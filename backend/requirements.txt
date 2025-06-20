@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+langchain
+langchain-community
+langchain-openai
+langchain-anthropic
+langchain-huggingface
+langchain-ollama
+langgraph
+numpy
+pandas
+streamlit
