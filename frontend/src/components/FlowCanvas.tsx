@@ -1,12 +1,12 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import ReactFlow, {
   Background,
-  BackgroundVariant,
   Controls,
   useReactFlow,
   type Node,
   type NodeTypes,
   SelectionMode,
+  ConnectionLineType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import useFlowStore from '../store/useFlowStore';
@@ -129,44 +129,132 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
           [-1000, -1000],
           [2000, 2000],
         ]}
-        zoomOnScroll={true}
-        zoomOnPinch={true}
-        zoomOnDoubleClick={true}
+        zoomOnScroll
+        zoomOnPinch
+        zoomOnDoubleClick
         panOnScroll={false}
-        panOnDrag={[0, 1, 2]} // Enable left, middle, and right mouse button for pan
-        selectionOnDrag={false} // Disable selection drag
+        panOnDrag={[0, 1, 2]}
+        selectionOnDrag={false}
         selectionMode={SelectionMode.Partial}
-        selectionKeyCode={'Shift'} // Only select with Shift key
+        selectionKeyCode={'Shift'}
+        // Performance optimizations
+        onlyRenderVisibleElements={false}
+        nodeOrigin={[0.5, 0.5]}
+        defaultMarkerColor="#4b5563"
+        connectionLineStyle={{ stroke: '#4b5563', strokeWidth: 1 }}
+        connectionLineType={ConnectionLineType.SmoothStep}
+        // Interaction settings
+        nodesDraggable
+        nodesConnectable
+        elementsSelectable
+        selectNodesOnDrag={false}
+        defaultNodes={[]}
+        defaultEdges={[]}
+        nodeDragThreshold={1}
+        fitViewOptions={{ padding: 0.2 }}
         style={{
           backgroundColor: '#0f172a',
         }}
-        onlyRenderVisibleElements={false}
       >
-        <Background 
-          color="#374151" 
-          variant={BackgroundVariant.Dots} 
-          gap={12} 
-          size={1.5}
+        <Background
+          gap={16}
+          size={1}
+          color="#334155"
+          className="bg-gray-900"
         />
         <Controls />
-        {/* Node counter in top right */}
-        <div className="absolute top-4 right-4 z-10">
-          <div className="bg-gray-800/90 backdrop-blur-sm border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 shadow-lg">
-            <span className="font-medium">{nodes.length}</span> node{nodes.length !== 1 ? 's' : ''} • 
-            <span className="font-medium">{edges.length}</span> edge{edges.length !== 1 ? 's' : ''}
+        {/* Modern top navigation bar */}
+        <div className="absolute top-0 left-0 right-0 z-10 bg-gray-900/80 backdrop-blur-lg border-b border-gray-800/80">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between h-16">
+              {/* Left side - Logo */}
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z" />
+                  </svg>
+                </div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Agent Smith
+                </h1>
+              </div>
+
+              {/* Center - Navigation */}
+              <nav className="hidden md:flex items-center space-x-1">
+                <button 
+                  onClick={() => console.log('LLMs clicked')}
+                  className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 flex items-center space-x-2 group"
+                >
+                  <svg className="w-5 h-5 text-blue-400 group-hover:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>LLMs</span>
+                </button>
+                <button 
+                  onClick={() => console.log('Flows clicked')}
+                  className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 flex items-center space-x-2 group"
+                >
+                  <svg className="w-5 h-5 text-purple-400 group-hover:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                  </svg>
+                  <span>Flows</span>
+                </button>
+                <button 
+                  onClick={() => console.log('Templates clicked')}
+                  className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 flex items-center space-x-2 group"
+                >
+                  <svg className="w-5 h-5 text-pink-400 group-hover:text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <span>Templates</span>
+                </button>
+              </nav>
+
+              {/* Right side - Actions */}
+              <div className="flex items-center space-x-3">
+                <div className="hidden md:flex items-center space-x-2 bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-1.5 text-sm">
+                  <span className="text-blue-400 font-medium">{nodes.length}</span>
+                  <span className="text-gray-400">nodes</span>
+                  <span className="text-gray-600">•</span>
+                  <span className="text-purple-400 font-medium">{edges.length}</span>
+                  <span className="text-gray-400">edges</span>
+                </div>
+                
+                <button 
+                  onClick={() => console.log('Settings clicked')}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors duration-200"
+                  title="Settings"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+                
+                <button 
+                  onClick={() => console.log('Save clicked')}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200 flex items-center space-x-2 shadow-lg shadow-blue-500/20"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Save</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         
         {/* Gradient Add Node button */}
-        <div className="absolute bottom-6 right-6 z-10">
+        <div className="absolute bottom-8 right-8 z-10">
           <button
             onClick={handleAddNode}
-            className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg transition-all duration-300 hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl hover:shadow-indigo-500/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 text-base font-medium text-white shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl hover:shadow-blue-500/20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
           >
             <span className="relative z-10 flex items-center space-x-2">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
-                className="h-5 w-5 transition-transform duration-200 group-hover:rotate-180" 
+                className="h-6 w-6 transition-transform duration-200 group-hover:rotate-180" 
                 viewBox="0 0 20 20" 
                 fill="currentColor"
               >
