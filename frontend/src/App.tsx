@@ -1,36 +1,80 @@
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { BrowserRouter as Router, Link, useLocation } from 'react-router-dom';
-import { FiMenu, FiCpu, FiSettings, FiLayers } from 'react-icons/fi';
+import { BrowserRouter as Router, Link, useLocation, Routes, Route } from 'react-router-dom';
+import { FiCpu, FiSettings, FiLayers } from 'react-icons/fi';
 import { FlowCanvas, type CustomNode } from './components/FlowCanvas';
 import useFlowStore from './store/useFlowStore';
+import LLMsPage from './pages/LLMsPage';
+import SettingsPage from './pages/SettingsPage';
 
 const Navigation = () => {
   const location = useLocation();
   
-  // Navigation items
+  // Navigation items with icons and paths
   const navItems = [
-    { id: 'canvas', path: '/', icon: <FiLayers />, label: 'Canvas' },
-    { id: 'llms', path: '/llms', icon: <FiCpu />, label: 'LLMs' },
-    { id: 'settings', path: '/settings', icon: <FiSettings />, label: 'Settings' },
+    { 
+      id: 'canvas', 
+      path: '/', 
+      icon: <FiLayers className="w-5 h-5" />, 
+      label: 'Canvas',
+      activeBg: 'from-blue-500/10 to-blue-600/10',
+      activeText: 'text-blue-400',
+      hoverBg: 'hover:bg-gray-700/50',
+      gradient: 'from-blue-400 to-blue-500'
+    },
+    { 
+      id: 'llms', 
+      path: '/llms', 
+      icon: <FiCpu className="w-5 h-5" />, 
+      label: 'LLMs',
+      activeBg: 'from-purple-500/10 to-purple-600/10',
+      activeText: 'text-purple-400',
+      hoverBg: 'hover:bg-purple-500/10',
+      gradient: 'from-purple-400 to-purple-500'
+    },
+    { 
+      id: 'settings', 
+      path: '/settings', 
+      icon: <FiSettings className="w-5 h-5" />, 
+      label: 'Settings',
+      activeBg: 'from-gray-600/10 to-gray-700/10',
+      activeText: 'text-gray-300',
+      hoverBg: 'hover:bg-gray-700/50',
+      gradient: 'from-gray-400 to-gray-500'
+    },
   ];
 
   return (
-    <nav className="ml-8 flex space-x-1 h-full">
-      {navItems.map((item) => (
-        <Link
-          key={item.id}
-          to={item.path}
-          className={`flex items-center px-4 h-full border-b-2 ${
-            location.pathname === item.path
-              ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-gray-700'
-          }`}
-        >
-          <span className="mr-2">{item.icon}</span>
-          {item.label}
-        </Link>
-      ))}
+    <nav className="ml-8 flex space-x-1 h-full items-center">
+      {navItems.map((item) => {
+        const isActive = location.pathname === item.path;
+        return (
+          <Link
+            key={item.id}
+            to={item.path}
+            className={`group relative flex items-center px-4 py-3 h-full transition-all duration-200 rounded-lg mx-1 ${
+              isActive 
+                ? `${item.activeText} ${item.activeBg} bg-gradient-to-r shadow-lg`
+                : `text-gray-400 ${item.hoverBg} hover:text-gray-200`
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <span className={`relative z-10 transition-all duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                <span className={`absolute inset-0 rounded-full bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-200 ${
+                  isActive ? 'opacity-100' : ''
+                }`}></span>
+                <span className="relative z-10">{item.icon}</span>
+              </span>
+              <span className="font-medium text-sm relative z-10">
+                {item.label}
+                <span className={`absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r ${item.gradient} transition-all duration-300 transform ${
+                  isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                }`}></span>
+              </span>
+            </div>
+          </Link>
+        );
+      })}
     </nav>
   );
 };
@@ -167,13 +211,20 @@ const RightSidebar = () => {
 
 const AppHeader = () => {
   return (
-    <header className="bg-gray-800 border-b border-gray-700 h-14 flex-shrink-0">
-      <div className="h-full flex items-center px-4">
+    <header className="bg-gray-900/80 backdrop-blur-lg border-b border-gray-800/50 h-16 flex-shrink-0">
+      <div className="h-full flex items-center justify-between px-6">
         <div className="flex items-center">
-          <FiMenu className="h-5 w-5 text-gray-400 mr-4" />
-          <h1 className="text-xl font-semibold">Agent Smith</h1>
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg mr-3">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Agent Smith
+          </h1>
         </div>
         <Navigation />
+        <div className="w-32"></div> {/* Spacer to balance the layout */}
       </div>
     </header>
   );
@@ -201,13 +252,14 @@ const FlowCanvasWithSidebar = () => {
   };
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 h-full overflow-hidden">
       <LeftSidebar node={selectedNode} onUpdate={handleNodeUpdate} />
       <div className="flex-1 relative h-full">
         <FlowCanvas 
           onNodeSelect={(node: CustomNode | null) => setSelectedNode(node)}
           selectedNodeId={selectedNode?.id}
           className="w-full h-full"
+          style={{ height: '100%' }}
         />
       </div>
       <RightSidebar />
@@ -215,17 +267,36 @@ const FlowCanvasWithSidebar = () => {
   );
 };
 
+// Main layout component that includes the FlowCanvasWithSidebar
+const MainLayout = () => (
+  <div className="flex-1 flex flex-col h-full overflow-hidden">
+    <FlowCanvasWithSidebar />
+  </div>
+);
+
+// Create a styled component for the app container
+const AppContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="flex flex-col h-screen bg-gray-900 text-white">
+    {children}
+  </div>
+);
+
 const App = () => {
   return (
     <Router>
-      <div className="flex flex-col h-screen bg-gray-900 text-white">
+      <AppContainer>
         <AppHeader />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <FlowCanvasWithSidebar />
-        </div>
+        <main className="flex-1 flex flex-col min-h-0 bg-gray-900">
+          <Routes>
+            <Route path="/" element={<MainLayout />} />
+            <Route path="/llms" element={<LLMsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<MainLayout />} />
+          </Routes>
+        </main>
         <Toaster position="bottom-right" />
         <style>{`
-          /* Original node styles */
+          /* Node styles */
           .react-flow__node {
             background: #1e293b;
             color: #f8fafc;
@@ -341,7 +412,7 @@ const App = () => {
             fill: #9ca3af;
           }
         `}</style>
-      </div>
+      </AppContainer>
     </Router>
   );
 };

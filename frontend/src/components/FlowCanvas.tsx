@@ -113,9 +113,6 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
         onPaneClick={handlePaneClick}
         nodeTypes={nodeTypes}
         fitView
-        nodesDraggable
-        nodesConnectable
-        elementsSelectable
         defaultEdgeOptions={defaultEdgeOptions}
         snapToGrid={false}
         nodeExtent={[
@@ -154,6 +151,11 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
         fitViewOptions={{ padding: 0.2 }}
         style={{
           backgroundColor: '#0f172a',
+          width: '100%',
+          height: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0
         }}
       >
         <Background
@@ -167,15 +169,10 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
         <div className="absolute top-0 left-0 right-0 z-10 bg-gray-900/80 backdrop-blur-lg border-b border-gray-800/80">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between h-16">
-              {/* Left side - Logo */}
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z" />
-                  </svg>
-                </div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Agent Smith
+              {/* Left side - Title */}
+              <div className="flex items-center">
+                <h1 className="text-xl font-medium text-gray-200">
+                  Agent Canvas
                 </h1>
               </div>
 
@@ -233,7 +230,7 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
                 
                 <button 
                   onClick={() => console.log('Save clicked')}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200 flex items-center space-x-2 shadow-lg shadow-blue-500/20"
+                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-lg transition-all duration-200 flex items-center space-x-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -279,10 +276,11 @@ const FlowCanvasWrapper = () => {
   const [selectedNode, setSelectedNode] = useState<CustomNode | null>(null);
   
   return (
-    <div className="flex-1 h-full">
+    <div className="flex-1 h-full w-full relative">
       <FlowCanvas 
         onNodeSelect={setSelectedNode}
         selectedNodeId={selectedNode?.id}
+        className="absolute inset-0"
       />
     </div>
   );
