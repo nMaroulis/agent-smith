@@ -197,13 +197,13 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
                   <span>Flows</span>
                 </button>
                 <button 
-                  onClick={() => console.log('Templates clicked')}
+                  onClick={() => console.log('Functions clicked')}
                   className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-all duration-200 flex items-center space-x-2 group"
                 >
                   <svg className="w-5 h-5 text-pink-400 group-hover:text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
-                  <span>Templates</span>
+                  <span>Functions</span>
                 </button>
               </nav>
 

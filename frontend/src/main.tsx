@@ -50,20 +50,4 @@ if (!rootElement) {
   console.log('✅ App component rendered');
 }
 
-// Add some debug styles to make sure they're applied
-const style = document.createElement('style');
-style.textContent = `
-  body { 
-    background-color: #f0f0f0 !important;
-    margin: 0;
-    padding: 0;
-  }
-  #root {
-    min-height: 100vh;
-    background-color: white;
-    border: 2px solid red;
-  }
-`;
-document.head.appendChild(style);
-
 console.log('=== Application Started ===');
