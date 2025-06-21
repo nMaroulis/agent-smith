@@ -1,0 +1,53 @@
+.reactFlowNode {
+  border: 2px solid #3b82f6;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  background: white;
+  color: #1f2937;
+}
+
+.reactFlowNode.selected {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 2px #bfdbfe;
+}
+
+.reactFlowHandle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+}
+
+.reactFlowHandleTop {
+  top: -5px;
+}
+
+.reactFlowHandleBottom {
+  bottom: -5px;
+}
+
+.reactFlowHandleLeft {
+  left: -5px;
+}
+
+.reactFlowHandleRight {
+  right: -5px;
+}
+
+.flowContainer {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background-color: #f9fafb;
+}
+
+.controls {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  z-index: 10;
+  background: white;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
