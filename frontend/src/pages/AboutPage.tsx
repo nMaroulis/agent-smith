@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiGithub, FiCode, FiCpu, FiLayers, FiZap, FiTwitter } from 'react-icons/fi';
+import { FiGithub, FiCode, FiCpu, FiLayers, FiZap, FiTwitter, FiLinkedin } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
 export default function AboutPage() {
@@ -352,13 +352,13 @@ export default function AboutPage() {
                 Empowering developers and businesses to build, deploy, and manage intelligent agents at scale.
               </p>
               <div className="flex space-x-4">
-                <a href="https://github.com/your-repo" target="_blank" rel="noopener noreferrer" 
+                <a href="https://github.com/nMaroulis/agent-smith" target="_blank" rel="noopener noreferrer" 
                    className="text-gray-400 hover:text-white transition-colors">
                   <FiGithub className="w-5 h-5" />
                 </a>
-                <a href="https://twitter.com/yourhandle" target="_blank" rel="noopener noreferrer" 
+                <a href="https://linkedin.com/in/nikos-maroulis" target="_blank" rel="noopener noreferrer" 
                    className="text-gray-400 hover:text-blue-400 transition-colors">
-                  <FiTwitter className="w-5 h-5" />
+                  <FiLinkedin className="w-5 h-5" />
                 </a>
               </div>
             </div>
