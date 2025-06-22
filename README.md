@@ -42,13 +42,13 @@ Design intelligent workflows using a drag-and-drop interface, describe flows in 
 
 ## 💡 Why AgentSmith?
 
-While tools like Flowise focus on simple chains, **AgentSmith is built for developers and advanced users** who want:
+AgentSmith is built for developers and advanced users who want:
 - ✅ Real state management via LangGraph
 - ✅ Full Python code and version control
 - ✅ Pluggable local/remote LLMs
+- ✅ Automated structured LLM outputs for models that do not support it (Llama.cpp etc.) by integrating [outlines](https://github.com/dottxt-ai/outlines)
 - ✅ Typed agent state, message schema, and input/output mapping
 
-If Flowise is Zapier, **AgentSmith is Webflow + VSCode** for AI agents.
 
 ---
 
@@ -98,7 +98,7 @@ $ python main.py
 $ cd frontend
 $ npm install
 $ npm run dev
-
+```
 
 ## 🤝 Contributing
 We welcome contributions, ideas, and extensions. AgentSmith is modular by design — whether you’re adding a new LLM provider or a UI feature, we’d love your input.
