@@ -1,10 +1,26 @@
 import { create } from 'zustand';
 import type { Node, Edge, Connection, NodeChange, EdgeChange } from 'reactflow';
 
+export type NodeType = 'llm' | 'function' | 'trigger' | 'start' | 'end';
+
+export interface LLMData {
+  provider: string;
+  providerName: string;
+  model: string;
+  modelName: string;
+}
+
+export interface FunctionData {
+  name: string;
+  description: string;
+}
+
 export interface NodeData {
   label: string;
   description?: string;
-  type: 'llm' | 'function' | 'trigger';
+  type: NodeType;
+  llm?: LLMData;
+  function?: FunctionData;
 }
 
 export interface FlowState {

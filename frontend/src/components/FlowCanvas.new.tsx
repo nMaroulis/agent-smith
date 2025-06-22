@@ -120,7 +120,7 @@ const NodeComponent = memo(({ data, selected, isConnectable }: NodeProps<NodeDat
           <div className="text-xs text-white/70">{data.description}</div>
         )}
         
-        {data.llm && (
+        {data.type === 'llm' && data.llm && (
           <div className="mt-2 pt-2 border-t border-white/10">
             <div className="text-xs font-medium text-white/80">
               {data.llm.providerName || 'LLM'}
@@ -128,18 +128,16 @@ const NodeComponent = memo(({ data, selected, isConnectable }: NodeProps<NodeDat
             <div className="text-xs text-white/60">
               {data.llm.modelName || 'Select a model'}
             </div>
-            {data.function && (
-              <div className="text-xs text-white/80 mt-1 pt-1 border-t border-white/5">
-                {data.function.name}
-              </div>
-            )}
           </div>
         )}
         
-        {!data.llm && data.function && (
+        {data.type === 'function' && data.function && (
           <div className="mt-2 pt-2 border-t border-white/10">
             <div className="text-xs font-medium text-white/80">
               {data.function.name}
+            </div>
+            <div className="text-xs text-white/60">
+              {data.function.description || 'No description'}
             </div>
           </div>
         )}
@@ -166,7 +164,7 @@ interface FlowCanvasProps {
   style?: React.CSSProperties;
 }
 
-export const FlowCanvas: React.FC<FlowCanvasProps> = ({
+const FlowCanvas: React.FC<FlowCanvasProps> = ({
   onNodeSelect,
   selectedNodeId,
   className = '',
@@ -211,10 +209,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     const id = `${type}-${Date.now()}`;
     const baseNode: CustomNode = {
       id,
-      type: type as any, // Type assertion for ReactFlow's Node type
+      type,
       position,
       data: {
-        label: type === 'function' ? 'New Router' : 'New Node',
+        label: type.charAt(0).toUpperCase() + type.slice(1) + (['start', 'end'].includes(type) ? '' : ' Node'),
         type,
       },
     };
@@ -227,16 +225,12 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             ...baseNode.data,
             llm: {
               provider: '',
-              providerName: 'OpenAI',
-              model: 'gpt-4',
-              modelName: 'GPT-4',
-            },
-            function: {
-              name: 'process_input',
-              description: 'Processes the input using the LLM',
+              providerName: '',
+              model: '',
+              modelName: '',
             },
           },
-        } as CustomNode;
+        };
       case 'function':
         return {
           ...baseNode,
@@ -376,13 +370,13 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
               onClick={() => handleAddNode('llm')}
               className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
             >
-              Add Node
+              Add LLM
             </button>
             <button
               onClick={() => handleAddNode('function')}
               className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
             >
-              Add Router
+              Add Function
             </button>
             <button
               onClick={() => handleAddNode('end')}
