@@ -1,3 +1,5 @@
+# BaseNode, Edge, AgentGraph
+
 from pydantic import BaseModel
 from typing import Optional, List
 from ..llms.base import BaseLLM
@@ -14,7 +16,8 @@ class BaseNode(BaseModel):
     code: str
     metadata: Optional[dict] = {}
     llm: Optional[BaseLLM] = None
-
+    input_keys: list[str]  # from the StateDefinition
+    output_keys: list[str]
 
 class Edge(BaseModel):
     source: str
