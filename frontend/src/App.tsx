@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Link, useLocation, Routes, Route } from 'react-router-dom';
-import { FiCpu, FiSettings, FiLayers } from 'react-icons/fi';
+import { FiCpu, FiSettings, FiLayers, FiPlus, FiChevronDown } from 'react-icons/fi';
 import { FlowCanvas, type CustomNode } from './components/FlowCanvas';
 import useFlowStore from './store/useFlowStore';
 import LLMsPage from './pages/LLMsPage';
@@ -79,8 +79,50 @@ const Navigation = () => {
   );
 };
 
+const LLM_PROVIDERS = [
+  { id: 'openai', name: 'OpenAI' },
+  { id: 'anthropic', name: 'Anthropic' },
+  { id: 'google', name: 'Google' },
+  { id: 'meta', name: 'Meta' },
+];
+
+const LLM_MODELS = {
+  openai: [
+    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+    { id: 'gpt-4', name: 'GPT-4' },
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+  ],
+  anthropic: [
+    { id: 'claude-3-opus', name: 'Claude 3 Opus' },
+    { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet' },
+    { id: 'claude-3-haiku', name: 'Claude 3 Haiku' },
+  ],
+  google: [
+    { id: 'gemini-pro', name: 'Gemini Pro' },
+    { id: 'gemini-ultra', name: 'Gemini Ultra' },
+  ],
+  meta: [
+    { id: 'llama-3-70b', name: 'Llama 3 70B' },
+    { id: 'llama-3-8b', name: 'Llama 3 8B' },
+  ],
+};
+
+const FUNCTION_OPTIONS = [
+  { id: 'process_data', name: 'Process Data' },
+  { id: 'generate_text', name: 'Generate Text' },
+  { id: 'analyze_sentiment', name: 'Analyze Sentiment' },
+  { id: 'extract_entities', name: 'Extract Entities' },
+];
+
 const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (node: CustomNode) => void }) => {
-  const handleChange = (field: string, value: string) => {
+  const [isProviderOpen, setIsProviderOpen] = useState(false);
+  const [isModelOpen, setIsModelOpen] = useState(false);
+  const [isFunctionOpen, setIsFunctionOpen] = useState(false);
+
+  const currentProvider = node?.data.llm?.provider || '';
+  const availableModels = currentProvider ? LLM_MODELS[currentProvider as keyof typeof LLM_MODELS] || [] : [];
+
+  const handleChange = (field: string, value: any) => {
     if (!node) return;
     onUpdate({
       ...node,
@@ -91,8 +133,39 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
     });
   };
 
+  const handleProviderSelect = (provider: { id: string; name: string }) => {
+    // When provider changes, reset the model
+    handleChange('llm', { 
+      provider: provider.id,
+      providerName: provider.name,
+      model: '',
+      modelName: ''
+    });
+    setIsProviderOpen(false);
+  };
+
+  const handleModelSelect = (model: { id: string; name: string }) => {
+    if (!node?.data.llm) return;
+    handleChange('llm', { 
+      ...node.data.llm,
+      model: model.id,
+      modelName: model.name
+    });
+    setIsModelOpen(false);
+  };
+
+  const handleFunctionSelect = (func: { id: string; name: string }) => {
+    handleChange('function', { name: func.id, description: func.name });
+    setIsFunctionOpen(false);
+  };
+
+  const handleAddFunction = () => {
+    // This would open a modal or navigate to a function creation page in a real app
+    console.log('Add new function');
+  };
+
   return (
-    <div className="w-64 bg-gray-800 border-r border-gray-700 flex-shrink-0 overflow-y-auto">
+    <div className="w-72 bg-gray-800 border-r border-gray-700 flex-shrink-0 overflow-y-auto">
       <div className="p-4">
         <h2 className="text-lg font-semibold text-white mb-4">Node Properties</h2>
         {!node ? (
@@ -112,12 +185,131 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
                 placeholder="Enter node label"
               />
             </div>
+
+            <div className="space-y-3">
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Provider</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsProviderOpen(!isProviderOpen)}
+                    className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    <span>{node.data.llm?.providerName || 'Select Provider'}</span>
+                    <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isProviderOpen ? 'transform rotate-180' : ''}`} />
+                  </button>
+                  {isProviderOpen && (
+                    <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
+                      <div className="py-1 max-h-60 overflow-auto">
+                        {LLM_PROVIDERS.map((provider) => (
+                          <button
+                            key={provider.id}
+                            onClick={() => handleProviderSelect(provider)}
+                            className={`w-full text-left px-4 py-2 text-sm ${
+                              node.data.llm?.provider === provider.id
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-300 hover:bg-gray-700'
+                            }`}
+                          >
+                            {provider.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Model</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled={!currentProvider}
+                    onClick={() => setIsModelOpen(!isModelOpen)}
+                    className={`w-full flex items-center justify-between bg-gray-700 border ${
+                      currentProvider ? 'border-gray-600' : 'border-gray-700 bg-gray-800/50 cursor-not-allowed'
+                    } rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                  >
+                    <span className={!currentProvider ? 'text-gray-500' : ''}>
+                      {node.data.llm?.modelName || (currentProvider ? 'Select Model' : 'Select provider first')}
+                    </span>
+                    <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${
+                      isModelOpen ? 'transform rotate-180' : ''
+                    } ${!currentProvider ? 'opacity-50' : ''}`} />
+                  </button>
+                  {isModelOpen && currentProvider && (
+                    <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
+                      <div className="py-1 max-h-60 overflow-auto">
+                        {availableModels.map((model) => (
+                          <button
+                            key={model.id}
+                            onClick={() => handleModelSelect(model)}
+                            className={`w-full text-left px-4 py-2 text-sm ${
+                              node.data.llm?.model === model.id
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-300 hover:bg-gray-700'
+                            }`}
+                          >
+                            {model.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-gray-300">Function</label>
+                <button
+                  type="button"
+                  onClick={handleAddFunction}
+                  className="text-xs text-blue-400 hover:text-blue-300 flex items-center"
+                >
+                  <FiPlus className="mr-1" size={12} />
+                  Add Function
+                </button>
+              </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsFunctionOpen(!isFunctionOpen)}
+                  className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  <span>{node.data.function?.name ? node.data.function.name.replace('_', ' ') : 'Select Function'}</span>
+                  <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isFunctionOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                {isFunctionOpen && (
+                  <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
+                    <div className="py-1 max-h-60 overflow-auto">
+                      {FUNCTION_OPTIONS.map((func) => (
+                        <button
+                          key={func.id}
+                          onClick={() => handleFunctionSelect(func)}
+                          className={`w-full text-left px-4 py-2 text-sm ${
+                            node.data.function?.name === func.id
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-300 hover:bg-gray-700'
+                          }`}
+                        >
+                          {func.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Description</label>
               <textarea
                 value={node.data.description || ''}
                 onChange={(e) => handleChange('description', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[100px] resize-none"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[80px] resize-none"
                 placeholder="Enter node description"
               />
             </div>

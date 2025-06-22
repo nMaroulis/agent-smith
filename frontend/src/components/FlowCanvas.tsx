@@ -13,40 +13,93 @@ import useFlowStore from '../store/useFlowStore';
 
 export interface NodeData {
   label: string;
-  description?: string;
   type: 'llm' | 'function' | 'trigger';
+  description?: string;
+  llm?: {
+    provider: string;
+    providerName: string;
+    model: string;
+    modelName: string;
+  };
+  function?: {
+    name: string;
+    description: string;
+  };
 }
 
 export type CustomNode = Node<NodeData>;
 
 // Memoized Node Component to prevent unnecessary re-renders
-const NodeComponent = memo(({ data, selected }: NodeProps<NodeData>) => (
-  <div className={`relative w-48 transition-all duration-200 ${selected ? 'scale-105' : 'scale-100'}`}>
-    <div className={`relative z-10 p-3 rounded-lg shadow-lg bg-gray-800 border-2 ${
-      selected 
-        ? 'border-blue-500 ring-4 ring-blue-500/20' 
-        : 'border-gray-700 hover:border-gray-600'
-    } transition-all duration-200`}>
-      <div className="flex items-start space-x-2">
-        <div className={`flex-shrink-0 w-2.5 h-2.5 mt-1 rounded-full ${
-          data.type === 'llm' ? 'bg-blue-500' : 
-          data.type === 'function' ? 'bg-green-500' : 'bg-purple-500'
-        }`}></div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-gray-100 truncate">{data.label}</div>
-          {data.description && (
-            <div className="mt-0.5 text-xs text-gray-400 line-clamp-1">{data.description}</div>
+const NodeComponent = memo(({ data, selected }: NodeProps<NodeData>) => {
+  const nodeTypeColors = {
+    llm: { bg: 'bg-blue-500', border: 'border-blue-500', text: 'text-blue-400' },
+    function: { bg: 'bg-green-500', border: 'border-green-500', text: 'text-green-400' },
+    trigger: { bg: 'bg-purple-500', border: 'border-purple-500', text: 'text-purple-400' }
+  };
+  
+  const colors = nodeTypeColors[data.type] || nodeTypeColors.llm;
+  
+  // Format function name for display
+  const formatFunctionName = (name: string) => {
+    return name
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+  
+  return (
+    <div className={`relative w-56 transition-all duration-200 ${selected ? 'scale-105' : 'scale-100'}`}>
+      <div className={`relative z-10 rounded-xl shadow-xl bg-gray-800 border-2 ${
+        selected 
+          ? `${colors.border} ring-4 ${colors.border}/20` 
+          : 'border-gray-700 hover:border-gray-600'
+      } transition-all duration-200 overflow-hidden`}>
+        {/* Header */}
+        <div className="px-4 py-3 bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700/50">
+          <div className="flex items-center space-x-2">
+            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${colors.bg}`}></div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-gray-100 truncate">{data.label}</div>
+              {data.description && (
+                <div className="text-xs text-gray-400 truncate">{data.description}</div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="p-3 space-y-2">
+          {/* LLM Section */}
+          {data.llm && (
+            <div className="flex items-center space-x-2 text-xs text-gray-300">
+              <svg className="flex-shrink-0 w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="truncate">{data.llm.model}</span>
+            </div>
+          )}
+          
+          {/* Function Section */}
+          {data.function && (
+            <div className="flex items-center space-x-2 text-xs text-gray-300">
+              <svg className="flex-shrink-0 w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="truncate">{formatFunctionName(data.function.name)}</span>
+            </div>
           )}
         </div>
+        
+        {/* Footer */}
+        <div className={`h-1.5 ${
+          selected 
+            ? `bg-gradient-to-r ${colors.bg} to-${colors.bg.replace('500', '400')}` 
+            : 'bg-gradient-to-r from-gray-700 to-gray-600'
+        }`}></div>
       </div>
     </div>
-    <div className={`absolute -bottom-1 left-3 right-3 h-1.5 rounded-full ${
-      selected 
-        ? 'bg-gradient-to-r from-blue-500 to-blue-400' 
-        : 'bg-gradient-to-r from-gray-700 to-gray-600'
-    } transition-all duration-200`}></div>
-  </div>
-));
+  );
+});
 
 NodeComponent.displayName = 'NodeComponent';
 
@@ -113,9 +166,19 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
       type: 'llm',
       position: { x: 100, y: 100 },
       data: {
-        label: 'New Node',
+        label: 'New Agent',
         type: 'llm',
-        description: ''
+        description: 'Agent description',
+        llm: {
+          provider: 'openai',
+          providerName: 'OpenAI',
+          model: 'gpt-4-turbo',
+          modelName: 'GPT-4 Turbo'
+        },
+        function: {
+          name: 'process_data',
+          description: 'Processes the input data using the LLM'
+        }
       }
     };
     const { addNode } = useFlowStore.getState();
