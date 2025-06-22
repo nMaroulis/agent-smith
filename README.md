@@ -21,22 +21,22 @@ Design intelligent workflows using a drag-and-drop interface, describe flows in 
   Design nodes, edges, and async flows using a canvas powered by React Flow.
 
 - 🧠 **Typed State Definition (LangGraph-native)**  
-  Visually define `TypedDict`-based agent state and message schemas — a first of its kind.
+  Visually define `TypedDict`-based agent state and message schemas.
 
-- 🗣️ **Natural Language to Flow**  
-  Type “create a RAG agent using OpenAI and a search tool” → get a runnable agent.
+- 🚀 **Python / LangGraph Code Export**  
+  Export your agent as a standalone Python module using LangGraph. Then just copy paste the code that works out of the box.
 
 - 🧬 **Per-Node Code Editing**  
   Modify each node’s logic directly in a Monaco (VSCode-style) editor.
 
 - 🔌 **Modular LLM Backend**  
-  Built-in support for OpenAI, Anthropic, Hugging Face Transformers, and local LLMs (Llama.cpp, Ollama).
+  Built-in support for OpenAI, Anthropic, Hugging Face Transformers, and **local LLMs**, currently **Llama.cpp** (more to come...).
 
 - 🛠️ **Custom Tool Creation**  
   Define and reuse tools via code or natural language.
 
-- 🚀 **LangGraph Code Export**  
-  Export your agent as a standalone Python module using LangGraph.
+- 🗣️ **Natural Language to Flow** - TBD  
+  Type “create a RAG agent using OpenAI and a search tool” → get a runnable agent.
 
 ---
 
