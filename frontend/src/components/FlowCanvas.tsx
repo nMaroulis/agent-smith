@@ -1,11 +1,11 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo, memo } from 'react';
 import ReactFlow, {
   Background,
   Controls,
   useReactFlow,
   type Node,
   type NodeTypes,
-  SelectionMode,
+  type NodeProps,
   ConnectionLineType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -19,19 +19,41 @@ export interface NodeData {
 
 export type CustomNode = Node<NodeData>;
 
-const nodeTypes: NodeTypes = {
-  llm: ({ data, selected }: { data: NodeData, selected?: boolean }) => (
-    <div className={`px-4 py-3 shadow-md rounded-md bg-gray-800 border ${selected ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-gray-700'} w-48 transition-all`}>
-      <div className="flex items-center space-x-2">
-        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-        <div className="text-xs font-medium text-gray-200">{data.label}</div>
+// Memoized Node Component to prevent unnecessary re-renders
+const NodeComponent = memo(({ data, selected }: NodeProps<NodeData>) => (
+  <div className={`relative w-48 transition-all duration-200 ${selected ? 'scale-105' : 'scale-100'}`}>
+    <div className={`relative z-10 p-3 rounded-lg shadow-lg bg-gray-800 border-2 ${
+      selected 
+        ? 'border-blue-500 ring-4 ring-blue-500/20' 
+        : 'border-gray-700 hover:border-gray-600'
+    } transition-all duration-200`}>
+      <div className="flex items-start space-x-2">
+        <div className={`flex-shrink-0 w-2.5 h-2.5 mt-1 rounded-full ${
+          data.type === 'llm' ? 'bg-blue-500' : 
+          data.type === 'function' ? 'bg-green-500' : 'bg-purple-500'
+        }`}></div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-gray-100 truncate">{data.label}</div>
+          {data.description && (
+            <div className="mt-0.5 text-xs text-gray-400 line-clamp-1">{data.description}</div>
+          )}
+        </div>
       </div>
-      {data.description && (
-        <div className="mt-1 text-xs text-gray-400">{data.description}</div>
-      )}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-b-md"></div>
     </div>
-  )
+    <div className={`absolute -bottom-1 left-3 right-3 h-1.5 rounded-full ${
+      selected 
+        ? 'bg-gradient-to-r from-blue-500 to-blue-400' 
+        : 'bg-gradient-to-r from-gray-700 to-gray-600'
+    } transition-all duration-200`}></div>
+  </div>
+));
+
+NodeComponent.displayName = 'NodeComponent';
+
+const nodeTypes: NodeTypes = {
+  llm: NodeComponent,
+  function: NodeComponent,
+  trigger: NodeComponent
 };
 
 export interface FlowCanvasProps {
@@ -55,19 +77,22 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
     },
   };
 
-  const handleNodeClick = (_event: React.MouseEvent, node: CustomNode) => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: CustomNode) => {
     onNodeSelect(node);
-  };
+  }, [onNodeSelect]);
 
-  const handlePaneClick = () => {
+  const handlePaneClick = useCallback(() => {
     onNodeSelect(null);
-  };
-
-
+  }, [onNodeSelect]);
 
   useEffect(() => {
     setViewport({ x: 0, y: 0, zoom: 1 });
   }, [setViewport]);
+
+  // Memoize nodes and edges to prevent unnecessary re-renders
+  const memoizedNodes = useMemo(() => nodes, [nodes]);
+  const memoizedEdges = useMemo(() => edges, [edges]);
 
   // Update selected node when selectedNodeId changes
   useEffect(() => {
@@ -104,8 +129,8 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
       ref={reactFlowWrapper}
     >
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={memoizedNodes}
+        edges={memoizedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -126,29 +151,28 @@ export const FlowCanvas = ({ onNodeSelect, selectedNodeId, className = '', style
           [-1000, -1000],
           [2000, 2000],
         ]}
-        zoomOnScroll
-        zoomOnPinch
-        zoomOnDoubleClick
-        panOnScroll={false}
-        panOnDrag={[0, 1, 2]}
-        selectionOnDrag={false}
-        selectionMode={SelectionMode.Partial}
-        selectionKeyCode={'Shift'}
         // Performance optimizations
-        onlyRenderVisibleElements={false}
+        onlyRenderVisibleElements={true}
         nodeOrigin={[0.5, 0.5]}
         defaultMarkerColor="#4b5563"
-        connectionLineStyle={{ stroke: '#4b5563', strokeWidth: 1 }}
+        connectionLineStyle={{ stroke: '#4b5563', strokeWidth: 1.5 }}
         connectionLineType={ConnectionLineType.SmoothStep}
-        // Interaction settings
-        nodesDraggable
-        nodesConnectable
-        elementsSelectable
+        // Interaction and performance settings
+        nodesDraggable={true}
+        nodesConnectable={true}
+        elementsSelectable={true}
         selectNodesOnDrag={false}
         defaultNodes={[]}
         defaultEdges={[]}
         nodeDragThreshold={1}
         fitViewOptions={{ padding: 0.2 }}
+        zoomOnScroll={true}
+        zoomOnPinch={true}
+        zoomOnDoubleClick={true}
+        panOnScroll={false}
+        panOnDrag={[0, 1, 2]}
+        selectionOnDrag={false}
+        selectionKeyCode={'Shift'}
         style={{
           backgroundColor: '#0f172a',
           width: '100%',
