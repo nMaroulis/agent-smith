@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiPlus, FiTrash2, FiEdit2, FiCpu, FiServer, FiKey } from 'react-icons/fi';
+import { FiTrash2, FiEdit2, FiCpu, FiServer, FiKey } from 'react-icons/fi';
 
 type LLMType = 'api' | 'local';
 type APIProvider = 'openai' | 'anthropic' | 'llama-cpp';
@@ -78,55 +78,51 @@ const LLMsPage = () => {
     setLlms(llms.filter(llm => llm.id !== id));
   };
 
+  const resetForm = () => {
+    setLlmType('api');
+    setProvider('openai');
+    setModel('');
+    setApiKey('');
+    setBaseUrl('');
+    setName('');
+    setIsEditing(null);
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">LLM Models</h1>
-          <p className="text-gray-400">Manage your language model configurations</p>
-        </div>
-        <button
-          onClick={() => {
-            setActiveTab('add');
-            setIsEditing(null);
-            // Reset form
-            setLlmType('api');
-            setProvider('openai');
-            setModel('');
-            setApiKey('');
-            setBaseUrl('');
-            setName('');
-          }}
-          className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          <FiPlus className="mr-2" />
-          Add LLM
-        </button>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">LLM Models</h1>
+        <p className="text-gray-400">Manage your language model configurations</p>
       </div>
 
       <div className="bg-gray-800 rounded-xl overflow-hidden">
-        <div className="flex border-b border-gray-700">
+        <div className="flex border-b border-gray-700 px-6">
           <button
-            className={`px-6 py-3 font-medium text-sm ${
+            className={`px-4 py-3 font-medium text-sm flex-1 text-center ${
               activeTab === 'active'
                 ? 'text-blue-400 border-b-2 border-blue-500'
-                : 'text-gray-400 hover:text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-750'
             }`}
-            onClick={() => setActiveTab('active')}
+            onClick={() => {
+              setActiveTab('active');
+              resetForm();
+            }}
           >
-            Active Models
+            Active Models {llms.length > 0 && `(${llms.length})`}
           </button>
           <button
-            className={`px-6 py-3 font-medium text-sm ${
+            className={`px-4 py-3 font-medium text-sm flex-1 text-center ${
               activeTab === 'add'
                 ? 'text-blue-400 border-b-2 border-blue-500'
-                : 'text-gray-400 hover:text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-750'
             }`}
             onClick={() => setActiveTab('add')}
           >
             {isEditing ? 'Edit LLM' : 'Add New LLM'}
           </button>
         </div>
+
+
 
         <div className="p-6">
           {activeTab === 'active' ? (

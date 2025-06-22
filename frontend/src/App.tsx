@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Link, useLocation, Routes, Route } from 'react-router-dom';
-import { FiCpu, FiSettings, FiLayers, FiPlus, FiChevronDown, FiCode } from 'react-icons/fi';
+import { FiCpu, FiSettings, FiLayers, FiPlus, FiChevronDown, FiCode, FiInfo } from 'react-icons/fi';
 import { FlowCanvas } from './components/FlowCanvas';
 import useFlowStore from './store/useFlowStore';
 import LLMsPage from './pages/LLMsPage';
 import SettingsPage from './pages/SettingsPage';
 import FunctionsPage from './pages/FunctionsPage';
+import AboutPage from './pages/AboutPage';
 
 // Define the node types that are used in the application
 type NodeType = 'start' | 'end' | 'llm' | 'function' | 'trigger';
@@ -79,6 +80,16 @@ const Navigation = () => {
       activeText: 'text-gray-300',
       hoverBg: 'hover:bg-gray-700/50',
       gradient: 'from-gray-400 to-gray-500'
+    },
+    { 
+      id: 'about', 
+      path: '/about', 
+      icon: <FiInfo className="w-5 h-5" />, 
+      label: 'About',
+      activeBg: 'from-amber-500/10 to-amber-600/10',
+      activeText: 'text-amber-400',
+      hoverBg: 'hover:bg-gray-700/50',
+      gradient: 'from-amber-400 to-amber-500'
     },
   ];
 
@@ -520,8 +531,9 @@ const App = () => {
           <Routes>
             <Route path="/" element={<MainLayout />} />
             <Route path="/llms" element={<LLMsPage />} />
-            <Route path="/functions" element={<FunctionsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/functions" element={<FunctionsPage />} />
+            <Route path="/about" element={<AboutPage />} />
             <Route path="*" element={<MainLayout />} />
           </Routes>
         </main>
