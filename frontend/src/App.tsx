@@ -1,11 +1,39 @@
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Link, useLocation, Routes, Route } from 'react-router-dom';
-import { FiCpu, FiSettings, FiLayers, FiPlus, FiChevronDown } from 'react-icons/fi';
-import { FlowCanvas, type CustomNode } from './components/FlowCanvas';
+import { FiCpu, FiSettings, FiLayers, FiPlus, FiChevronDown, FiCode } from 'react-icons/fi';
+import { FlowCanvas } from './components/FlowCanvas';
 import useFlowStore from './store/useFlowStore';
 import LLMsPage from './pages/LLMsPage';
 import SettingsPage from './pages/SettingsPage';
+import FunctionsPage from './pages/FunctionsPage';
+
+// Define the node types that are used in the application
+type NodeType = 'start' | 'end' | 'llm' | 'function' | 'trigger';
+
+type CustomNode = {
+  id: string;
+  type: NodeType;
+  data: {
+    type: NodeType;
+    label: string;
+    description?: string;
+    llm?: {
+      provider: string;
+      model: string;
+      providerName: string;
+      modelName: string;
+    };
+    function?: {
+      name: string;
+      description: string;
+    };
+  };
+  position: {
+    x: number;
+    y: number;
+  };
+};
 
 const Navigation = () => {
   const location = useLocation();
@@ -31,6 +59,16 @@ const Navigation = () => {
       activeText: 'text-purple-400',
       hoverBg: 'hover:bg-purple-500/10',
       gradient: 'from-purple-400 to-purple-500'
+    },
+    { 
+      id: 'functions', 
+      path: '/functions', 
+      icon: <FiCode className="w-5 h-5" />, 
+      label: 'Functions',
+      activeBg: 'from-green-500/10 to-green-600/10',
+      activeText: 'text-green-400',
+      hoverBg: 'hover:bg-green-500/10',
+      gradient: 'from-green-400 to-green-500'
     },
     { 
       id: 'settings', 
@@ -482,6 +520,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<MainLayout />} />
             <Route path="/llms" element={<LLMsPage />} />
+            <Route path="/functions" element={<FunctionsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<MainLayout />} />
           </Routes>

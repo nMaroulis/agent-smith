@@ -38,7 +38,7 @@ type NodeTypeColors = {
 const NodeComponent = memo(({ data, selected, isConnectable }: NodeProps<NodeData>) => {
   const nodeTypeColors: NodeTypeColors = {
     llm: { bg: 'bg-blue-500', border: 'border-blue-500', text: 'text-blue-400' },
-    function: { bg: 'bg-green-500', border: 'border-green-500', text: 'text-green-400' },
+    function: { bg: 'bg-purple-500', border: 'border-purple-500', text: 'text-purple-100' },
     trigger: { bg: 'bg-purple-500', border: 'border-purple-500', text: 'text-purple-400' },
     start: { bg: 'bg-emerald-500', border: 'border-emerald-500', text: 'text-emerald-400' },
     end: { bg: 'bg-rose-500', border: 'border-rose-500', text: 'text-rose-400' }
@@ -364,31 +364,45 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             borderRadius: '4px',
           }}
         />
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800/80 backdrop-blur-sm rounded-lg p-2 shadow-lg z-10">
-          <div className="flex gap-2">
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-sm rounded-xl p-1.5 shadow-2xl border border-gray-700/50 z-10">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => handleAddNode('start')}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-emerald-500/20 hover:-translate-y-0.5"
             >
-              Add Start
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Start</span>
             </button>
             <button
               onClick={() => handleAddNode('llm')}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-blue-500/20 hover:-translate-y-0.5"
             >
-              Add Node
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span>Add Node</span>
             </button>
             <button
               onClick={() => handleAddNode('function')}
-              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-purple-500/20 hover:-translate-y-0.5"
             >
-              Add Router
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7l4-4m0 0l4 4m-4-4v18m-6 0h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <span>Add Router</span>
             </button>
             <button
               onClick={() => handleAddNode('end')}
-              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-sm font-medium transition-colors"
+              className="px-4 py-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-rose-500/20 hover:-translate-y-0.5"
             >
-              Add End
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+              </svg>
+              <span>End</span>
             </button>
           </div>
         </div>
