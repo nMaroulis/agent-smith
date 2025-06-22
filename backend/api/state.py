@@ -1,7 +1,7 @@
 # FastAPI endpoints to accept state/message schema from UI
 
 from fastapi import APIRouter
-from models.state_io import StateSchemaRequest
+from schemas.state_io import StateSchemaRequest
 
 router = APIRouter(prefix="/state", tags=["State"], responses={404: {"description": "Not found"}})
 
