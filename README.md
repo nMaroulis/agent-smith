@@ -84,8 +84,8 @@ AgentSmith is built for developers and advanced users who want:
 > Full instructions will be added soon — includes local dev, docker setup, and example flows.
 
 ```bash
-git clone https://github.com/nMaroulis/agent-smith
-cd agent-smith
+$ git clone https://github.com/nMaroulis/agent-smith
+$ cd agent-smith
 
 # Backend
 $ cd backend

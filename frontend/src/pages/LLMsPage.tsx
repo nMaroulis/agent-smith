@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { FiTrash2, FiEdit2, FiCpu, FiServer, FiKey } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiTrash2, FiEdit2, FiCpu, FiServer, FiKey, FiRefreshCw } from 'react-icons/fi';
+import { llmService } from '../services/llmService';
 
 type LLMType = 'api' | 'local';
-type APIProvider = 'openai' | 'anthropic' | 'llama-cpp';
+type APIProvider = 'openai' | 'anthropic' | 'huggingface' | 'llama-cpp';
 
 interface LLM {
   id: string;
@@ -14,11 +15,13 @@ interface LLM {
   name: string;
 }
 
-const PROVIDER_MODELS: Record<APIProvider, string[]> = {
-  openai: ['gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
-  anthropic: ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'],
-  'llama-cpp': ['llama-3-8b', 'llama-3-70b', 'codellama-7b']
-};
+
+// List of downloaded GGUF models (this would ideally be fetched from the backend)
+const DOWNLOADED_MODELS = [
+  'llama-3-8b.Q4_K_M.gguf',
+  'llama-3-70b.Q4_K_M.gguf',
+  'mistral-7b-instruct-v0.1.Q4_K_M.gguf'
+];
 
 const LLMsPage = () => {
   const [activeTab, setActiveTab] = useState<'active' | 'add'>('active');
@@ -28,10 +31,33 @@ const LLMsPage = () => {
   // Form state
   const [llmType, setLlmType] = useState<LLMType>('api');
   const [provider, setProvider] = useState<APIProvider>('openai');
-  const [model, setModel] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [baseUrl, setBaseUrl] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
   const [name, setName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchLLMs = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const allLLMs = await llmService.listAllLLMs();
+      setLlms(allLLMs);
+    } catch (err) {
+      console.error('Failed to fetch LLMs:', err);
+      setError('Failed to load LLMs. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLLMs();
+  }, []);
+
+  const handleRefresh = () => {
+    fetchLLMs();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,10 +66,10 @@ const LLMsPage = () => {
       id: isEditing || Date.now().toString(),
       type: llmType,
       provider,
-      model: model || PROVIDER_MODELS[provider][0],
-      name: name || `${provider} ${model || PROVIDER_MODELS[provider][0]}`,
+      model: llmType === 'api' ? provider : selectedModel,
+      name: name || (llmType === 'api' ? provider : selectedModel.split('/').pop() || 'Local Model'),
       ...(llmType === 'api' && { apiKey }),
-      ...(llmType === 'local' && { baseUrl })
+      ...(llmType === 'local' && { baseUrl: selectedModel })
     };
 
     if (isEditing) {
@@ -55,9 +81,8 @@ const LLMsPage = () => {
     // Reset form
     setLlmType('api');
     setProvider('openai');
-    setModel('');
     setApiKey('');
-    setBaseUrl('');
+    setSelectedModel('');
     setName('');
     setIsEditing(null);
     setActiveTab('active');
@@ -66,24 +91,29 @@ const LLMsPage = () => {
   const handleEdit = (llm: LLM) => {
     setLlmType(llm.type);
     setProvider(llm.provider);
-    setModel(llm.model);
     setApiKey(llm.apiKey || '');
-    setBaseUrl(llm.baseUrl || '');
+    setSelectedModel(llm.model);
     setName(llm.name);
     setIsEditing(llm.id);
     setActiveTab('add');
   };
 
-  const handleDelete = (id: string) => {
-    setLlms(llms.filter(llm => llm.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      // TODO: Call delete API endpoint when implemented
+      await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API call
+      setLlms(llms.filter(llm => llm.id !== id));
+    } catch (err) {
+      console.error('Failed to delete LLM:', err);
+      setError('Failed to delete LLM. Please try again.');
+    }
   };
 
   const resetForm = () => {
     setLlmType('api');
     setProvider('openai');
-    setModel('');
+    setSelectedModel('');
     setApiKey('');
-    setBaseUrl('');
     setName('');
     setIsEditing(null);
   };
@@ -127,7 +157,28 @@ const LLMsPage = () => {
         <div className="p-6">
           {activeTab === 'active' ? (
             <div className="space-y-4">
-              {llms.length === 0 ? (
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-white">Configured Models</h3>
+                <button
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="flex items-center text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  <FiRefreshCw className={`mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
+              {error && (
+                <div className="bg-red-900/20 border border-red-800 text-red-200 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
+                  <p className="mt-2 text-gray-400">Loading models...</p>
+                </div>
+              ) : llms.length === 0 ? (
                 <div className="text-center py-12">
                   <FiCpu className="mx-auto h-12 w-12 text-gray-600" />
                   <h3 className="mt-2 text-sm font-medium text-gray-200">No LLM models configured</h3>
@@ -136,32 +187,53 @@ const LLMsPage = () => {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {llms.map((llm) => (
-                    <div key={llm.id} className="bg-gray-750 rounded-lg p-4 border border-gray-700">
+                    <div key={llm.id} className="bg-gray-750 rounded-lg p-4 border border-gray-700 flex flex-col h-full">
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium text-white">{llm.name}</h3>
-                          <div className="flex items-center mt-1 text-sm text-gray-400">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-900 text-purple-200 mr-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-medium text-white truncate">{llm.name}</h3>
+                          <div className="flex items-center mt-1 text-sm text-gray-400 flex-wrap gap-x-2">
+                            <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              llm.type === 'api' 
+                                ? 'bg-blue-900/50 text-blue-300' 
+                                : 'bg-purple-900/50 text-purple-300'
+                            }`}>
                               {llm.type === 'api' ? 'API' : 'Local'}
                             </span>
-                            <span className="text-gray-500">{llm.provider}</span>
-                            <span className="mx-1">•</span>
-                            <span className="text-gray-300">{llm.model}</span>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-gray-300 truncate">
+                              {llm.type === 'api' ? llm.provider : 'LLaMA.cpp'}
+                            </span>
+                            {llm.type === 'local' && (
+                              <>
+                                <span className="text-gray-400">•</span>
+                                <span className="text-gray-400 truncate">{llm.model.split('/').pop()}</span>
+                              </>
+                            )}
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEdit(llm)}
-                            className="text-gray-400 hover:text-blue-400 p-1"
-                          >
-                            <FiEdit2 />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(llm.id)}
-                            className="text-gray-400 hover:text-red-400 p-1"
-                          >
-                            <FiTrash2 />
-                          </button>
+                        <div className="flex-shrink-0 ml-2">
+                          <div className="flex space-x-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(llm);
+                              }}
+                              className="text-gray-400 hover:text-blue-400 p-1 transition-colors"
+                              title="Edit model"
+                            >
+                              <FiEdit2 />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(llm.id);
+                              }}
+                              className="text-gray-400 hover:text-red-400 p-1 transition-colors"
+                              title="Delete model"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
                         </div>
                       </div>
                       {llm.type === 'api' && llm.apiKey && (
@@ -204,7 +276,7 @@ const LLMsPage = () => {
                     onClick={() => setLlmType('local')}
                   >
                     <FiCpu className="mr-2" />
-                    Local (LLaMA.cpp)
+                    Local
                   </button>
                 </div>
               </div>
@@ -222,46 +294,80 @@ const LLMsPage = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Provider
-                  </label>
-                  <select
-                    value={provider}
-                    onChange={(e) => {
-                      const newProvider = e.target.value as APIProvider;
-                      setProvider(newProvider);
-                      // Reset model when provider changes
-                      setModel('');
-                    }}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    disabled={llmType === 'local'}
-                  >
-                    <option value="openai">OpenAI</option>
-                    <option value="anthropic">Anthropic</option>
-                    {llmType === 'local' && <option value="llama-cpp">LLaMA.cpp</option>}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Model
-                  </label>
-                  <select
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {PROVIDER_MODELS[provider].map((modelOption) => (
-                      <option key={modelOption} value={modelOption}>
-                        {modelOption}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="space-y-4">
+                {llmType === 'api' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Provider
+                    </label>
+                    <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm" role="group">
+                      {['openai', 'anthropic', 'huggingface'].map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setProvider(p as APIProvider)}
+                          className={`relative px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
+                            provider === p
+                              ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
+                              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                          } ${p === 'openai' ? 'rounded-l-lg' : ''} ${
+                            p === 'huggingface' ? 'rounded-r-lg' : ''
+                          }`}
+                          style={{
+                            minWidth: '100px',
+                            backdropFilter: 'blur(4px)'
+                          }}
+                        >
+                          {p === 'openai' && 'OpenAI'}
+                          {p === 'anthropic' && 'Anthropic'}
+                          {p === 'huggingface' && 'Hugging Face'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Library
+                      </label>
+                      <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm">
+                        <span className="inline-flex items-center px-5 py-2.5 text-sm font-medium bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-lg shadow-lg shadow-blue-500/20 transition-all duration-200"
+                          style={{
+                            minWidth: '120px',
+                            backdropFilter: 'blur(4px)',
+                            justifyContent: 'center'
+                          }}>
+                          LLaMA.cpp
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Choose Model
+                      </label>
+                      <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select a model</option>
+                        {DOWNLOADED_MODELS.map((model) => (
+                          <option key={model} value={`/models/llama/${model}`}>
+                            {model}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-2 text-xs text-gray-400">
+                        Place GGUF model files in <code className="bg-gray-700 px-1 py-0.5 rounded">agent-smith/models/llama/</code>
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {llmType === 'api' ? (
+              {llmType === 'api' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
                     API Key
@@ -271,7 +377,11 @@ const LLMsPage = () => {
                       type="password"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="sk-..."
+                      placeholder={
+                        provider === 'openai' ? 'sk-...' : 
+                        provider === 'anthropic' ? 'sk-ant-...' :
+                        'hf_...'
+                      }
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                       required
                     />
@@ -280,24 +390,7 @@ const LLMsPage = () => {
                     </div>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
-                    Your API key is stored locally in your browser.
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Base URL
-                  </label>
-                  <input
-                    type="text"
-                    value={baseUrl}
-                    onChange={(e) => setBaseUrl(e.target.value)}
-                    placeholder="http://localhost:8080"
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    URL where your local LLaMA.cpp server is running.
+                    Your API key is stored locally on your PC in an SQLite encrypted database.
                   </p>
                 </div>
               )}
