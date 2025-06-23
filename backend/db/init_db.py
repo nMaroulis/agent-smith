@@ -1,28 +1,17 @@
-import os
 from pathlib import Path
 from db.session import engine
 from db.base import Base
-
-# Import all models so metadata is complete
 from models.llms import LLMRemote, LLMLocal
 from models.flows import Flow
 from models.functions import Function
+from db.utils import get_absolute_db_path
 
-from dotenv import load_dotenv
-
-
-# load_dotenv(dotenv_path='paths.env')
-
-# DB_PATH = Path(os.getenv("DATABASE_URL", "sqlite:///./storage/dev.db").replace("sqlite:///", ""))
-
-load_dotenv(Path(__file__).resolve().parents[2] / ".env")
-DATABASE_URL = os.getenv("DATABASE_URL")
-
+DB_PATH = get_absolute_db_path(keep_url=False)
 
 def init_db():
-    if not Path(DATABASE_URL.replace("sqlite:///", "")).exists():
-        print(f"[AgentSmith DB] Creating database at {DATABASE_URL}")
-        Path(DATABASE_URL.replace("sqlite:///", "")).parent.mkdir(parents=True, exist_ok=True)
+    if not Path(DB_PATH).exists():
+        print(f"[AgentSmith DB] Creating database at {DB_PATH}")
+        Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
         Base.metadata.create_all(bind=engine)
         print("[AgentSmith DB] ✅ Database and tables created.")
     else:
