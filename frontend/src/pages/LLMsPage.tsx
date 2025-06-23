@@ -92,16 +92,15 @@ const LLMsPage = () => {
             path: selectedModel
           };
 
-      let updatedLLM: LLM;
-      
       if (isEditing) {
         // Update existing LLM
-        updatedLLM = await llmService.updateLLM(isEditing, llmData, llmType);
-        setLlms(llms.map(llm => llm.id === isEditing ? updatedLLM : llm));
+        const updatedLLM = await llmService.updateLLM(isEditing, llmData, llmType);
+        setLlms(prevLlms => prevLlms.map(llm => llm.id === isEditing ? updatedLLM : llm));
       } else {
-        // Create new LLM
-        updatedLLM = await llmService.createLLM(llmData, llmType);
-        setLlms([...llms, updatedLLM]);
+        // Create new LLM - wait for the creation to complete
+        await llmService.createLLM(llmData, llmType);
+        // Refresh the full list from the server to ensure we have all fields
+        await fetchLLMs();
       }
 
       // Reset form and show success
