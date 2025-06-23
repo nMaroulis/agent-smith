@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text
-from models.base import Base
+from db.base import Base
 
 class Function(Base):
     __tablename__ = 'functions'

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, JSON
-from models.base import Base
+from db.base import Base
 
 class Flow(Base):
     __tablename__ = 'flows'

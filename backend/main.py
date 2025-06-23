@@ -2,7 +2,8 @@ from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from api.llm_router import router as llm_router
-from backend.db.init_db import init_db
+from api.flows import router as flow_router
+from db.init_db import init_db
 
 
 app = FastAPI(title="Agentsmith API", description="Agentsmith API", version="0.0.1")
@@ -25,6 +26,7 @@ app.add_middleware(
 # Include routers
 router = APIRouter(prefix="/api")
 router.include_router(llm_router)
+router.include_router(flow_router)
 app.include_router(router)
 
 

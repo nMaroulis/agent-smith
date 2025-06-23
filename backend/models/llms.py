@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, JSON
-from models.base import Base
+from db.base import Base
 
 class LLMAPICredential(Base):
     __tablename__ = 'llm_api_credentials'

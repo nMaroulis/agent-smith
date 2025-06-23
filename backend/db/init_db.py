@@ -1,12 +1,12 @@
 import os
 from pathlib import Path
-from backend.db.session import engine
-from backend.db.base import Base
+from db.session import engine
+from db.base import Base
 
 # Import all models so metadata is complete
-from backend.models.llm_credentials import LLMCredential
-from backend.models.flows import Flow
-from backend.models.functions import Function
+from models.llms import LLMAPICredential, LLMLocalRegistry
+from models.flows import Flow
+from models.functions import Function
 
 DB_PATH = Path(os.getenv("DATABASE_URL", "sqlite:///./storage/dev.db").replace("sqlite:///", ""))
 
