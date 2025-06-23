@@ -1,4 +1,5 @@
 import React, { useRef, memo, useCallback, useMemo } from 'react';
+import SaveLoadFlow from './SaveLoadFlow';
 import ReactFlow, {
   Background,
   Controls,
@@ -9,7 +10,6 @@ import ReactFlow, {
   type DefaultEdgeOptions,
   type NodeTypes,
   type MarkerType,
-  type ConnectionLineType,
   type OnConnectStartParams,
   type OnConnectEnd,
   type OnConnectStart,
@@ -17,7 +17,8 @@ import ReactFlow, {
   type Connection,
   type Edge,
   Handle,
-  Position
+  Position,
+  ConnectionLineType
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import useFlowStore, { type NodeData, type NodeType } from '../store/useFlowStore';
@@ -161,19 +162,26 @@ const NodeComponent = memo(({ data, selected, isConnectable }: NodeProps<NodeDat
 
 interface FlowCanvasProps {
   onNodeSelect?: (node: CustomNode | null) => void;
-  selectedNodeId?: string | null;
   className?: string;
   style?: React.CSSProperties;
 }
 
 export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   onNodeSelect,
-  selectedNodeId,
   className = '',
   style,
 }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { nodes, edges, addNode, onNodesChange, onEdgesChange, addEdge } = useFlowStore();
+  const { 
+    nodes, 
+    edges, 
+    addNode, 
+    onNodesChange, 
+    onEdgesChange, 
+    addEdge, 
+    setNodes, 
+    setEdges 
+  } = useFlowStore();
 
   const handleConnect = useCallback((connection: Connection) => {
     console.log('Connecting nodes:', connection);
@@ -184,11 +192,19 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       return;
     }
     
+    // Ensure source and target are not null
+    if (!connection.source || !connection.target) {
+      console.error('Source or target is missing');
+      return;
+    }
+    
     // Create a new edge with proper typing
     const newEdge: Edge = {
       ...connection,
       id: `edge-${connection.source}-${connection.target}-${Date.now()}`,
       type: 'smoothstep',
+      source: connection.source,
+      target: connection.target,
       style: { stroke: '#94a3b8', strokeWidth: 2 },
       animated: true,
       markerEnd: { type: 'arrowclosed' as MarkerType, color: '#94a3b8' },
@@ -197,12 +213,12 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     addEdge(newEdge);
   }, [addEdge]);
 
-  const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     console.log('Node clicked:', node);
     onNodeSelect?.(node as CustomNode);
   }, [onNodeSelect]);
 
-  const handlePaneClick = useCallback((event: React.MouseEvent) => {
+  const handlePaneClick = useCallback((_event: React.MouseEvent) => {
     console.log('Pane clicked');
     onNodeSelect?.(null);
   }, [onNodeSelect]);
@@ -256,6 +272,22 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     }
   }, []);
 
+  // Get the current flow state as a serialized graph
+  const getSerializedGraph = useCallback(() => {
+    return {
+      nodes: [...nodes],
+      edges: [...edges]
+    };
+  }, [nodes, edges]);
+
+  // Load a flow from serialized data
+  const loadFlow = useCallback((serializedGraph: any) => {
+    if (serializedGraph?.nodes && serializedGraph?.edges) {
+      setNodes(serializedGraph.nodes);
+      setEdges(serializedGraph.edges);
+    }
+  }, [setNodes, setEdges]);
+
   const handleAddNode = useCallback((type: NodeType = 'llm') => {
     if (!reactFlowWrapper.current) return;
 
@@ -297,7 +329,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     console.log('Connect start:', params);
   }, []);
 
-  const onConnectEnd: OnConnectEnd = useCallback((event) => {
+  const onConnectEnd: OnConnectEnd = useCallback((_event) => {
     console.log('Connect end:', event);
   }, []);
 
@@ -341,7 +373,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         nodesConnectable
         elementsSelectable
         selectNodesOnDrag
-        connectionLineType="smoothstep"
+        connectionLineType={ConnectionLineType.SmoothStep}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         onEdgeUpdateStart={() => console.log('Edge update started')}
         onEdgeUpdateEnd={() => console.log('Edge update ended')}
@@ -364,6 +396,15 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             borderRadius: '4px',
           }}
         />
+        {/* Save/Load Flow Buttons */}
+        <div className="absolute top-4 right-4 z-10">
+          <SaveLoadFlow 
+            serializedGraph={getSerializedGraph()} 
+            onLoad={loadFlow} 
+          />
+        </div>
+        
+        {/* Node Creation Buttons */}
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-sm rounded-xl p-1.5 shadow-2xl border border-gray-700/50 z-10">
           <div className="flex items-center gap-1.5">
             <button

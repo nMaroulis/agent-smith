@@ -13,4 +13,4 @@ class FlowOut(BaseModel):
     serialized_graph: dict
 
     class Config:
-        orm_mode = True
+        from_attributes = True
