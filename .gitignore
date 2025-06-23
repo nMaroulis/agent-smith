@@ -1,4 +1,4 @@
 /models/api/*
 /models/local/*
+/secrets/*
 # /storage/*.db
-# /storage/*.key
