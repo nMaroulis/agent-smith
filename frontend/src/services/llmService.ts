@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 type APIProvider = 'openai' | 'anthropic' | 'huggingface' | 'llama-cpp';
 
@@ -17,13 +17,13 @@ export interface LLM {
 export const llmService = {
   // API LLMs
   listApiLLMs: async (): Promise<LLM[]> => {
-    const response = await axios.get(`${API_BASE_URL}/api/llm/api/list`);
+    const response = await axios.get(`${API_BASE_URL}/llms/api`);
     return response.data;
   },
 
   // Local LLMs
   listLocalLLMs: async (): Promise<LLM[]> => {
-    const response = await axios.get(`${API_BASE_URL}/api/llm/local/list`);
+    const response = await axios.get(`${API_BASE_URL}/llms/local`);
     return response.data;
   },
 
