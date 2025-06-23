@@ -23,15 +23,70 @@ export const llmService = {
     return response.data;
   },
 
+  getApiLLM: async (id: string): Promise<LLM> => {
+    const response = await axios.get(`${API_BASE_URL}/llms/remote/${id}`);
+    return response.data;
+  },
+
+  createApiLLM: async (llm: Omit<LLM, 'id' | 'type'>): Promise<LLM> => {
+    const { apiKey, ...rest } = llm;
+    const response = await axios.post(`${API_BASE_URL}/llms/remote`, {
+      ...rest,
+      api_key: apiKey,  // Transform to snake_case
+      type: 'api' as const
+    });
+    return response.data;
+  },
+
+  updateApiLLM: async (id: string, llm: Partial<LLM>): Promise<LLM> => {
+    const { apiKey, ...rest } = llm;
+    const payload = {
+      ...rest,
+      api_key: apiKey  // Transform to snake_case
+    };
+    const response = await axios.put(`${API_BASE_URL}/llms/remote/${id}`, payload);
+    return response.data;
+  },
+
+  deleteApiLLM: async (id: string): Promise<void> => {
+    await axios.delete(`${API_BASE_URL}/llms/remote/${id}`);
+  },
+
   // Local LLMs
   listLocalLLMs: async (): Promise<LLM[]> => {
     const response = await axios.get(`${API_BASE_URL}/llms/local`);
-    // Map the response to ensure path is set for local LLMs
     return response.data.map((llm: any) => ({
       ...llm,
-      // For backward compatibility, if path is not set, use model as path
       path: llm.path || llm.model
     }));
+  },
+
+  getLocalLLM: async (id: string): Promise<LLM> => {
+    const response = await axios.get(`${API_BASE_URL}/llms/local/${id}`);
+    return {
+      ...response.data,
+      path: response.data.path || response.data.model
+    };
+  },
+
+  createLocalLLM: async (llm: Omit<LLM, 'id' | 'type'>): Promise<LLM> => {
+    const response = await axios.post(`${API_BASE_URL}/llms/local`, {
+      ...llm,
+      type: 'local' as const
+    });
+    return response.data;
+  },
+
+  updateLocalLLM: async (id: string, llm: Partial<LLM>): Promise<LLM> => {
+    const response = await axios.put(`${API_BASE_URL}/llms/local/${id}`, llm);
+    return {
+      ...response.data,
+      path: response.data.path || response.data.model
+    };
+  },
+
+  deleteLocalLLM: async (id: string): Promise<void> => {
+    await axios.delete(`${API_BASE_URL}/llms/local/${id}`);
   },
 
   // Get all LLMs (both API and local)
@@ -41,15 +96,27 @@ export const llmService = {
         llmService.listApiLLMs(),
         llmService.listLocalLLMs(),
       ]);
-      // Ensure local LLMs have their path set
-      const processedLocalLLMs = localLLMs.map(llm => ({
-        ...llm,
-        path: llm.path || llm.model
-      }));
-      return [...apiLLMs, ...processedLocalLLMs];
+      return [...apiLLMs, ...localLLMs];
     } catch (error) {
       console.error('Error fetching LLMs:', error);
       return [];
     }
+  },
+  
+  // Generic methods that work with both types
+  getLLM: async (id: string, type: 'api' | 'local'): Promise<LLM> => {
+    return type === 'api' ? llmService.getApiLLM(id) : llmService.getLocalLLM(id);
+  },
+  
+  createLLM: async (llm: Omit<LLM, 'id'>, type: 'api' | 'local'): Promise<LLM> => {
+    return type === 'api' ? llmService.createApiLLM(llm) : llmService.createLocalLLM(llm);
+  },
+  
+  updateLLM: async (id: string, llm: Partial<LLM>, type: 'api' | 'local'): Promise<LLM> => {
+    return type === 'api' ? llmService.updateApiLLM(id, llm) : llmService.updateLocalLLM(id, llm);
+  },
+  
+  deleteLLM: async (id: string, type: 'api' | 'local'): Promise<void> => {
+    return type === 'api' ? llmService.deleteApiLLM(id) : llmService.deleteLocalLLM(id);
   },
 };

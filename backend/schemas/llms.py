@@ -50,6 +50,17 @@ class RemoteLLM(BaseLLM):
         }
 
 
+class RemoteLLMOut(BaseModel):
+    id: int
+    type: Literal[LLMType.API] = LLMType.API
+    name: str
+    provider: RemoteProvider
+    base_url: Optional[HttpUrl] = None
+
+    class Config:
+        from_attributes = True
+
+
 class LocalLLM(BaseLLM):
     """Model for locally hosted LLMs"""
     type: Literal[LLMType.LOCAL] = LLMType.LOCAL
@@ -71,9 +82,21 @@ class LocalLLM(BaseLLM):
             }
         }
 
+class LocalLLMOut(BaseModel):
+    id: int
+    type: Literal[LLMType.LOCAL] = LLMType.LOCAL
+    name: str
+    provider: LocalProvider
+    path: str
+
+    class Config:
+        from_attributes = True
+
+
+
 class ListLLMs(BaseModel):
-    api: list[RemoteLLM]
-    local: list[LocalLLM]
+    api: list[RemoteLLMOut]
+    local: list[LocalLLMOut]
 
 
 # Union type that can represent any LLM type

@@ -11,9 +11,7 @@ app = FastAPI(title="Agentsmith API", description="Agentsmith API", version="0.0
 
 # CORS middleware configuration
 origins = [
-    "http://localhost:3000",  # Default React dev server
     "http://localhost:5173",  # Default Vite dev server
-    "http://localhost:8501",   # Streamlit
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -37,5 +35,5 @@ def read_root():
 
 if __name__ == "__main__":
     init_db()  # initialize DB if it doesn't exist
-    uvicorn.run(app, host="0.0.0.0", port=8000, workers=1)
+    uvicorn.run(app, host="0.0.0.0", port=8000, workers=1, log_level='debug', access_log=True)
     

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from schemas.llms import RemoteLLM, LocalLLM, ListLLMs
+from schemas.llms import RemoteLLM, LocalLLM, ListLLMs, RemoteLLMOut, LocalLLMOut
 from crud.llms import get_remote_llms, create_remote_llm, update_remote_llm_by_id, get_remote_llm_by_id, delete_remote_llm_by_id, create_local_llm, get_local_llms, get_local_llm_by_id, update_local_llm_by_id, delete_local_llm_by_id
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -18,7 +18,7 @@ def list_llms(limit: Optional[int] = None, db: Session = Depends(get_db)):
 ## Remote LLMs - though API
 ###########################
 
-@router.get("/remote", response_model=list[RemoteLLM])
+@router.get("/remote", response_model=list[RemoteLLMOut])
 def list_remote_llms(limit: Optional[int] = None, db: Session = Depends(get_db)):
     return get_remote_llms(db, limit)
 
@@ -28,7 +28,7 @@ def new_api_key(llm: RemoteLLM, db: Session = Depends(get_db)):
     return create_remote_llm(db, llm.provider, llm.name, llm.api_key)
 
 
-@router.get("/remote/{id}", description="Get a remote LLM by ID")
+@router.get("/remote/{id}", description="Get a remote LLM by ID", response_model=RemoteLLMOut)
 def get_remote_llm(id: int, db: Session = Depends(get_db)):
     return get_remote_llm_by_id(db, id)
 
@@ -54,7 +54,7 @@ def delete_api_key(id: int, db: Session = Depends(get_db)):
 ## Local LLMs
 #############
 
-@router.get("/local", response_model=list[LocalLLM])
+@router.get("/local", response_model=list[LocalLLMOut])
 def list_local_llms(limit: Optional[int] = None, db: Session = Depends(get_db)):
     return get_local_llms(db, limit)
 
@@ -64,7 +64,7 @@ def new_local_llm(llm: LocalLLM, db: Session = Depends(get_db)):
     return create_local_llm(db, llm.provider, llm.name, llm.path)
 
 
-@router.get("/local/{id}", description="Get a local LLM by ID")
+@router.get("/local/{id}", description="Get a local LLM by ID", response_model=LocalLLMOut)
 def get_local_llm(id: int, db: Session = Depends(get_db)):
     return get_local_llm_by_id(db, id)
 

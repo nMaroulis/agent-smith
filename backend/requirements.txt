@@ -1,3 +1,4 @@
+cryptography
 fastapi
 uvicorn
 python-multipart
@@ -11,4 +12,3 @@ langchain-ollama
 langgraph
 numpy
 pandas
-streamlit

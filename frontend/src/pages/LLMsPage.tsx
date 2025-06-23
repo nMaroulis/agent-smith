@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiRefreshCw, FiEdit2, FiTrash2, FiCpu, FiServer, FiAlertCircle, FiKey, FiChevronDown } from 'react-icons/fi';
+import { FiRefreshCw, FiEdit2, FiTrash2, FiCpu, FiServer, FiAlertCircle, FiKey } from 'react-icons/fi'; // Removed unused FiChevronDown
 import { llmService } from '../services/llmService';
 
 type LLMType = 'api' | 'local';
@@ -10,12 +10,11 @@ interface LLM {
   type: LLMType;
   provider: APIProvider;
   model: string;
-  path?: string; // For local LLMs
+  path?: string;
+  name: string;
   apiKey?: string;
   baseUrl?: string;
-  name: string;
 }
-
 
 // List of downloaded GGUF models (this would ideally be fetched from the backend)
 const DOWNLOADED_MODELS = [
@@ -46,6 +45,17 @@ const LLMsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to get provider display name
+  const getProviderName = (provider: string) => {
+    const names: Record<string, string> = {
+      'openai': 'OpenAI',
+      'anthropic': 'Anthropic',
+      'huggingface': 'Hugging Face',
+      'llama-cpp': 'LLaMA.cpp'
+    };
+    return names[provider] || provider;
+  };
+
   const fetchLLMs = async () => {
     setIsLoading(true);
     setLoadError(null);
@@ -67,38 +77,49 @@ const LLMsPage = () => {
     fetchLLMs();
   }, []);
 
-  const handleRefresh = () => {
-    fetchLLMs();
-  };
+  // Using fetchLLMs directly instead of handleRefresh
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newLLM: LLM = {
-      id: isEditing || Date.now().toString(),
-      type: llmType,
-      provider,
-      model: llmType === 'api' ? provider : selectedModel.split('/').pop() || 'local-model',
-      ...(llmType === 'local' && { path: selectedModel }),
-      name: name || (llmType === 'api' ? provider : selectedModel.split('/').pop() || 'Local Model'),
-      ...(llmType === 'api' && { apiKey }),
-      ...(llmType === 'local' && { baseUrl: selectedModel })
-    };
+    setError(null);
+    setIsLoading(true);
 
-    if (isEditing) {
-      setLlms(llms.map(llm => llm.id === isEditing ? newLLM : llm));
-    } else {
-      setLlms([...llms, newLLM]);
+    try {
+      const llmName = name || (llmType === 'api' ? provider : selectedModel.split('/').pop() || 'Local Model');
+      const llmData = {
+        type: llmType,
+        provider,
+        name: llmName,
+        model: llmType === 'api' ? provider : selectedModel.split('/').pop() || 'local-model',
+        ...(llmType === 'api' ? { 
+          apiKey 
+        } : { 
+          path: selectedModel,
+          baseUrl: selectedModel
+        })
+      };
+
+      let updatedLLM: LLM;
+      
+      if (isEditing) {
+        // Update existing LLM
+        updatedLLM = await llmService.updateLLM(isEditing, llmData, llmType);
+        setLlms(llms.map(llm => llm.id === isEditing ? updatedLLM : llm));
+      } else {
+        // Create new LLM
+        updatedLLM = await llmService.createLLM(llmData, llmType);
+        setLlms([...llms, updatedLLM]);
+      }
+
+      // Reset form and show success
+      resetForm();
+      setActiveTab('active');
+    } catch (err) {
+      console.error('Failed to save LLM:', err);
+      setError('Failed to save LLM. Please check your input and try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    // Reset form
-    setLlmType('api');
-    setProvider('openai');
-    setApiKey('');
-    setSelectedModel('');
-    setName('');
-    setIsEditing(null);
-    setActiveTab('active');
   };
 
   const handleEdit = (llm: LLM) => {
@@ -111,16 +132,23 @@ const LLMsPage = () => {
     }
     setIsEditing(llm.id);
     setActiveTab('add');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, type: 'api' | 'local') => {
+    if (!window.confirm('Are you sure you want to delete this LLM configuration?')) {
+      return;
+    }
+    
     try {
-      // TODO: Call delete API endpoint when implemented
-      await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API call
+      setIsLoading(true);
+      await llmService.deleteLLM(id, type);
       setLlms(llms.filter(llm => llm.id !== id));
     } catch (err) {
       console.error('Failed to delete LLM:', err);
       setError('Failed to delete LLM. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -130,15 +158,135 @@ const LLMsPage = () => {
     setSelectedModel('');
     setApiKey('');
     setName('');
+    setError(null);
     setIsEditing(null);
   };
 
+  // Render the list of LLMs
+  const renderLLMList = () => {
+    if (isLoading) {
+      return (
+        <div className="text-center py-12">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
+          <p className="mt-2 text-gray-400">Loading models...</p>
+        </div>
+      );
+    }
+
+    if (loadError) {
+      return (
+        <div className="text-center py-12">
+          <FiAlertCircle className="mx-auto h-10 w-10 text-red-500" />
+          <h3 className="mt-3 text-sm font-medium text-red-400">Failed to load models</h3>
+          <p className="mt-1 text-sm text-gray-400">{loadError}</p>
+          <button
+            onClick={fetchLLMs}
+            className="mt-4 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <FiRefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Try Again
+          </button>
+        </div>
+      );
+    }
+
+    if (filteredLLMs.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <FiCpu className="mx-auto h-12 w-12 text-gray-600" />
+          <h3 className="mt-2 text-sm font-medium text-gray-200">
+            {llms.length === 0 
+              ? 'No LLM models configured' 
+              : `No ${filter === 'all' ? '' : filter + ' '}models found`}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {llms.length === 0 
+              ? 'Get started by adding a new LLM model.'
+              : `Try changing the filter or add a new ${filter === 'all' ? '' : filter + ' '}model.`}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredLLMs.map((llm) => (
+          <div key={llm.id} className="bg-gray-750 rounded-lg p-4 border border-gray-700 flex flex-col h-full">
+            <div className="flex justify-between items-start">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-medium text-white truncate">{llm.name}</h3>
+                <div className="flex items-center mt-1 text-sm text-gray-400 flex-wrap gap-x-2">
+                  <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
+                    llm.type === 'api' 
+                      ? 'bg-blue-900/50 text-blue-300' 
+                      : 'bg-purple-900/50 text-purple-300'
+                  }`}>
+                    {llm.type === 'api' ? 'API' : 'Local'}
+                  </span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-300 truncate">
+                    {llm.type === 'api' ? getProviderName(llm.provider) : 'LLaMA.cpp'}
+                  </span>
+                  {llm.type === 'local' && llm.path && (
+                    <>
+                      <span className="text-gray-400">•</span>
+                      <span className="text-gray-400 truncate">
+                        {llm.path.split('/').pop()}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex-shrink-0 ml-2">
+                <div className="flex space-x-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(llm);
+                    }}
+                    className="text-gray-400 hover:text-blue-400 p-1.5 rounded-full hover:bg-blue-900/20 transition-colors"
+                    title="Edit model"
+                    disabled={isLoading}
+                  >
+                    <FiEdit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(llm.id, llm.type);
+                    }}
+                    className="text-gray-400 hover:text-red-400 p-1.5 rounded-full hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                    title="Delete model"
+                    disabled={isLoading}
+                  >
+                    <FiTrash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Main component render
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">LLM Models</h1>
         <p className="text-gray-400">Manage your language model configurations</p>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-200">
+          <div className="flex items-center">
+            <FiAlertCircle className="mr-2 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
 
       <div className="bg-gray-800 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-700 px-6">
@@ -167,8 +315,6 @@ const LLMsPage = () => {
           </button>
         </div>
 
-
-
         <div className="p-6">
           {activeTab === 'active' ? (
             <div className="space-y-4">
@@ -181,134 +327,26 @@ const LLMsPage = () => {
                         value={filter}
                         onChange={(e) => setFilter(e.target.value as 'all' | 'api' | 'local')}
                         className="appearance-none bg-gray-800 border border-gray-700 text-white text-sm rounded-lg pl-3 pr-8 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+                        disabled={isLoading}
                         style={{
                           backgroundImage: "url(" + "data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e" + ")",
                           backgroundPosition: "right 0.5rem center",
                           backgroundRepeat: "no-repeat",
                           backgroundSize: "1.5em 1.5em",
                           paddingRight: "2.5rem",
-                          minWidth: "120px"
+                          minWidth: "120px",
+                          opacity: isLoading ? 0.7 : 1
                         }}
                       >
                         <option value="all">All Models</option>
                         <option value="api">API Models</option>
                         <option value="local">Local Models</option>
                       </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                        <FiChevronDown className="h-4 w-4" />
-                      </div>
                     </div>
-                    <button
-                      onClick={handleRefresh}
-                      disabled={isLoading}
-                      className="flex items-center text-sm text-gray-400 hover:text-white transition-colors"
-                    >
-                      <FiRefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    </button>
                   </div>
                 </div>
+                {renderLLMList()}
               </div>
-              {error && (
-                <div className="bg-red-900/20 border border-red-800 text-red-200 px-4 py-3 rounded-lg">
-                  {error}
-                </div>
-              )}
-              {loadError ? (
-                <div className="text-center py-12">
-                  <FiAlertCircle className="mx-auto h-10 w-10 text-red-500" />
-                  <h3 className="mt-3 text-sm font-medium text-red-400">Failed to load models</h3>
-                  <p className="mt-1 text-sm text-gray-400">{loadError}</p>
-                  <button
-                    onClick={handleRefresh}
-                    className="mt-4 inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <FiRefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                    Try Again
-                  </button>
-                </div>
-              ) : isLoading ? (
-                <div className="text-center py-12">
-                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
-                  <p className="mt-2 text-gray-400">Loading models...</p>
-                </div>
-              ) : filteredLLMs.length === 0 ? (
-                <div className="text-center py-12">
-                  <FiCpu className="mx-auto h-12 w-12 text-gray-600" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-200">
-                    {llms.length === 0 
-                      ? 'No LLM models configured' 
-                      : `No ${filter === 'all' ? '' : filter + ' '}models found`}
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {llms.length === 0 
-                      ? 'Get started by adding a new LLM model.'
-                      : `Try changing the filter or add a new ${filter === 'all' ? '' : filter + ' '}model.`}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredLLMs.map((llm) => (
-                    <div key={llm.id} className="bg-gray-750 rounded-lg p-4 border border-gray-700 flex flex-col h-full">
-                      <div className="flex justify-between items-start">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-medium text-white truncate">{llm.name}</h3>
-                          <div className="flex items-center mt-1 text-sm text-gray-400 flex-wrap gap-x-2">
-                            <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
-                              llm.type === 'api' 
-                                ? 'bg-blue-900/50 text-blue-300' 
-                                : 'bg-purple-900/50 text-purple-300'
-                            }`}>
-                              {llm.type === 'api' ? 'API' : 'Local'}
-                            </span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-gray-300 truncate">
-                              {llm.type === 'api' ? llm.provider : 'LLaMA.cpp'}
-                            </span>
-                            {llm.type === 'local' && (
-                              <>
-                                <span className="text-gray-400">•</span>
-                                <span className="text-gray-400 truncate">
-                                {llm.type === 'local' ? (llm.path || llm.model).split('/').pop() : llm.model}
-                              </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex-shrink-0 ml-2">
-                          <div className="flex space-x-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(llm);
-                              }}
-                              className="text-gray-400 hover:text-blue-400 p-1 transition-colors"
-                              title="Edit model"
-                            >
-                              <FiEdit2 />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(llm.id);
-                              }}
-                              className="text-gray-400 hover:text-red-400 p-1 transition-colors"
-                              title="Delete model"
-                            >
-                              <FiTrash2 />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      {llm.type === 'api' && llm.apiKey && (
-                        <div className="mt-3 flex items-center text-xs text-gray-500">
-                          <FiKey className="mr-1" />
-                          <span className="truncate">••••••••{llm.apiKey.slice(-4)}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
