@@ -1,0 +1,13 @@
+agentsmith/
+├── backend/
+│   ├── main.py
+│   ├── api/                # FastAPI routes (e.g. /flows, /llms)
+│   ├── models/             # SQLAlchemy models (LLMAPICredential, Flow, etc.)
+│   ├── crud/               # Business logic (add/read/update db objects)
+│   ├── core/               # Internal helpers (e.g. encryption, settings)
+│   ├── schemas/            # Pydantic schemas (e.g. LLMAPICredentialRequest)
+│   ├── utils/              # Utility functions (e.g. logging, file handling)
+│   ├── tests/              # Unit tests
+│   └── db/                 # DB init, SessionLocal, Base
+├── storage/                # Contains dev.db
+├── .env                    # Environment variables

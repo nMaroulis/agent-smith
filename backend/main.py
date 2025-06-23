@@ -2,6 +2,7 @@ from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from api.llm_router import router as llm_router
+from backend.db.init_db import init_db
 
 
 app = FastAPI(title="Agentsmith API", description="Agentsmith API", version="0.0.1")
@@ -33,5 +34,6 @@ def read_root():
 
 
 if __name__ == "__main__":
+    init_db()  # initialize DB if it doesn't exist
     uvicorn.run(app, host="0.0.0.0", port=8000, workers=1)
     
