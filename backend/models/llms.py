@@ -1,18 +1,20 @@
 from sqlalchemy import Column, Integer, String, JSON
 from db.base import Base
 
-class LLMAPICredential(Base):
-    __tablename__ = 'llm_api_credentials'
+
+class LLMRemote(Base):
+    __tablename__ = 'llm_remote'
 
     id = Column(Integer, primary_key=True)
     provider = Column(String, nullable=False)
     name = Column(String, nullable=False)
     api_key = Column(String, nullable=False)
     parameters = Column(JSON, nullable=True)
+    base_url = Column(String, nullable=True)
 
 
-class LLMLocalRegistry(Base):
-    __tablename__ = 'llm_local_registry'
+class LLMLocal(Base):
+    __tablename__ = 'llm_local'
 
     id = Column(Integer, primary_key=True)
     provider = Column(String, nullable=False)

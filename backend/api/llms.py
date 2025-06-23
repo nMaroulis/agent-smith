@@ -1,68 +1,85 @@
-from fastapi import APIRouter
-from schemas.llms import APILLM, LocalLLM, LLM
-from crud.llms import create_llm_credential, get_llm_credentials, update_llm_credential, delete_llm_credential
-
+from fastapi import APIRouter, Depends, HTTPException
+from schemas.llms import RemoteLLM, LocalLLM, ListLLMs
+from crud.llms import get_remote_llms, create_remote_llm, update_remote_llm_by_id, get_remote_llm_by_id, delete_remote_llm_by_id, create_local_llm, get_local_llms, get_local_llm_by_id, update_local_llm_by_id, delete_local_llm_by_id
+from typing import Optional
+from sqlalchemy.orm import Session
+from db.session import get_db
 
 router = APIRouter(prefix="/llms", tags=["LLM"])
 
 
-@router.post("/api")
-def new_api_key(provide:str, api_key: str):
-    return {"message": "Hello World"}
+@router.get("/", response_model=ListLLMs)
+def list_llms(limit: Optional[int] = None, db: Session = Depends(get_db)):
+    """List all LLMs - currently unused"""
+    return ListLLMs(api=[], local=[])
 
 
-@router.delete("/api")
-def delete_api_key():
-    return {"message": "Hello World"}
+###########################
+## Remote LLMs - though API
+###########################
+
+@router.get("/remote", response_model=list[RemoteLLM])
+def list_remote_llms(limit: Optional[int] = None, db: Session = Depends(get_db)):
+    return get_remote_llms(db, limit)
 
 
-@router.get("/api", response_model=list[APILLM])
-async def list_api_keys():
-    # Dummy data for API LLMs
-    return [
-        {
-            "id": "1",
-            "type": "api",
-            "provider": "openai",
-            "model": "gpt-4-turbo",
-            "name": "My OpenAI API"
-        },
-        {
-            "id": "2",
-            "type": "api",
-            "provider": "anthropic",
-            "model": "claude-3-opus",
-            "name": "My Anthropic API"
-        }
-    ]
+@router.post("/remote")
+def new_api_key(llm: RemoteLLM, db: Session = Depends(get_db)):
+    return create_remote_llm(db, llm.provider, llm.name, llm.api_key)
+
+
+@router.get("/remote/{id}", description="Get a remote LLM by ID")
+def get_remote_llm(id: int, db: Session = Depends(get_db)):
+    return get_remote_llm_by_id(db, id)
+
+
+@router.put("/remote/{id}", description="Update a remote LLM by ID")
+def update_api_key(id: int, llm: RemoteLLM, db: Session = Depends(get_db)):
+    updated = update_remote_llm_by_id(db, id, llm.provider, llm.name, llm.api_key)
+    if not updated:
+        raise HTTPException(status_code=404, detail="LLM not found")
+    return updated
+
+
+@router.delete("/remote/{id}")
+def delete_api_key(id: int, db: Session = Depends(get_db)):
+    deleted = delete_remote_llm_by_id(db, id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="LLM not found")
+    return deleted
+
+
+
+#############
+## Local LLMs
+#############
+
+@router.get("/local", response_model=list[LocalLLM])
+def list_local_llms(limit: Optional[int] = None, db: Session = Depends(get_db)):
+    return get_local_llms(db, limit)
 
 
 @router.post("/local")
-def new_local_llm():
-    return {"message": "Hello World"}
+def new_local_llm(llm: LocalLLM, db: Session = Depends(get_db)):
+    return create_local_llm(db, llm.provider, llm.name, llm.path)
 
 
-@router.delete("/local")
-def delete_local_llm():
-    return {"message": "Hello World"}
+@router.get("/local/{id}", description="Get a local LLM by ID")
+def get_local_llm(id: int, db: Session = Depends(get_db)):
+    return get_local_llm_by_id(db, id)
 
 
-@router.get("/local", response_model=list[LocalLLM])
-async def list_local_llms():
-    # Dummy data for local LLMs
-    return [
-        {
-            "id": "3",
-            "type": "local",
-            "provider": "llama-cpp",
-            "model": "/models/llama/llama-3-8b.Q4_K_M.gguf",
-            "name": "Local LLaMA 3 8B"
-        },
-        {
-            "id": "4",
-            "type": "local",
-            "provider": "llama-cpp",
-            "model": "/models/llama/mistral-7b-instruct-v0.1.Q4_K_M.gguf",
-            "name": "Local Mistral 7B"
-        }
-    ]
+@router.put("/local/{id}", description="Update a local LLM by ID")
+def update_local_llm(id: int, llm: LocalLLM, db: Session = Depends(get_db)):
+    updated = update_local_llm_by_id(db, id, llm.provider, llm.name, llm.path)
+    if not updated:
+        raise HTTPException(status_code=404, detail="LLM not found")
+    return updated
+
+
+@router.delete("/local/{id}")
+def delete_local_llm(id: int, db: Session = Depends(get_db)):
+    deleted = delete_local_llm_by_id(db, id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="LLM not found")
+    return deleted

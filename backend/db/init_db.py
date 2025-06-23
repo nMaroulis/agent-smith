@@ -4,9 +4,14 @@ from db.session import engine
 from db.base import Base
 
 # Import all models so metadata is complete
-from models.llms import LLMAPICredential, LLMLocalRegistry
+from models.llms import LLMRemote, LLMLocal
 from models.flows import Flow
 from models.functions import Function
+
+from dotenv import load_dotenv
+
+
+# load_dotenv(dotenv_path='paths.env')
 
 DB_PATH = Path(os.getenv("DATABASE_URL", "sqlite:///./storage/dev.db").replace("sqlite:///", ""))
 

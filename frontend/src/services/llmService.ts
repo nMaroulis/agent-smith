@@ -17,7 +17,7 @@ export interface LLM {
 export const llmService = {
   // API LLMs
   listApiLLMs: async (): Promise<LLM[]> => {
-    const response = await axios.get(`${API_BASE_URL}/llms/api`);
+    const response = await axios.get(`${API_BASE_URL}/llms/remote`);
     return response.data;
   },
 

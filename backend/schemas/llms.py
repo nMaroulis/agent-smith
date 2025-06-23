@@ -8,31 +8,29 @@ class LLMType(str, Enum):
     LOCAL = "local"
 
 
-class APIProvider(str, Enum):
-    OPENAI = "openai"
-    ANTHROPIC = "anthropic"
-    HUGGINGFACE = "huggingface"
+class RemoteProvider(str, Enum):
+    OPENAI = "OpenAI"
+    ANTHROPIC = "Anthropic"
+    HUGGINGFACE = "HuggingFace"
 
 
-class LocalLLMProvider(str, Enum):
+class LocalProvider(str, Enum):
     LLAMA_CPP = "llama-cpp"
 
 
 class BaseLLM(BaseModel):
     """Base model for all LLM types"""
-    id: str
     type: LLMType
     name: str
-    model: str
 
 
-class APILLM(BaseLLM):
-    """Model for API-based LLMs"""
+class RemoteLLM(BaseLLM):
+    """Model for API-based remote LLMs"""
     type: Literal[LLMType.API] = LLMType.API
-    provider: APIProvider
-    api_key: Optional[str] = Field(
-        None,
-        description="API key for the LLM provider. Only included in responses when explicitly requested.",
+    provider: RemoteProvider
+    api_key: str = Field(
+        ...,
+        description="API key for the LLM provider.",
         exclude=True
     )
     base_url: Optional[HttpUrl] = Field(
@@ -47,7 +45,7 @@ class APILLM(BaseLLM):
                 "type": "api",
                 "name": "My OpenAI API",
                 "provider": "openai",
-                "model": "gpt-4-turbo"
+                "base_url": "https://api.openai.com/v1"
             }
         }
 
@@ -55,11 +53,11 @@ class APILLM(BaseLLM):
 class LocalLLM(BaseLLM):
     """Model for locally hosted LLMs"""
     type: Literal[LLMType.LOCAL] = LLMType.LOCAL
-    provider: LocalLLMProvider
-    model_path: str = Field(
+    provider: LocalProvider
+    path: str = Field(
         ...,
         description="Filesystem path to the model file",
-        alias="model"  # Keep alias for backward compatibility with frontend
+        # alias="model"  # Keep alias for backward compatibility with frontend
     )
 
     class Config:
@@ -69,10 +67,14 @@ class LocalLLM(BaseLLM):
                 "type": "local",
                 "name": "Local LLaMA 3 8B",
                 "provider": "llama-cpp",
-                "model": "/models/llama/llama-3-8b.Q4_K_M.gguf"
+                "path": "/models/llama/llama-3-8b.Q4_K_M.gguf"
             }
         }
 
+class ListLLMs(BaseModel):
+    api: list[RemoteLLM]
+    local: list[LocalLLM]
+
 
 # Union type that can represent any LLM type
-LLM = APILLM | LocalLLM
+LLM = RemoteLLM | LocalLLM

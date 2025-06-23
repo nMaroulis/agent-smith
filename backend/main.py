@@ -1,7 +1,7 @@
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from api.llm_router import router as llm_router
+from api.llms import router as llm_router
 from api.flows import router as flow_router
 from db.init_db import init_db
 
