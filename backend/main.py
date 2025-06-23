@@ -4,6 +4,7 @@ import uvicorn
 from api.llms import router as llm_router
 from api.flows import router as flow_router
 from db.init_db import init_db
+from utils.security import generate_fernet_key_file
 
 
 app = FastAPI(title="Agentsmith API", description="Agentsmith API", version="0.0.1")
@@ -34,6 +35,7 @@ def read_root():
 
 
 if __name__ == "__main__":
+    generate_fernet_key_file()  # generate fernet key if it doesn't exist
     init_db()  # initialize DB if it doesn't exist
     uvicorn.run(app, host="0.0.0.0", port=8000, workers=1, log_level='debug', access_log=True)
     
