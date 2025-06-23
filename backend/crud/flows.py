@@ -10,13 +10,13 @@ def create_flow(db: Session, name: str, description: str, serialized_graph: dict
     return flow
 
 
-def get_flow_by_id(db: Session, flow_id: int, limit: Optional[int]):
-    if limit:
-        return db.query(Flow).filter(Flow.id == flow_id).limit(limit).first()
+def get_flow_by_id(db: Session, flow_id: int):
     return db.query(Flow).filter(Flow.id == flow_id).first()
 
 
-def get_flows(db: Session):
+def get_flows(db: Session, limit: Optional[int] = None):
+    if limit:
+        return db.query(Flow).limit(limit).all()
     return db.query(Flow).all()
 
 

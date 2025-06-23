@@ -22,13 +22,13 @@ def add_flow(flow: FlowCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", description="List all flows")
-def list_flows(db: Session = Depends(get_db)):
-    return get_flows(db)
+def list_flows(limit: Optional[int] = None, db: Session = Depends(get_db)):
+    return get_flows(db, limit)
 
 
 @router.get("/{id}", description="Get a flow by ID")
-def get_flow(id: int, limit: Optional[int] = None, db: Session = Depends(get_db)):
-    return get_flow_by_id(db, id, limit)
+def get_flow(id: int, db: Session = Depends(get_db)):
+    return get_flow_by_id(db, id)
 
 
 @router.put("/{id}", response_model=FlowOut)
