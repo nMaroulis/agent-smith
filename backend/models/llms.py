@@ -7,7 +7,7 @@ class LLMRemote(Base):
 
     id = Column(Integer, primary_key=True)
     provider = Column(String, nullable=False)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
     api_key = Column(String, nullable=False)
     parameters = Column(JSON, nullable=True)
     base_url = Column(String, nullable=True)
@@ -18,7 +18,7 @@ class LLMLocal(Base):
 
     id = Column(Integer, primary_key=True)
     provider = Column(String, nullable=False)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
     path = Column(String, nullable=False)
     parameters = Column(JSON, nullable=True)
 

@@ -10,6 +10,7 @@ interface LLM {
   type: LLMType;
   provider: APIProvider;
   model: string;
+  path?: string; // For local LLMs
   apiKey?: string;
   baseUrl?: string;
   name: string;
@@ -77,7 +78,8 @@ const LLMsPage = () => {
       id: isEditing || Date.now().toString(),
       type: llmType,
       provider,
-      model: llmType === 'api' ? provider : selectedModel,
+      model: llmType === 'api' ? provider : selectedModel.split('/').pop() || 'local-model',
+      ...(llmType === 'local' && { path: selectedModel }),
       name: name || (llmType === 'api' ? provider : selectedModel.split('/').pop() || 'Local Model'),
       ...(llmType === 'api' && { apiKey }),
       ...(llmType === 'local' && { baseUrl: selectedModel })
@@ -102,9 +104,11 @@ const LLMsPage = () => {
   const handleEdit = (llm: LLM) => {
     setLlmType(llm.type);
     setProvider(llm.provider);
-    setApiKey(llm.apiKey || '');
-    setSelectedModel(llm.model);
+    setSelectedModel(llm.path || llm.model || '');
     setName(llm.name);
+    if (llm.type === 'api') {
+      setApiKey(llm.apiKey || '');
+    }
     setIsEditing(llm.id);
     setActiveTab('add');
   };
@@ -263,7 +267,9 @@ const LLMsPage = () => {
                             {llm.type === 'local' && (
                               <>
                                 <span className="text-gray-400">•</span>
-                                <span className="text-gray-400 truncate">{llm.model.split('/').pop()}</span>
+                                <span className="text-gray-400 truncate">
+                                {llm.type === 'local' ? (llm.path || llm.model).split('/').pop() : llm.model}
+                              </span>
                               </>
                             )}
                           </div>
