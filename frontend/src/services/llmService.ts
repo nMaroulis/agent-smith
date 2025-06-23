@@ -1,15 +1,15 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
-type APIProvider = 'openai' | 'anthropic' | 'huggingface' | 'llama-cpp';
+export type APIProvider = 'openai' | 'anthropic' | 'huggingface' | 'llama-cpp';
 
 export interface LLM {
   id: string;
   type: 'api' | 'local';
   provider: APIProvider;
   /** For API LLMs: model name, for Local LLMs: path to model file */
-  model: string;
+  model?: string; // Only required for local LLMs
   path?: string; // For local LLMs
   name: string;
   apiKey?: string;
@@ -30,11 +30,14 @@ export const llmService = {
 
   createApiLLM: async (llm: Omit<LLM, 'id' | 'type'>): Promise<LLM> => {
     const { apiKey, ...rest } = llm;
-    const response = await axios.post(`${API_BASE_URL}/llms/remote`, {
+    const payload = {
       ...rest,
       api_key: apiKey,  // Transform to snake_case
       type: 'api' as const
-    });
+    };
+    console.log('[createApiLLM] Sending payload:', JSON.stringify(payload, null, 2));
+    const response = await axios.post(`${API_BASE_URL}/llms/remote`, payload);
+    console.log('[createApiLLM] Response:', response.data);
     return response.data;
   },
 
@@ -44,7 +47,9 @@ export const llmService = {
       ...rest,
       api_key: apiKey  // Transform to snake_case
     };
+    console.log(`[updateApiLLM] Updating ID ${id} with payload:`, JSON.stringify(payload, null, 2));
     const response = await axios.put(`${API_BASE_URL}/llms/remote/${id}`, payload);
+    console.log(`[updateApiLLM] Response for ID ${id}:`, response.data);
     return response.data;
   },
 
@@ -70,19 +75,25 @@ export const llmService = {
   },
 
   createLocalLLM: async (llm: Omit<LLM, 'id' | 'type'>): Promise<LLM> => {
-    const response = await axios.post(`${API_BASE_URL}/llms/local`, {
+    const payload = {
       ...llm,
       type: 'local' as const
-    });
+    };
+    console.log('[createLocalLLM] Sending payload:', JSON.stringify(payload, null, 2));
+    const response = await axios.post(`${API_BASE_URL}/llms/local`, payload);
+    console.log('[createLocalLLM] Response:', response.data);
     return response.data;
   },
 
   updateLocalLLM: async (id: string, llm: Partial<LLM>): Promise<LLM> => {
+    console.log(`[updateLocalLLM] Updating ID ${id} with payload:`, JSON.stringify(llm, null, 2));
     const response = await axios.put(`${API_BASE_URL}/llms/local/${id}`, llm);
-    return {
+    const responseData = {
       ...response.data,
       path: response.data.path || response.data.model
     };
+    console.log(`[updateLocalLLM] Response for ID ${id}:`, responseData);
+    return responseData;
   },
 
   deleteLocalLLM: async (id: string): Promise<void> => {

@@ -9,9 +9,9 @@ class LLMType(str, Enum):
 
 
 class RemoteProvider(str, Enum):
-    OPENAI = "OpenAI"
-    ANTHROPIC = "Anthropic"
-    HUGGINGFACE = "HuggingFace"
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    HUGGINGFACE = "huggingface"
 
 
 class LocalProvider(str, Enum):

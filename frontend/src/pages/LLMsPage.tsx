@@ -1,20 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FiRefreshCw, FiEdit2, FiTrash2, FiCpu, FiServer, FiAlertCircle, FiKey } from 'react-icons/fi'; // Removed unused FiChevronDown
-import { llmService } from '../services/llmService';
+import { llmService, type LLM, type APIProvider } from '../services/llmService';
 
 type LLMType = 'api' | 'local';
-type APIProvider = 'openai' | 'anthropic' | 'huggingface' | 'llama-cpp';
-
-interface LLM {
-  id: string;
-  type: LLMType;
-  provider: APIProvider;
-  model: string;
-  path?: string;
-  name: string;
-  apiKey?: string;
-  baseUrl?: string;
-}
 
 // List of downloaded GGUF models (this would ideally be fetched from the backend)
 const DOWNLOADED_MODELS = [
@@ -38,7 +26,8 @@ const LLMsPage = () => {
   
   // Form state
   const [llmType, setLlmType] = useState<LLMType>('api');
-  const [provider, setProvider] = useState<APIProvider>('openai');
+  const [apiProvider, setApiProvider] = useState<APIProvider>('openai');
+  const [localProvider, setLocalProvider] = useState<APIProvider>('llama-cpp');
   const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
   const [name, setName] = useState('');
@@ -85,19 +74,23 @@ const LLMsPage = () => {
     setIsLoading(true);
 
     try {
+      const provider = llmType === 'api' ? apiProvider : localProvider;
       const llmName = name || (llmType === 'api' ? provider : selectedModel.split('/').pop() || 'Local Model');
-      const llmData = {
+      const baseData = {
         type: llmType,
         provider,
         name: llmName,
-        model: llmType === 'api' ? provider : selectedModel.split('/').pop() || 'local-model',
-        ...(llmType === 'api' ? { 
-          apiKey 
-        } : { 
-          path: selectedModel,
-          baseUrl: selectedModel
-        })
       };
+      
+      const llmData = llmType === 'api'
+        ? {
+            ...baseData,
+            apiKey
+          }
+        : {
+            ...baseData,
+            path: selectedModel
+          };
 
       let updatedLLM: LLM;
       
@@ -124,12 +117,14 @@ const LLMsPage = () => {
 
   const handleEdit = (llm: LLM) => {
     setLlmType(llm.type);
-    setProvider(llm.provider);
-    setSelectedModel(llm.path || llm.model || '');
-    setName(llm.name);
     if (llm.type === 'api') {
+      setApiProvider(llm.provider as APIProvider);
       setApiKey(llm.apiKey || '');
+    } else {
+      setLocalProvider(llm.provider as APIProvider);
     }
+    setSelectedModel(llm.path || '');
+    setName(llm.name);
     setIsEditing(llm.id);
     setActiveTab('add');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -154,7 +149,8 @@ const LLMsPage = () => {
 
   const resetForm = () => {
     setLlmType('api');
-    setProvider('openai');
+    setApiProvider('openai');
+    setLocalProvider('llama-cpp');
     setSelectedModel('');
     setApiKey('');
     setName('');
@@ -211,7 +207,7 @@ const LLMsPage = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredLLMs.map((llm) => (
-          <div key={llm.id} className="bg-gray-750 rounded-lg p-4 border border-gray-700 flex flex-col h-full">
+          <div key={`${llm.type}-${llm.id}`} className="bg-gray-750 rounded-lg p-4 border border-gray-700 flex flex-col h-full">
             <div className="flex justify-between items-start">
               <div className="min-w-0 flex-1">
                 <h3 className="font-medium text-white truncate">{llm.name}</h3>
@@ -406,9 +402,9 @@ const LLMsPage = () => {
                         <button
                           key={p}
                           type="button"
-                          onClick={() => setProvider(p as APIProvider)}
+                          onClick={() => setApiProvider(p as APIProvider)}
                           className={`relative px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
-                            provider === p
+                            apiProvider === p
                               ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
                               : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
                           } ${p === 'openai' ? 'rounded-l-lg' : ''} ${
@@ -430,17 +426,21 @@ const LLMsPage = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Library
+                        Provider
                       </label>
                       <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm">
-                        <span className="inline-flex items-center px-5 py-2.5 text-sm font-medium bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-lg shadow-lg shadow-blue-500/20 transition-all duration-200"
+                        <button
+                          type="button"
+onClick={() => setLocalProvider('llama-cpp' as APIProvider)}
+                          className="relative px-5 py-2.5 text-sm font-medium transition-all duration-200 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-lg shadow-lg shadow-blue-500/20"
                           style={{
                             minWidth: '120px',
                             backdropFilter: 'blur(4px)',
                             justifyContent: 'center'
-                          }}>
+                          }}
+                        >
                           LLaMA.cpp
-                        </span>
+                        </button>
                       </div>
                     </div>
                     <div>
@@ -479,8 +479,8 @@ const LLMsPage = () => {
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
                       placeholder={
-                        provider === 'openai' ? 'sk-...' : 
-                        provider === 'anthropic' ? 'sk-ant-...' :
+                        apiProvider === 'openai' ? 'sk-...' : 
+                        apiProvider === 'anthropic' ? 'sk-ant-...' :
                         'hf_...'
                       }
                       className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
