@@ -396,6 +396,74 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             borderRadius: '4px',
           }}
         />
+        {/* macOS-like Toolbar */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="flex items-center justify-center bg-gray-800/80 backdrop-blur-md rounded-full px-4 py-2 shadow-lg border border-gray-700/50">
+            {/* Start Node */}
+            <button 
+              className="flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full transition-all duration-200 hover:bg-gray-700/50 group relative"
+              onClick={() => handleAddNode('start')}
+              title="Start Node"
+            >
+              <div className="bg-emerald-500/20 p-3 rounded-full group-hover:bg-emerald-500/30 transition-colors duration-200">
+                <svg className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">Start</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-emerald-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+            </button>
+
+            {/* LLM Node */}
+            <button 
+              className="flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full transition-all duration-200 hover:bg-gray-700/50 group relative"
+              onClick={() => handleAddNode('llm')}
+              title="Add LLM Node"
+            >
+              <div className="bg-blue-500/20 p-3 rounded-full group-hover:bg-blue-500/30 transition-colors duration-200">
+                <svg className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">LLM</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+            </button>
+
+            {/* Router Node */}
+            <button 
+              className="flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full transition-all duration-200 hover:bg-gray-700/50 group relative"
+              onClick={() => handleAddNode('function')}
+              title="Add Router Node"
+            >
+              <div className="bg-purple-500/20 p-3 rounded-full group-hover:bg-purple-500/30 transition-colors duration-200">
+                <svg className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7l4-4m0 0l4 4m-4-4v18m-6 0h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">Router</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+            </button>
+
+            {/* End Node */}
+            <div className="h-8 w-px bg-gray-600/50 mx-1"></div>
+            <button 
+              className="flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full transition-all duration-200 hover:bg-gray-700/50 group relative"
+              onClick={() => handleAddNode('end')}
+              title="End Node"
+            >
+              <div className="bg-rose-500/20 p-3 rounded-full group-hover:bg-rose-500/30 transition-colors duration-200">
+                <svg className="w-5 h-5 text-rose-400 group-hover:text-rose-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                </svg>
+              </div>
+              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">End</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-rose-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+            </button>
+          </div>
+        </div>
+
         {/* Save/Load Flow Buttons */}
         <div className="absolute top-4 right-4 z-10">
           <SaveLoadFlow 
@@ -404,49 +472,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           />
         </div>
         
-        {/* Node Creation Buttons */}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-sm rounded-xl p-1.5 shadow-2xl border border-gray-700/50 z-10">
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => handleAddNode('start')}
-              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-emerald-500/20 hover:-translate-y-0.5"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Start</span>
-            </button>
-            <button
-              onClick={() => handleAddNode('llm')}
-              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-blue-500/20 hover:-translate-y-0.5"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span>Add Node</span>
-            </button>
-            <button
-              onClick={() => handleAddNode('function')}
-              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-purple-500/20 hover:-translate-y-0.5"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7l4-4m0 0l4 4m-4-4v18m-6 0h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              <span>Add Router</span>
-            </button>
-            <button
-              onClick={() => handleAddNode('end')}
-              className="px-4 py-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-rose-500/20 hover:-translate-y-0.5"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-              </svg>
-              <span>End</span>
-            </button>
-          </div>
-        </div>
+
       </ReactFlow>
     </div>
   );
