@@ -1,4 +1,4 @@
-import React, { useRef, memo, useCallback, useMemo } from 'react';
+import React, { useRef, memo, useCallback, useMemo, useState } from 'react';
 import SaveLoadFlow from './SaveLoadFlow';
 import ReactFlow, {
   Background,
@@ -21,6 +21,7 @@ import ReactFlow, {
   ConnectionLineType
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import StateModal, { type StateField } from './StateModal';
 import useFlowStore, { type NodeData, type NodeType } from '../store/useFlowStore';
 
 type CustomNode = Node<NodeData> & {
@@ -182,6 +183,21 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     setNodes, 
     setEdges 
   } = useFlowStore();
+  
+  // State for the state modal and state fields
+  const [isStateModalOpen, setIsStateModalOpen] = useState(false);
+  const [stateFields, setStateFields] = useState<StateField[]>([]);
+  
+  const handleStateButtonClick = useCallback(() => {
+    setIsStateModalOpen(true);
+  }, []);
+  
+  const handleStateSave = useCallback((fields: StateField[]) => {
+    setStateFields(fields);
+    setIsStateModalOpen(false);
+    // Here you would typically save the state definition to your backend
+    console.log('State fields saved:', fields);
+  }, []);
 
   const handleConnect = useCallback((connection: Connection) => {
     console.log('Connecting nodes:', connection);
@@ -467,7 +483,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             {/* State Tool */}
             <button 
               className="group flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full relative"
-              onClick={() => console.log('State tool clicked')}
+              onClick={handleStateButtonClick}
               title="State"
             >
               <div className="p-3 rounded-full bg-amber-500/20 group-hover:bg-amber-500/30 transition-all duration-200 group-hover:shadow-[0_0_15px_3px_rgba(245,158,11,0.3)]">
@@ -480,6 +496,14 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             </button>
           </div>
         </div>
+
+        {/* State Modal - Rendered at the root level of FlowCanvas */}
+        <StateModal
+          isOpen={isStateModalOpen}
+          onClose={() => setIsStateModalOpen(false)}
+          onSave={handleStateSave}
+          initialFields={stateFields}
+        />
 
         {/* Save/Load Flow Buttons */}
         <div className="absolute top-4 right-4 z-10">
