@@ -401,64 +401,64 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           <div className="flex items-center justify-center bg-gray-800/80 backdrop-blur-md rounded-full px-4 py-2 shadow-lg border border-gray-700/50">
             {/* Start Node */}
             <button 
-              className="flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full transition-all duration-200 hover:bg-gray-700/50 group relative"
+              className="group flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full relative"
               onClick={() => handleAddNode('start')}
               title="Start Node"
             >
-              <div className="bg-emerald-500/20 p-3 rounded-full group-hover:bg-emerald-500/30 transition-colors duration-200">
-                <svg className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="p-3 rounded-full bg-emerald-500/20">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">Start</span>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-emerald-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <span className="text-xs mt-1 text-gray-300">Start</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-emerald-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
 
             {/* Node */}
             <button 
-              className="flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full transition-all duration-200 hover:bg-gray-700/50 group relative"
+              className="group flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full relative"
               onClick={() => handleAddNode('llm')}
               title="Add Node"
             >
-              <div className="bg-blue-500/20 p-3 rounded-full group-hover:bg-blue-500/30 transition-colors duration-200">
-                <svg className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">Node</span>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <span className="text-xs mt-1 text-gray-300">Node</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
 
             {/* Router Node */}
             <button 
-              className="flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full transition-all duration-200 hover:bg-gray-700/50 group relative"
+              className="group flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full relative"
               onClick={() => handleAddNode('function')}
               title="Add Router Node"
             >
-              <div className="bg-purple-500/20 p-3 rounded-full group-hover:bg-purple-500/30 transition-colors duration-200">
-                <svg className="w-5 h-5 text-purple-400 group-hover:text-purple-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="p-3 rounded-full bg-purple-500/20">
+                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7l4-4m0 0l4 4m-4-4v18m-6 0h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
-              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">Router</span>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <span className="text-xs mt-1 text-gray-300">Router</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
 
             {/* End Node */}
             <button 
-              className="flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full transition-all duration-200 hover:bg-gray-700/50 group relative"
+              className="group flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full relative"
               onClick={() => handleAddNode('end')}
               title="End Node"
             >
-              <div className="bg-rose-500/20 p-3 rounded-full group-hover:bg-rose-500/30 transition-colors duration-200">
-                <svg className="w-5 h-5 text-rose-400 group-hover:text-rose-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="p-3 rounded-full bg-rose-500/20">
+                <svg className="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
                 </svg>
               </div>
-              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">End</span>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-rose-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <span className="text-xs mt-1 text-gray-300">End</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-rose-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
 
             {/* Divider */}
@@ -466,17 +466,17 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 
             {/* State Tool */}
             <button 
-              className="flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full transition-all duration-200 hover:bg-gray-700/50 group relative"
+              className="group flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full relative"
               onClick={() => console.log('State tool clicked')}
               title="State"
             >
-              <div className="bg-amber-500/20 p-3 rounded-full group-hover:bg-amber-500/30 transition-colors duration-200">
-                <svg className="w-5 h-5 text-amber-400 group-hover:text-amber-300 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="p-3 rounded-full bg-amber-500/20">
+                <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                 </svg>
               </div>
-              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">State</span>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-amber-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <span className="text-xs mt-1 text-gray-300">State</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-amber-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
           </div>
         </div>
