@@ -7,4 +7,5 @@ class Flow(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     description = Column(Text)
-    serialized_graph = Column(JSON)
+    graph = Column(JSON)
+    state = Column(JSON)

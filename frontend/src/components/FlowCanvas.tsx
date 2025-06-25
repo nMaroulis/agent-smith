@@ -292,15 +292,29 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const getSerializedGraph = useCallback(() => {
     return {
       nodes: [...nodes],
-      edges: [...edges]
+      edges: [...edges],
+      state: stateFields
     };
-  }, [nodes, edges]);
+  }, [nodes, edges, stateFields]);
 
   // Load a flow from serialized data
   const loadFlow = useCallback((serializedGraph: any) => {
     if (serializedGraph?.nodes && serializedGraph?.edges) {
       setNodes(serializedGraph.nodes);
       setEdges(serializedGraph.edges);
+      
+      // Load state fields if they exist
+      if (serializedGraph.state) {
+        // Check if state is in the new format with fields property
+        const stateFields = Array.isArray(serializedGraph.state.fields) 
+          ? serializedGraph.state.fields 
+          : Array.isArray(serializedGraph.state) 
+            ? serializedGraph.state 
+            : [];
+        
+        console.log('Loading state fields:', stateFields);
+        setStateFields(stateFields);
+      }
     }
   }, [setNodes, setEdges]);
 

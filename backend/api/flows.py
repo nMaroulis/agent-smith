@@ -18,7 +18,7 @@ router = APIRouter(
 
 @router.post("/", description="Add a new flow")
 def add_flow(flow: FlowCreate, db: Session = Depends(get_db)):
-    return create_flow(db, name=flow.name, description=flow.description, serialized_graph=flow.serialized_graph)
+    return create_flow(db, name=flow.name, description=flow.description, graph=flow.graph, state=flow.state)
 
 
 @router.get("/", description="List all flows")
@@ -33,7 +33,7 @@ def get_flow(id: int, db: Session = Depends(get_db)):
 
 @router.put("/{id}", response_model=FlowOut)
 def update_flow(id: int, flow: FlowCreate, db: Session = Depends(get_db)):
-    updated = update_flow_by_id(db, id, flow.name, flow.description, flow.serialized_graph)
+    updated = update_flow_by_id(db, id, flow.name, flow.description, flow.graph, flow.state)
     if updated:
         return updated
     raise HTTPException(status_code=404, detail="Flow not found")

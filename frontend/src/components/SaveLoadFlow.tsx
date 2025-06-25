@@ -1,5 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton, Box, ListItemButton, Typography } from '@mui/material';
+import { 
+  Button, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
+  TextField, 
+  List, 
+  ListItem, 
+  ListItemText, 
+  ListItemSecondaryAction, 
+  IconButton, 
+  Box, 
+  ListItemButton, 
+  Typography,
+  Snackbar,
+  Alert,
+  type AlertColor
+} from '@mui/material';
 import { Delete as DeleteIcon, Save as SaveIcon, FolderOpen as FolderOpenIcon } from '@mui/icons-material';
 import { getFlows, createFlow, updateFlow, deleteFlow, type Flow } from '../services/flows';
 
@@ -16,6 +34,15 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
   const [flowDescription, setFlowDescription] = useState('');
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: AlertColor;
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   useEffect(() => {
     if (open) {
@@ -53,6 +80,10 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
     setSelectedFlow(null);
   };
 
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
   const handleSave = async () => {
     if (!flowName.trim()) {
       alert('Please enter a flow name');
@@ -61,18 +92,42 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
 
     try {
       setIsLoading(true);
+      
+      // Create a clean copy of the graph without the state
+      const { state: graphState, ...graphWithoutState } = serializedGraph || {};
+      
+      // Convert array state to object format for the backend
+      const flowState = Array.isArray(graphState) 
+        ? { fields: graphState } 
+        : { fields: [] };
+      
       const flowData = {
         name: flowName.trim(),
         description: flowDescription.trim() || undefined,
-        serialized_graph: serializedGraph,
+        graph: graphWithoutState, // Graph without the state
+        state: flowState, // State as an object with a fields array
       };
+
+      console.log('Sending flow data to API:', JSON.stringify(flowData, null, 2));
 
       if (selectedFlow) {
         // Update existing flow
+        console.log('Updating flow with ID:', selectedFlow.id);
         await updateFlow(selectedFlow.id, flowData);
+        setSnackbar({
+          open: true,
+          message: 'Flow updated successfully!',
+          severity: 'success',
+        });
       } else {
         // Create new flow
+        console.log('Creating new flow');
         await createFlow(flowData);
+        setSnackbar({
+          open: true,
+          message: 'Flow created successfully!',
+          severity: 'success',
+        });
       }
       
       await loadFlows();
@@ -87,7 +142,18 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
 
   const handleLoad = () => {
     if (selectedFlow) {
-      onLoad(selectedFlow.serialized_graph);
+      // Convert the state back to array format for the frontend
+      const stateArray = selectedFlow.state && selectedFlow.state.fields 
+        ? selectedFlow.state.fields 
+        : [];
+      
+      // Merge the graph and state when loading
+      const graphWithState = {
+        ...selectedFlow.graph,
+        state: stateArray
+      };
+      
+      onLoad(graphWithState);
       handleClose();
     }
   };
@@ -454,6 +520,22 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

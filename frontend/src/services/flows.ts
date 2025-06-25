@@ -6,7 +6,8 @@ export interface Flow {
   id: number;
   name: string;
   description: string | null;
-  serialized_graph: any;
+  graph: any;
+  state?: any;
   created_at?: string;
   updated_at?: string;
 }
@@ -14,7 +15,8 @@ export interface Flow {
 export interface CreateFlowData {
   name: string;
   description?: string;
-  serialized_graph: any;
+  graph: any;
+  state?: any;
 }
 
 // Get all flows
@@ -44,10 +46,22 @@ export const getFlow = async (id: number): Promise<Flow> => {
 // Create a new flow
 export const createFlow = async (flowData: CreateFlowData): Promise<Flow> => {
   try {
+    console.log('Creating flow with data:', JSON.stringify(flowData, null, 2));
     const response = await axios.post(`${API_BASE_URL}/flows/`, flowData);
+    console.log('Flow created successfully:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error creating flow:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Error creating flow:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        requestData: error.config?.data
+      });
+    } else {
+      console.error('Error creating flow:', error);
+    }
     throw error;
   }
 };
@@ -55,10 +69,22 @@ export const createFlow = async (flowData: CreateFlowData): Promise<Flow> => {
 // Update an existing flow
 export const updateFlow = async (id: number, flowData: CreateFlowData): Promise<Flow> => {
   try {
+    console.log(`Updating flow ${id} with data:`, JSON.stringify(flowData, null, 2));
     const response = await axios.put(`${API_BASE_URL}/flows/${id}`, flowData);
+    console.log(`Flow ${id} updated successfully:`, response.data);
     return response.data;
   } catch (error) {
-    console.error(`Error updating flow ${id}:`, error);
+    if (axios.isAxiosError(error)) {
+      console.error(`Error updating flow ${id}:`, {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        requestData: error.config?.data
+      });
+    } else {
+      console.error(`Error updating flow ${id}:`, error);
+    }
     throw error;
   }
 };
