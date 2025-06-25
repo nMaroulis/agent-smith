@@ -1,4 +1,6 @@
 import React, { useRef, memo, useCallback, useMemo, useState } from 'react';
+import StateModal from './StateModal';
+import MemoryModal from './MemoryModal';
 import SaveLoadFlow from './SaveLoadFlow';
 import ReactFlow, {
   Background,
@@ -21,7 +23,7 @@ import ReactFlow, {
   ConnectionLineType
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import StateModal, { type StateField } from './StateModal';
+import { XMarkIcon, CheckIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import useFlowStore, { type NodeData, type NodeType } from '../store/useFlowStore';
 
 type CustomNode = Node<NodeData> & {
@@ -184,19 +186,37 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     setEdges 
   } = useFlowStore();
   
-  // State for the state modal and state fields
+  // State for the modals
   const [isStateModalOpen, setIsStateModalOpen] = useState(false);
-  const [stateFields, setStateFields] = useState<StateField[]>([]);
+  const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
+  const [stateFields, setStateFields] = useState([]);
+  const [memorySettings, setMemorySettings] = useState({
+    enabled: true,
+    backend: 'memory',
+    autoSaveFields: [],
+    langSmithEnabled: false,
+    langSmithToken: '',
+    langSmithProjectId: '',
+  });
   
   const handleStateButtonClick = useCallback(() => {
     setIsStateModalOpen(true);
   }, []);
-  
-  const handleStateSave = useCallback((fields: StateField[]) => {
+
+  const handleMemoryButtonClick = useCallback(() => {
+    setIsMemoryModalOpen(true);
+  }, []);
+
+  const handleStateSave = useCallback((fields: any) => {
     setStateFields(fields);
     setIsStateModalOpen(false);
-    // Here you would typically save the state definition to your backend
     console.log('State fields saved:', fields);
+  }, []);
+
+  const handleMemorySave = useCallback((settings: any) => {
+    setMemorySettings(settings);
+    setIsMemoryModalOpen(false);
+    console.log('Memory settings saved:', settings);
   }, []);
 
   const handleConnect = useCallback((connection: Connection) => {
@@ -508,6 +528,23 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
               <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">State</span>
               <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-amber-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
+
+            {/* Memory Button */}
+            <button 
+              className="group flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full relative"
+              onClick={handleMemoryButtonClick}
+              title="Memory Settings"
+            >
+              <div className="p-3 rounded-full bg-purple-500/20 group-hover:bg-purple-500/30 transition-all duration-200 group-hover:shadow-[0_0_15px_3px_rgba(139,92,246,0.3)]">
+              <svg className="w-5 h-5 text-purple-400 group-hover:scale-125 transform transition-all duration-200" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5v14c0 1.656 4.03 3 9 3s9-1.344 9-3V5" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12c0 1.656 4.03 3 9 3s9-1.344 9-3" />
+  </svg>
+              </div>
+              <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">Memory</span>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+            </button>
           </div>
         </div>
 
@@ -517,6 +554,13 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           onClose={() => setIsStateModalOpen(false)}
           onSave={handleStateSave}
           initialFields={stateFields}
+        />
+
+        <MemoryModal
+          isOpen={isMemoryModalOpen}
+          onClose={() => setIsMemoryModalOpen(false)}
+          onSave={handleMemorySave}
+          initialSettings={memorySettings}
         />
 
         {/* Save/Load Flow Buttons */}
