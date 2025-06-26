@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from api.llms import router as llm_router
 from api.flows import router as flow_router
+from api.tools import router as tool_router
 from db.init_db import init_db
 from utils.security import generate_fernet_key_file
 
@@ -26,6 +27,7 @@ app.add_middleware(
 router = APIRouter(prefix="/api")
 router.include_router(llm_router)
 router.include_router(flow_router)
+router.include_router(tool_router)
 app.include_router(router)
 
 
