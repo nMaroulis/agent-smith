@@ -41,14 +41,14 @@ type NodeTypeColors = {
 // Memoized Node Component with connection handles
 const NodeComponent = memo(({ data, selected, isConnectable }: NodeProps<NodeData>) => {
   const nodeTypeColors: NodeTypeColors = {
-    llm: { bg: 'bg-blue-500', border: 'border-blue-500', text: 'text-blue-400' },
-    function: { bg: 'bg-purple-500', border: 'border-purple-500', text: 'text-purple-100' },
+    node: { bg: 'bg-blue-500', border: 'border-blue-500', text: 'text-blue-400' },
+    router: { bg: 'bg-purple-500', border: 'border-purple-500', text: 'text-purple-100' },
     trigger: { bg: 'bg-purple-500', border: 'border-purple-500', text: 'text-purple-400' },
     start: { bg: 'bg-emerald-500', border: 'border-emerald-500', text: 'text-emerald-400' },
     end: { bg: 'bg-rose-500', border: 'border-rose-500', text: 'text-rose-400' }
   };
   
-  const colors = nodeTypeColors[data.type] || nodeTypeColors.llm;
+  const colors = nodeTypeColors[data.type] || nodeTypeColors.node;
   
   // Special rendering for start/end nodes
   const nodeType = data.type;
@@ -124,13 +124,13 @@ const NodeComponent = memo(({ data, selected, isConnectable }: NodeProps<NodeDat
           <div className="text-xs text-white/70">{data.description}</div>
         )}
         
-        {data.llm && (
+        {data.node && (
           <div className="mt-2 pt-2 border-t border-white/10">
             <div className="text-xs font-medium text-white/80">
-              {data.llm.providerName || 'LLM'}
+              {data.node.providerName || 'Node'}
             </div>
             <div className="text-xs text-white/60">
-              {data.llm.modelName || 'Select a model'}
+              {data.node.modelName || 'Select a model'}
             </div>
             {data.function && (
               <div className="text-xs text-white/80 mt-1 pt-1 border-t border-white/5">
@@ -140,7 +140,7 @@ const NodeComponent = memo(({ data, selected, isConnectable }: NodeProps<NodeDat
           </div>
         )}
         
-        {!data.llm && data.function && (
+        {!data.node && data.function && (
           <div className="mt-2 pt-2 border-t border-white/10">
             <div className="text-xs font-medium text-white/80">
               {data.function.name}
@@ -266,18 +266,18 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       type: type as any, // Type assertion for ReactFlow's Node type
       position,
       data: {
-        label: type === 'function' ? 'New Router' : 'New Node',
+        label: type === 'router' ? 'Router' : type.charAt(0).toUpperCase() + type.slice(1),
         type,
       },
     };
 
     switch (type) {
-      case 'llm':
+      case 'node':
         return {
           ...baseNode,
           data: {
             ...baseNode.data,
-            llm: {
+            node: {
               provider: '',
               providerName: 'OpenAI',
               model: 'gpt-4',
@@ -285,18 +285,18 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             },
             function: {
               name: 'process_input',
-              description: 'Processes the input using the LLM',
+              description: 'Processes the input',
             },
           },
         } as CustomNode;
-      case 'function':
+      case 'router':
         return {
           ...baseNode,
           data: {
             ...baseNode.data,
             function: {
-              name: 'function_name',
-              description: 'Function description',
+              name: 'router_name',
+              description: 'Router description',
             },
           },
         };
@@ -338,7 +338,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     }
   }, [setNodes, setEdges]);
 
-  const handleAddNode = useCallback((type: NodeType = 'llm') => {
+  const handleAddNode = useCallback((type: NodeType = 'node') => {
     if (!reactFlowWrapper.current) return;
 
     const { left, top } = reactFlowWrapper.current.getBoundingClientRect();
@@ -356,8 +356,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
 
   const nodeTypes: NodeTypes = useMemo(() => ({
     default: NodeComponent,
-    llm: NodeComponent,
-    function: NodeComponent,
+    node: NodeComponent,
+    router: NodeComponent,
     trigger: NodeComponent,
     start: NodeComponent,
     end: NodeComponent,
@@ -468,12 +468,12 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             {/* Node */}
             <button 
               className="group flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full relative"
-              onClick={() => handleAddNode('llm')}
+              onClick={() => handleAddNode('node')}
               title="Add Node"
             >
               <div className="p-3 rounded-full bg-blue-500/20 group-hover:bg-blue-500/30 transition-all duration-200 group-hover:shadow-[0_0_15px_3px_rgba(59,130,246,0.3)]">
-                <svg className="w-5 h-5 text-blue-400 group-hover:scale-125 transform transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                <svg className="w-5 h-5 text-blue-400 group-hover:scale-125 transform transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 15 15">
+                  <path d="M4 6.25A2.25 2.25 0 016.25 4h3a2.25 2.25 0 012.25 2.25V7h3.25a.75.75 0 010 1.5H11.5v.75a2.25 2.25 0 01-2.25 2.25h-3A2.25 2.25 0 014 9.25V8.5H.75a.75.75 0 010-1.5H4v-.75zm6 0a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75v3c0 .414.336.75.75.75h3a.75.75 0 00.75-.75v-3z" /> 
                 </svg>
               </div>
               <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">Node</span>
@@ -483,16 +483,17 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             {/* Router Node */}
             <button 
               className="group flex flex-col items-center justify-center w-16 h-16 mx-1 rounded-full relative"
-              onClick={() => handleAddNode('function')}
+              onClick={() => handleAddNode('router')}
               title="Add Router Node"
             >
-              <div className="p-3 rounded-full bg-purple-500/20 group-hover:bg-purple-500/30 transition-all duration-200 group-hover:shadow-[0_0_15px_3px_rgba(139,92,246,0.3)]">
-                <svg className="w-5 h-5 text-purple-400 group-hover:scale-125 transform transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7l4-4m0 0l4 4m-4-4v18m-6 0h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              <div className="p-3 rounded-full bg-cyan-500/20 group-hover:bg-cyan-500/30 transition-all duration-200 group-hover:shadow-[0_0_15px_3px_rgba(6,182,212,0.3)]">
+                <svg className="w-5 h-5 text-cyan-400 group-hover:scale-125 transform transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 16 16">
+                <path xmlns="http://www.w3.org/2000/svg" d="M14.533 2.953H9.53a.493.493 0 0 0-.325.79l1.049 1.36.15.194L8 7.137l-2.403-1.84.15-.194 1.048-1.36a.493.493 0 0 0-.325-.79H1.467a.496.496 0 0 0-.434.683L2.276 8.39a.493.493 0 0 0 .847.113l.935-1.211.281-.366 2.638 2.02-.006 6.074a1.026 1.026 0 0 0 2.05 0l.007-6.078 2.632-2.016.282.366.934 1.211a.493.493 0 0 0 .847-.113l1.244-4.755a.496.496 0 0 0-.434-.683z"/>
                 </svg>
+
               </div>
               <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">Router</span>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-cyan-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
             </button>
 
             {/* End Node */}
@@ -537,10 +538,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             >
               <div className="p-3 rounded-full bg-purple-500/20 group-hover:bg-purple-500/30 transition-all duration-200 group-hover:shadow-[0_0_15px_3px_rgba(139,92,246,0.3)]">
               <svg className="w-5 h-5 text-purple-400 group-hover:scale-125 transform transition-all duration-200" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-    <ellipse cx="12" cy="5" rx="9" ry="3" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5v14c0 1.656 4.03 3 9 3s9-1.344 9-3V5" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12c0 1.656 4.03 3 9 3s9-1.344 9-3" />
-  </svg>
+                <ellipse cx="12" cy="5" rx="9" ry="3" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5v14c0 1.656 4.03 3 9 3s9-1.344 9-3V5" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12c0 1.656 4.03 3 9 3s9-1.344 9-3" />
+              </svg>
               </div>
               <span className="text-xs mt-1 text-gray-300 group-hover:text-white transition-colors duration-200">Memory</span>
               <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>

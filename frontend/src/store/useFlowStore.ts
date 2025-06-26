@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Node, Edge, Connection, NodeChange, EdgeChange } from 'reactflow';
 
-export type NodeType = 'llm' | 'function' | 'trigger' | 'start' | 'end';
+export type NodeType = 'node' | 'router' | 'trigger' | 'start' | 'end';
 
 export interface LLMData {
   provider: string;
@@ -19,7 +19,7 @@ export interface NodeData {
   label: string;
   description?: string;
   type: NodeType;
-  llm?: LLMData;
+  node?: LLMData;
   function?: FunctionData;
 }
 

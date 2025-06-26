@@ -58,7 +58,8 @@ AgentSmith is built for developers and advanced users who want:
 |--------------|--------------------------------------------------|
 | **Frontend** | React + React Flow + TailwindCSS + Monaco Editor |
 | **Backend**  | Python + FastAPI + LangChain + LangGraph         |
-| **LLMs**     | OpenAI, Anthropic, HuggingFace, Llama.cpp        |
+| **LLM APIs**     | OpenAI, Anthropic, HuggingFace, Llama.cpp        |
+| **Local LLMs**     | OpenAI, Anthropic, HuggingFace, Llama.cpp        |
 | **Storage**  | SQLite / TinyDB / Local JSON                     |
 
 ---
