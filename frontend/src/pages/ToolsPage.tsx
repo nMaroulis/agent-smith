@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FiPlus, FiTrash2, FiEdit2, FiCode } from 'react-icons/fi';
 
-type FunctionType = {
+type ToolType = {
   id: string;
   name: string;
   description: string;
@@ -13,56 +13,56 @@ type FunctionType = {
   }>;
 };
 
-export default function FunctionsPage() {
-  const [functions, setFunctions] = useState<FunctionType[]>([]);
+export default function ToolsPage() {
+  const [tools, setTools] = useState<ToolType[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingFunction, setEditingFunction] = useState<FunctionType | null>(null);
+  const [editingTool, setEditingTool] = useState<ToolType | null>(null);
 
-  const handleSaveFunction = (func: Omit<FunctionType, 'id'>) => {
-    if (editingFunction) {
-      setFunctions(functions.map(f => f.id === editingFunction.id ? { ...func, id: editingFunction.id } : f));
-      setEditingFunction(null);
+  const handleSaveTool = (tool: Omit<ToolType, 'id'>) => {
+    if (editingTool) {
+      setTools(tools.map(t => t.id === editingTool.id ? { ...tool, id: editingTool.id } : t));
+      setEditingTool(null);
     } else {
-      setFunctions([...functions, { ...func, id: Date.now().toString() }]);
+      setTools([...tools, { ...tool, id: Date.now().toString() }]);
     }
     setIsModalOpen(false);
   };
 
-  const handleDeleteFunction = (id: string) => {
-    setFunctions(functions.filter(f => f.id !== id));
+  const handleDeleteTool = (id: string) => {
+    setTools(tools.filter(f => f.id !== id));
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white">Functions</h1>
-          <p className="text-gray-400">Manage your custom functions</p>
+          <h1 className="text-2xl font-bold text-white">Tools</h1>
+          <p className="text-gray-400">Manage your custom tools</p>
         </div>
         <button
           onClick={() => {
-            setEditingFunction(null);
+            setEditingTool(null);
             setIsModalOpen(true);
           }}
           className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
         >
           <FiPlus className="mr-2" />
-          Add Function
+          Add Tool
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {functions.map((func) => (
-          <div key={func.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        {tools.map((tool) => (
+          <div key={tool.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-lg font-medium text-white">{func.name}</h3>
-                <p className="text-gray-400 text-sm mt-1">{func.description}</p>
+                <h3 className="text-lg font-medium text-white">{tool.name}</h3>
+                <p className="text-gray-400 text-sm mt-1">{tool.description}</p>
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={() => {
-                    setEditingFunction(func);
+                    setEditingTool(tool);
                     setIsModalOpen(true);
                   }}
                   className="text-gray-400 hover:text-blue-400 p-1"
@@ -70,7 +70,7 @@ export default function FunctionsPage() {
                   <FiEdit2 />
                 </button>
                 <button
-                  onClick={() => handleDeleteFunction(func.id)}
+                  onClick={() => handleDeleteTool(tool.id)}
                   className="text-gray-400 hover:text-red-400 p-1"
                 >
                   <FiTrash2 />
@@ -80,7 +80,7 @@ export default function FunctionsPage() {
             <div className="mt-4">
               <div className="text-sm text-gray-400 mb-2">Parameters:</div>
               <div className="space-y-2">
-                {func.parameters.map((param, i) => (
+                {tool.parameters.map((param, i) => (
                   <div key={i} className="flex items-center text-sm">
                     <span className="text-blue-400 font-mono mr-2">{param.name}</span>
                     <span className="text-gray-500 text-xs bg-gray-700 px-2 py-0.5 rounded">
@@ -96,18 +96,18 @@ export default function FunctionsPage() {
           </div>
         ))}
 
-        {functions.length === 0 && (
+        {tools.length === 0 && (
           <div className="col-span-full text-center py-12">
             <FiCode className="mx-auto h-12 w-12 text-gray-600" />
-            <h3 className="mt-2 text-sm font-medium text-gray-200">No functions yet</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new function.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-200">No tools yet</h3>
+            <p className="mt-1 text-sm text-gray-500">Get started by creating a new tool.</p>
             <div className="mt-6">
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <FiPlus className="-ml-1 mr-2 h-5 w-5" />
-                New Function
+                New Tool
               </button>
             </div>
           </div>
@@ -115,11 +115,11 @@ export default function FunctionsPage() {
       </div>
 
       {isModalOpen && (
-        <FunctionForm
-          function={editingFunction}
-          onSave={handleSaveFunction}
+        <ToolForm
+          tool={editingTool}
+          onSave={handleSaveTool}
           onClose={() => {
-            setEditingFunction(null);
+            setEditingTool(null);
             setIsModalOpen(false);
           }}
         />
@@ -128,20 +128,20 @@ export default function FunctionsPage() {
   );
 }
 
-function FunctionForm({ 
-  function: func, 
+function ToolForm({ 
+  tool: tool, 
   onSave, 
   onClose 
 }: { 
-  function: FunctionType | null; 
-  onSave: (func: Omit<FunctionType, 'id'>) => void; 
+  tool: ToolType | null; 
+  onSave: (tool: Omit<ToolType, 'id'>) => void; 
   onClose: () => void;
 }) {
-  const [name, setName] = useState(func?.name || '');
-  const [description, setDescription] = useState(func?.description || '');
-  const [code, setCode] = useState(func?.code || '');
+  const [name, setName] = useState(tool?.name || '');
+  const [description, setDescription] = useState(tool?.description || '');
+  const [code, setCode] = useState(tool?.code || '');
   const [parameters, setParameters] = useState<Array<{name: string; type: string; description: string}>>(
-    func?.parameters || []);
+    tool?.parameters || []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,7 +173,7 @@ function FunctionForm({
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-white">
-              {func ? 'Edit Function' : 'Add New Function'}
+              {tool ? 'Edit Tool' : 'Add New Tool'}
             </h2>
             <button
               onClick={onClose}
@@ -186,7 +186,7 @@ function FunctionForm({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Function Name
+                Tool Name
               </label>
               <input
                 type="text"
@@ -277,13 +277,13 @@ function FunctionForm({
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Function Code
+                Tool Code
               </label>
               <textarea
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="w-full h-48 font-mono text-sm bg-gray-700 border border-gray-600 rounded-md p-3 text-white"
-                placeholder="// Your function code here\n// Use parameters: param1, param2, ..."
+                placeholder="// Your tool code here\n// Use parameters: param1, param2, ..."
                 required
               />
             </div>
@@ -300,7 +300,7 @@ function FunctionForm({
                 type="submit"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
               >
-                {func ? 'Update' : 'Create'} Function
+                {tool ? 'Update' : 'Create'} Tool
               </button>
             </div>
           </form>

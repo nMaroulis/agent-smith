@@ -132,18 +132,18 @@ const NodeComponent = memo(({ data, selected, isConnectable }: NodeProps<NodeDat
             <div className="text-xs text-white/60">
               {data.node.modelName || 'Select a model'}
             </div>
-            {data.function && (
+            {data.tool && (
               <div className="text-xs text-white/80 mt-1 pt-1 border-t border-white/5">
-                {data.function.name}
+                {data.tool.name}
               </div>
             )}
           </div>
         )}
         
-        {!data.node && data.function && (
+        {!data.node && data.tool && (
           <div className="mt-2 pt-2 border-t border-white/10">
             <div className="text-xs font-medium text-white/80">
-              {data.function.name}
+              {data.tool.name}
             </div>
           </div>
         )}
@@ -283,7 +283,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
               model: 'gpt-4',
               modelName: 'GPT-4',
             },
-            function: {
+            tool: {
               name: 'process_input',
               description: 'Processes the input',
             },
@@ -294,7 +294,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           ...baseNode,
           data: {
             ...baseNode.data,
-            function: {
+            tool: {
               name: 'router_name',
               description: 'Router description',
             },

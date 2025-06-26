@@ -35,9 +35,9 @@ export default function CustomNode({ id, data, selected }: NodeProps<NodeData>) 
     [id, data.config, updateNodeData]
   );
 
-  const handleFunctionCodeChange = useCallback(
+  const handleToolCodeChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      updateNodeData(id, { config: { ...data.config, functionCode: e.target.value } });
+      updateNodeData(id, { config: { ...data.config, toolCode: e.target.value } });
     },
     [id, data.config, updateNodeData]
   );
@@ -74,7 +74,7 @@ export default function CustomNode({ id, data, selected }: NodeProps<NodeData>) 
           className="w-full text-xs border border-gray-200 rounded p-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="llm">LLM</option>
-          <option value="function">Function</option>
+          <option value="tool">Tool</option>
           <option value="input">Input</option>
           <option value="output">Output</option>
         </select>
@@ -106,11 +106,11 @@ export default function CustomNode({ id, data, selected }: NodeProps<NodeData>) 
           </div>
         )}
 
-        {data.type === 'function' && (
+        {data.type === 'tool' && (
           <textarea
-            value={data.config?.functionCode || ''}
-            onChange={handleFunctionCodeChange}
-            placeholder="// Write your function code here"
+            value={data.config?.toolCode || ''}
+            onChange={handleToolCodeChange}
+            placeholder="// Write your tool code here"
             className="w-full text-xs font-mono h-20 p-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         )}

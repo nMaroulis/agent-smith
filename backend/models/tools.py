@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, Text
 from db.base import Base
 
-class Function(Base):
-    __tablename__ = 'functions'
+class Tool(Base):
+    __tablename__ = 'tools'
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)

@@ -39,13 +39,13 @@ export default function AboutPage() {
     },
     {
       icon: <FiCode className="w-8 h-8 text-green-400" />,
-      title: "Custom Functions",
-      description: "Extend functionality with custom JavaScript/TypeScript functions. Add your own logic, API calls, and data processing steps to create truly unique AI applications."
+      title: "Custom Tools",
+      description: "Extend functionality with custom python tools. Add your own logic, API calls, and data processing steps to create truly unique AI applications."
     },
     {
       icon: <FiZap className="w-8 h-8 text-yellow-400" />,
       title: "Real-time Execution",
-      description: "See your AI workflows execute in real-time with detailed logging and monitoring. Debug and optimize your prompts and function calls with ease."
+      description: "See your AI workflows execute in real-time with detailed logging and monitoring. Debug and optimize your prompts and tool calls with ease."
     }
   ];
 
@@ -369,7 +369,7 @@ export default function AboutPage() {
               <ul className="space-y-2">
                 <li><a href="/" className="text-gray-400 hover:text-white text-sm transition-colors">Home</a></li>
                 <li><a href="/llms" className="text-gray-400 hover:text-white text-sm transition-colors">LLMs</a></li>
-                <li><a href="/functions" className="text-gray-400 hover:text-white text-sm transition-colors">Functions</a></li>
+                <li><a href="/tools" className="text-gray-400 hover:text-white text-sm transition-colors">Tools</a></li>
                 <li><a href="/about" className="text-gray-400 hover:text-white text-sm transition-colors">About</a></li>
               </ul>
             </div>

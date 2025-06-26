@@ -3,7 +3,7 @@ from db.session import engine
 from db.base import Base
 from models.llms import LLMRemote, LLMLocal
 from models.flows import Flow
-from models.functions import Function
+from models.tools import Tool
 from db.utils import get_absolute_db_path
 
 DB_PATH = get_absolute_db_path(keep_url=False)

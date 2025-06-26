@@ -110,20 +110,20 @@ const NodePanel = () => {
             </div>
           )}
 
-          {data.type === 'function' && (
+          {data.type === 'tool' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Function Code
+                Tool Code
               </label>
               <textarea
-                value={data.config?.functionCode || ''}
+                value={data.config?.toolCode || ''}
                 onChange={(e) =>
                   updateNodeData(selectedNodeId!, {
-                    config: { ...data.config, functionCode: e.target.value },
+                    config: { ...data.config, toolCode: e.target.value },
                   })
                 }
                 className="w-full h-40 p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white font-mono text-sm"
-                placeholder="// Enter your function code here\n// Use 'input' as the input variable"
+                placeholder="// Enter your tool code here\n// Use 'input' as the input variable"
               />
             </div>
           )}

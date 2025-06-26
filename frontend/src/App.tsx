@@ -7,7 +7,7 @@ import { FlowCanvas } from './components/FlowCanvas';
 import useFlowStore from './store/useFlowStore';
 import LLMsPage from './pages/LLMsPage';
 import SettingsPage from './pages/SettingsPage';
-import FunctionsPage from './pages/FunctionsPage';
+import ToolsPage from './pages/ToolsPage';
 import AboutPage from './pages/AboutPage';
 
 // Import NodeType from useFlowStore
@@ -26,7 +26,7 @@ type CustomNode = {
       providerName: string;
       modelName: string;
     };
-    function?: {
+    tool?: {
       name: string;
       description: string;
     };
@@ -63,10 +63,10 @@ const Navigation = () => {
       gradient: 'from-purple-400 to-purple-500'
     },
     { 
-      id: 'functions', 
-      path: '/functions', 
+      id: 'tools', 
+      path: '/tools', 
       icon: <FiCode className="w-5 h-5" />, 
-      label: 'Functions',
+      label: 'Tools',
       activeBg: 'from-green-500/10 to-green-600/10',
       activeText: 'text-green-400',
       hoverBg: 'hover:bg-green-500/10',
@@ -157,7 +157,7 @@ const LLM_MODELS = {
   ],
 };
 
-const FUNCTION_OPTIONS = [
+const TOOL_OPTIONS = [
   { id: 'process_data', name: 'Process Data' },
   { id: 'generate_text', name: 'Generate Text' },
   { id: 'analyze_sentiment', name: 'Analyze Sentiment' },
@@ -167,7 +167,7 @@ const FUNCTION_OPTIONS = [
 const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (node: CustomNode) => void }) => {
   const [isProviderOpen, setIsProviderOpen] = useState(false);
   const [isModelOpen, setIsModelOpen] = useState(false);
-  const [isFunctionOpen, setIsFunctionOpen] = useState(false);
+  const [isToolOpen, setIsToolOpen] = useState(false);
 
   const currentProvider = node?.data.llm?.provider || '';
   const availableModels = currentProvider ? LLM_MODELS[currentProvider as keyof typeof LLM_MODELS] || [] : [];
@@ -204,14 +204,14 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
     setIsModelOpen(false);
   };
 
-  const handleFunctionSelect = (func: { id: string; name: string }) => {
-    handleChange('function', { name: func.id, description: func.name });
-    setIsFunctionOpen(false);
+  const handleToolSelect = (tool: { id: string; name: string }) => {
+    handleChange('tool', { name: tool.id, description: tool.name });
+    setIsToolOpen(false);
   };
 
-  const handleAddFunction = () => {
-    // This would open a modal or navigate to a function creation page in a real app
-    console.log('Add new function');
+  const handleAddTool = () => {
+    // This would open a modal or navigate to a tool creation page in a real app
+    console.log('Add new tool');
   };
 
   return (
@@ -313,39 +313,39 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-gray-300">Function</label>
+                <label className="block text-sm font-medium text-gray-300">Tool</label>
                 <button
                   type="button"
-                  onClick={handleAddFunction}
+                  onClick={handleAddTool}
                   className="text-xs text-blue-400 hover:text-blue-300 flex items-center"
                 >
                   <FiPlus className="mr-1" size={12} />
-                  Add Function
+                  Add Tool
                 </button>
               </div>
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setIsFunctionOpen(!isFunctionOpen)}
+                  onClick={() => setIsToolOpen(!isToolOpen)}
                   className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
-                  <span>{node.data.function?.name ? node.data.function.name.replace('_', ' ') : 'Select Function'}</span>
-                  <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isFunctionOpen ? 'transform rotate-180' : ''}`} />
+                  <span>{node.data.tool?.name ? node.data.tool.name.replace('_', ' ') : 'Select Tool'}</span>
+                  <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isToolOpen ? 'transform rotate-180' : ''}`} />
                 </button>
-                {isFunctionOpen && (
+                {isToolOpen && (
                   <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
                     <div className="py-1 max-h-60 overflow-auto">
-                      {FUNCTION_OPTIONS.map((func) => (
+                      {TOOL_OPTIONS.map((tool) => (
                         <button
-                          key={func.id}
-                          onClick={() => handleFunctionSelect(func)}
+                          key={tool.id}
+                          onClick={() => handleToolSelect(tool)}
                           className={`w-full text-left px-4 py-2 text-sm ${
-                            node.data.function?.name === func.id
+                            node.data.tool?.name === tool.id
                               ? 'bg-blue-600 text-white'
                               : 'text-gray-300 hover:bg-gray-700'
                           }`}
                         >
-                          {func.name}
+                          {tool.name}
                         </button>
                       ))}
                     </div>
@@ -589,7 +589,7 @@ const App = () => {
               <Route path="/" element={<MainLayout />} />
               <Route path="/llms" element={<LLMsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/functions" element={<FunctionsPage />} />
+              <Route path="/tools" element={<ToolsPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="*" element={<MainLayout />} />
             </Routes>

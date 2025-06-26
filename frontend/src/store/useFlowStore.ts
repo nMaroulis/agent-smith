@@ -10,7 +10,7 @@ export interface LLMData {
   modelName: string;
 }
 
-export interface FunctionData {
+export interface ToolData {
   name: string;
   description: string;
 }
@@ -20,7 +20,7 @@ export interface NodeData {
   description?: string;
   type: NodeType;
   node?: LLMData;
-  function?: FunctionData;
+  tool?: ToolData;
 }
 
 export interface FlowState {
