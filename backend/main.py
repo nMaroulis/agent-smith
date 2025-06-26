@@ -29,8 +29,13 @@ router.include_router(flow_router)
 app.include_router(router)
 
 
-@app.get("/")
-def read_root():
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/api/health")
+
+
+@app.api_route("/api/health", methods=["GET", "HEAD"])
+def read_health():
     return {"status": "ok"}
 
 

@@ -42,7 +42,7 @@ type NodeTypeColors = {
 const NodeComponent = memo(({ data, selected, isConnectable }: NodeProps<NodeData>) => {
   const nodeTypeColors: NodeTypeColors = {
     node: { bg: 'bg-blue-500', border: 'border-blue-500', text: 'text-blue-400' },
-    router: { bg: 'bg-purple-500', border: 'border-purple-500', text: 'text-purple-100' },
+    router: { bg: 'bg-cyan-500', border: 'border-cyan-500', text: 'text-cyan-100' },
     trigger: { bg: 'bg-purple-500', border: 'border-purple-500', text: 'text-purple-400' },
     start: { bg: 'bg-emerald-500', border: 'border-emerald-500', text: 'text-emerald-400' },
     end: { bg: 'bg-rose-500', border: 'border-rose-500', text: 'text-rose-400' }

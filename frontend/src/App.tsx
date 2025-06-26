@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { ServerProvider, useServer } from './contexts/ServerContext';
 import { BrowserRouter as Router, Link, useLocation, Routes, Route } from 'react-router-dom';
 import { FiCpu, FiSettings, FiLayers, FiPlus, FiChevronDown, FiCode, FiInfo } from 'react-icons/fi';
 import { FlowCanvas } from './components/FlowCanvas';
@@ -9,8 +10,8 @@ import SettingsPage from './pages/SettingsPage';
 import FunctionsPage from './pages/FunctionsPage';
 import AboutPage from './pages/AboutPage';
 
-// Define the node types that are used in the application
-type NodeType = 'start' | 'end' | 'llm' | 'function' | 'trigger';
+// Import NodeType from useFlowStore
+import type { NodeType } from './store/useFlowStore';
 
 type CustomNode = {
   id: string;
@@ -451,6 +452,30 @@ const RightSidebar = () => {
 
 
 const AppHeader = () => {
+  const { serverUrl, serverStatus } = useServer();
+  
+  const getStatusColor = () => {
+    switch (serverStatus) {
+      case 'online':
+        return 'bg-green-500';
+      case 'offline':
+        return 'bg-red-500';
+      case 'checking':
+        return 'bg-yellow-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
+  const getStatusText = () => {
+    const statusMap = {
+      online: 'Online',
+      offline: 'Offline',
+      checking: 'Checking...',
+    };
+    return statusMap[serverStatus] || 'Unknown';
+  };
+
   return (
     <header className="bg-gray-900/80 backdrop-blur-lg border-b border-gray-800/50 h-16 flex-shrink-0">
       <div className="h-full flex items-center justify-between px-6">
@@ -465,7 +490,19 @@ const AppHeader = () => {
           </h1>
         </div>
         <Navigation />
-        <div className="w-32"></div> {/* Spacer to balance the layout */}
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
+            <div className="relative group">
+              <div className={`w-2.5 h-2.5 rounded-full ${getStatusColor()} animate-pulse`}></div>
+              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-xs text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                Server {getStatusText()}
+              </div>
+            </div>
+            <span className="text-sm text-gray-300 font-mono">
+              {new URL(serverUrl).hostname}
+            </span>
+          </div>
+        </div>
       </div>
     </header>
   );
@@ -498,7 +535,6 @@ const FlowCanvasWithSidebar = () => {
       <div className="flex-1 relative h-full">
         <FlowCanvas 
           onNodeSelect={(node: CustomNode | null) => setSelectedNode(node)}
-          selectedNodeId={selectedNode?.id}
           className="w-full h-full"
           style={{ height: '100%' }}
         />
@@ -517,146 +553,51 @@ const MainLayout = () => (
 
 // Create a styled component for the app container
 const AppContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex flex-col h-screen bg-gray-900 text-white">
-    {children}
-  </div>
+  <>
+    <div className="flex flex-col h-screen bg-gray-900 text-white">
+      {children}
+    </div>
+    <style>{`
+      /* Node styles */
+      .react-flow__node {
+        background: #1e293b;
+        color: #f8fafc;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+        overflow: hidden;
+        padding: 0;
+      }
+
+      .react-flow__node.selected {
+        border: 1px solid #3b82f6;
+        box-shadow: 0 0 0 1px #3b82f6, 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+    `}</style>
+  </>
 );
 
 const App = () => {
   return (
-    <Router>
-      <AppContainer>
-        <AppHeader />
-        <main className="flex-1 flex flex-col min-h-0 bg-gray-900">
-          <Routes>
-            <Route path="/" element={<MainLayout />} />
-            <Route path="/llms" element={<LLMsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/functions" element={<FunctionsPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="*" element={<MainLayout />} />
-          </Routes>
-        </main>
-        <Toaster position="bottom-right" />
-        <style>{`
-          /* Node styles */
-          .react-flow__node {
-            background: #1e293b;
-            color: #f8fafc;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            transition: all 0.2s ease;
-            overflow: hidden;
-            padding: 0;
-          }
-          
-
-          .react-flow__node.selected {
-            border: 1px solid #3b82f6;
-            box-shadow: 0 0 0 1px #3b82f6, 0 2px 8px rgba(0, 0, 0, 0.2);
-          }
-          
-          .react-flow__node:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          }
-          
-          .react-flow__node .react-flow__handle {
-            width: 8px;
-            height: 8px;
-            background: #4b5563;
-            border: 2px solid #1f2937;
-          }
-          
-          .react-flow__node .react-flow__handle:hover {
-            transform: scale(1.2);
-          }
-          .react-flow__node:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.1);
-          }
-          .react-flow__node.selected {
-            border: 1px solid rgba(59, 130, 246, 0.8);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4), 0 8px 25px -5px rgba(0, 0, 0, 0.3);
-          }
-          .react-flow__node .react-flow__handle {
-            width: 10px;
-            height: 10px;
-            border: 2px solid #1f2937;
-            background: #3b82f6;
-            transition: all 0.2s ease;
-          }
-          .react-flow__node .react-flow__handle:hover {
-            transform: scale(1.4);
-            background: #60a5fa;
-          }
-          /* React Flow controls */
-          .react-flow__controls {
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-            border-radius: 6px !important;
-            overflow: hidden;
-          }
-          
-          .react-flow__controls-button {
-            background: #1e293b !important;
-            border-bottom: 1px solid #334155 !important;
-            border-radius: 0 !important;
-            transition: all 0.2s ease !important;
-          }
-          
-          .react-flow__controls-button:hover {
-            background: #334155 !important;
-          }
-          
-          .react-flow__controls-button svg {
-            fill: #f8fafc !important;
-          }
-          
-          .react-flow__controls-button:first-child {
-            border-top-left-radius: 6px !important;
-            border-top-right-radius: 6px !important;
-          }
-          
-          .react-flow__controls-button:last-child {
-            border-bottom-left-radius: 6px !important;
-            border-bottom-right-radius: 6px !important;
-            border-bottom: none !important;
-          }
-          .dark .react-flow__handle {
-            border-color: #1f2937;
-          }
-          .react-flow__handle-connecting {
-            background: #ff4d4f;
-          }
-          .react-flow__handle-valid {
-            background: #10b981;
-          }
-          .react-flow__edge-path {
-            stroke: #3b82f6;
-            stroke-width: 2;
-          }
-          .react-flow__edge.selected .react-flow__edge-path {
-            stroke: #1d4ed8;
-            stroke-width: 3;
-          }
-          .react-flow__controls {
-            background: #1f2937;
-            border: 1px solid #4b5563;
-          }
-          .react-flow__controls-button {
-            border-bottom: 1px solid #4b5563;
-            color: #9ca3af;
-          }
-          .react-flow__controls-button:hover {
-            background: #374151;
-          }
-          .react-flow__controls-button svg {
-            fill: #9ca3af;
-          }
-        `}</style>
-      </AppContainer>
-    </Router>
+    <ServerProvider>
+      <Router>
+        <AppContainer>
+          <AppHeader />
+          <main className="flex-1 flex flex-col min-h-0 bg-gray-900">
+            <Routes>
+              <Route path="/" element={<MainLayout />} />
+              <Route path="/llms" element={<LLMsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/functions" element={<FunctionsPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="*" element={<MainLayout />} />
+            </Routes>
+          </main>
+          <Toaster position="bottom-right" />
+        </AppContainer>
+      </Router>
+    </ServerProvider>
   );
 };
 
