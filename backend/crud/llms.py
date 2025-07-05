@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from models.llms import LLMRemote, LLMLocal
 from typing import Optional
-# from core.encryption import fernet_encrypt
+from core.encryption import fernet_encrypt
 
 
 #####################
@@ -20,7 +20,7 @@ def get_remote_llm_by_id(db: Session, id: int):
 
 def create_remote_llm(db: Session, provider: str, name: str, api_key: str):
     cred = LLMRemote(provider=provider, name=name)
-    cred.api_key = api_key # fernet_encrypt(api_key)
+    cred.api_key = fernet_encrypt(api_key)
     db.add(cred)
     db.commit()
     db.refresh(cred)
@@ -32,7 +32,7 @@ def update_remote_llm_by_id(db: Session, id: int, provider: str, name: str, api_
         return None
     llm.provider = provider
     llm.name = name
-    llm.api_key = api_key # fernet_encrypt(api_key)
+    llm.api_key = fernet_encrypt(api_key)
     db.commit()
     db.refresh(llm)
     return llm

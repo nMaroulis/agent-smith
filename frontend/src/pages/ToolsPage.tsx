@@ -105,6 +105,42 @@ const ToolsPage = () => {
     setIsFullscreen(prev => !prev);
   }, []);
   
+  const generateDefaultRAGPrompt = useCallback(() => {
+    const defaultPrompt = `You are a helpful assistant that provides accurate information based on the retrieved context.
+
+Context:
+{context}
+
+Question: {question}
+
+Please provide a detailed and accurate answer based on the context above. If the context doesn't contain enough information to answer the question, say "I don't have enough information to answer that question."`;
+    
+    setFormData(prev => ({
+      ...prev,
+      config: {
+        ...prev.config,
+        llm_followup_prompt: defaultPrompt
+      }
+    }));
+  }, []);
+
+  const generateDefaultWebSearchPrompt = useCallback(() => {
+    const defaultPrompt = `You are a helpful research assistant. Below are search results for the query: "{query}"
+
+Search Results:
+{search_results}
+
+Please provide a comprehensive summary of the search results, focusing on the most relevant and reliable information. Include key points, statistics, and any other important details. If the search results are not relevant to the query, please state that clearly.`;
+    
+    setFormData(prev => ({
+      ...prev,
+      config: {
+        ...prev.config,
+        llm_followup_prompt: defaultPrompt
+      }
+    }));
+  }, []);
+
   const handleCodeChange = useCallback((value: string = '') => {
     setFormData(prev => ({ ...prev, code: value }));
   }, []);
@@ -347,6 +383,173 @@ const ToolsPage = () => {
                   </div>
 
                   {/* RAG Configuration */}
+                  {formData.type === 'web_search' && (
+                    <div className="space-y-6 bg-gray-700/30 p-4 rounded-lg">
+                      <h3 className="text-lg font-medium text-white">Web Search Configuration</h3>
+                      
+                      <div>
+                        <label htmlFor="search_provider" className="block text-sm font-medium text-gray-300 mb-1">
+                          Search Provider *
+                        </label>
+                        <select
+                          id="search_provider"
+                          name="config.search_provider"
+                          required
+                          className="mt-1 block w-full border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-800 text-white"
+                          value={formData.config?.search_provider || ''}
+                          onChange={handleInputChange}
+                        >
+                          <option value="">Select search provider</option>
+                          <option value="DuckDuckGo">DuckDuckGo</option>
+                          <option value="SerpAPI">SerpAPI</option>
+                          <option value="Google CSE">Google CSE</option>
+                          <option value="Bing">Bing</option>
+                          <option value="Custom">Custom</option>
+                        </select>
+                      </div>
+
+                      {(formData.config?.search_provider === 'SerpAPI' || 
+                        formData.config?.search_provider === 'Google CSE' || 
+                        formData.config?.search_provider === 'Bing' ||
+                        formData.config?.search_provider === 'Custom') && (
+                        <div>
+                          <label htmlFor="api_key" className="block text-sm font-medium text-gray-300 mb-1">
+                            API Key *
+                          </label>
+                          <input
+                            type="password"
+                            id="api_key"
+                            name="config.api_key"
+                            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-600 rounded-md bg-gray-800 text-white p-2"
+                            placeholder="Enter API key"
+                            value={formData.config?.api_key || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label htmlFor="num_results" className="block text-sm font-medium text-gray-300 mb-1">
+                          Number of Results
+                        </label>
+                        <input
+                          type="number"
+                          id="num_results"
+                          name="config.num_results"
+                          min="1"
+                          max="50"
+                          className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-600 rounded-md bg-gray-800 text-white p-2"
+                          value={formData.config?.num_results || 10}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="filter_regex" className="block text-sm font-medium text-gray-300 mb-1">
+                          Filter Regex
+                        </label>
+                        <input
+                          type="text"
+                          id="filter_regex"
+                          name="config.filter_regex"
+                          className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-600 rounded-md bg-gray-800 text-white p-2 font-mono text-sm"
+                          placeholder="e.g., (?i)exclude-this"
+                          value={formData.config?.filter_regex || ''}
+                          onChange={handleInputChange}
+                        />
+                        <p className="mt-1 text-xs text-gray-400">Regular expression to filter or clean search results</p>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="block text-sm font-medium text-gray-300">
+                            Post-process Code
+                          </label>
+                          <button
+                            type="button"
+                            onClick={toggleFullscreen}
+                            className="text-gray-400 hover:text-blue-400 p-1 rounded-full"
+                            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                          >
+                            {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
+                          </button>
+                        </div>
+                        <div className={`border border-gray-700 rounded-md overflow-hidden ${isFullscreen ? 'fixed inset-4 z-50 bg-gray-900' : 'relative h-48'}`}>
+                          {isFullscreen && (
+                            <div className="flex justify-between items-center p-2 bg-gray-800 border-b border-gray-700">
+                              <span className="text-sm font-medium text-gray-300">
+                                {formData.name || 'Untitled Tool'} - Post-process Code
+                              </span>
+                              <button
+                                type="button"
+                                onClick={toggleFullscreen}
+                                className="text-gray-400 hover:text-white"
+                              >
+                                <FiX size={20} />
+                              </button>
+                            </div>
+                          )}
+                          <Suspense fallback={<EditorLoading />}>
+                            <MonacoEditor
+                              height={isFullscreen ? 'calc(100% - 40px)' : '100%'}
+                              defaultLanguage="python"
+                              value={formData.config?.postprocess_code || ''}
+                              onChange={(value = '') => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  config: {
+                                    ...prev.config,
+                                    postprocess_code: value
+                                  }
+                                }));
+                              }}
+                              onMount={handleEditorDidMount}
+                              theme="vs-dark"
+                              options={{
+                                minimap: { enabled: true },
+                                scrollBeyondLastLine: false,
+                                fontSize: 14,
+                                wordWrap: 'on',
+                                automaticLayout: true,
+                                tabSize: 2,
+                              }}
+                            />
+                          </Suspense>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-400">
+                          Optional code to process search results (JavaScript or Python)
+                        </p>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label htmlFor="llm_followup_prompt" className="block text-sm font-medium text-gray-300">
+                            LLM Follow-up Prompt
+                          </label>
+                          <button
+                            type="button"
+                            onClick={generateDefaultWebSearchPrompt}
+                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
+                          >
+                            Use Default
+                          </button>
+                        </div>
+                        <textarea
+                          id="llm_followup_prompt"
+                          name="config.llm_followup_prompt"
+                          rows={4}
+                          className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-600 rounded-md bg-gray-800 text-white p-2 font-mono text-sm"
+                          placeholder="Enter a prompt to process search results with an LLM..."
+                          value={formData.config?.llm_followup_prompt || ''}
+                          onChange={handleInputChange}
+                        />
+                        <p className="mt-1 text-xs text-gray-400">
+                          This prompt will be used to process search results with an LLM. Use {'{query}'} to insert the search query and {'{search_results}'} for the search results.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {formData.type === 'rag' && (
                     <div className="space-y-6 bg-gray-700/30 p-4 rounded-lg">
                       <h3 className="text-lg font-medium text-white">RAG Configuration</h3>
@@ -590,6 +793,33 @@ const ToolsPage = () => {
                             }}
                           />
                         </div>
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label htmlFor="rag_llm_prompt" className="block text-sm font-medium text-gray-300">
+                            LLM Follow-up Prompt
+                          </label>
+                          <button
+                            type="button"
+                            onClick={generateDefaultRAGPrompt}
+                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
+                          >
+                            Use Default
+                          </button>
+                        </div>
+                        <textarea
+                          id="rag_llm_prompt"
+                          name="config.llm_followup_prompt"
+                          rows={4}
+                          className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-600 rounded-md bg-gray-800 text-white p-2 font-mono text-sm"
+                          placeholder="Enter a prompt to process the retrieved context with an LLM..."
+                          value={formData.config?.llm_followup_prompt || ''}
+                          onChange={handleInputChange}
+                        />
+                        <p className="mt-1 text-xs text-gray-400">
+                          This prompt will be used to process the retrieved context with an LLM. Use {'{context}'} to insert the retrieved context and {'{question}'} for the user's query.
+                        </p>
                       </div>
                     </div>
                   )}
