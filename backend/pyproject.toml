@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "cryptography>=45.0.4",
     "fastapi>=0.115.13",
+    "jinja2>=3.1.6",
     "langchain>=0.3.26",
     "langchain-anthropic>=0.3.15",
     "langchain-community>=0.3.26",

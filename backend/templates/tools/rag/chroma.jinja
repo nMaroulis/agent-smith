@@ -1,0 +1,24 @@
+from langchain.vectorstores import Chroma
+from langchain.embeddings import OpenAIEmbeddings
+
+{{ name }}_vectorstore = Chroma(
+    persist_directory="{{ vector_store_path }}",
+    collection_name="{{ collection_name }}",
+    embedding_function=OpenAIEmbeddings()
+)
+
+{{ name }}_retriever = {{ name }}_vectorstore.as_retriever(
+    search_type="similarity",
+    search_kwargs={
+        "k": {{ top_k }}
+        {% if similarity_threshold is defined %}
+        , "score_threshold": {{ similarity_threshold }}
+        {% endif %}
+    }
+)
+
+def {{ name }}(input):
+    docs = {{ name }}_retriever.get_relevant_documents(input["question"])
+    context = " ".join([doc.page_content for doc in docs])
+    prompt = f"""{{ prompt_template }}""".replace("{{context}}", context).replace("{{question}}", input["question"])
+    return llm.invoke(prompt)

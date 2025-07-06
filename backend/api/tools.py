@@ -38,3 +38,11 @@ def delete_tool(id: int, db: Session = Depends(get_db)):
     if not deleted:
         raise HTTPException(status_code=404, detail="Tool not found")
     return deleted
+
+
+
+
+# @router.post("/tools/preview_code")
+# def preview_tool_code(tool: Tool):
+#     generator = get_tool_generator(tool)
+#     return {"code": generator.render_code()}
