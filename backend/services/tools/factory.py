@@ -2,9 +2,10 @@ from services.tools.rag.chroma import ChromaRAGTool
 from services.tools.rag.qdrant import QdrantRAGTool
 from services.tools.base import BaseTool
 from services.tools.web_search.duckduckgo import DuckDuckGoWebSearchTool
+from schemas.tools import ToolCreate
 
 
-def get_tool_generator(tool) -> BaseTool:
+def get_tool(tool: ToolCreate) -> BaseTool:
     if tool.type == "rag":
         if tool.library == "chromadb":
             return ChromaRAGTool(tool)

@@ -4,6 +4,8 @@ from crud.tools import get_tools, create_tool, get_tool_by_id, update_tool_by_id
 from typing import Optional
 from sqlalchemy.orm import Session
 from db.session import get_db
+from services.tools.factory import get_tool as get_tool_object
+
 
 router = APIRouter(prefix="/tools", tags=["Tool"])
 
@@ -40,9 +42,7 @@ def delete_tool(id: int, db: Session = Depends(get_db)):
     return deleted
 
 
-
-
-# @router.post("/tools/preview_code")
-# def preview_tool_code(tool: Tool):
-#     generator = get_tool_generator(tool)
-#     return {"code": generator.render_code()}
+@router.post("/preview_code")
+def preview_tool_code(tool: ToolCreate):
+    tool = get_tool_object(tool)
+    return {"code": tool.to_code()}

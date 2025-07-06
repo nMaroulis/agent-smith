@@ -7,17 +7,17 @@ class ChromaRAGTool(BaseRAGTool):
     def __init__(self, tool: Tool):
         super().__init__(tool)
 
-    def to_code(self) -> str:
 
+    def to_code(self) -> str:
         return self.render_template("tools/rag/chroma_rag_tool.py.jinja",
             name=self.tool.name,
             vector_store_path=self.tool.config.get("vector_store_path", "./data"),
-            collection_name=self.tool.config.get("collection_name", "default"),
+            index_name=self.tool.config.get("index_name", "default"),
             top_k=self.tool.config.get("retriever_top_k", 3),
             similarity_threshold=self.tool.config.get("similarity_threshold"),
-            prompt_template=self.tool.config.get(
-                "prompt_template",
-                "Answer the following question using the context: {{context}}\nQuestion: {{question}}"
+            llm_followup_prompt=self.tool.config.get(
+                "llm_followup_prompt",
+                "Answer the following question using the context: {context}\nQuestion: {question}"
             )
         )
 
@@ -28,9 +28,8 @@ class ChromaRAGTool(BaseRAGTool):
             "type": "rag",
             "library": "chromadb",
             "vector_store_path": self.tool.config.get("vector_store_path"),
-            "collection_name": self.tool.config.get("collection_name"),
+            "index_name": self.tool.config.get("index_name"),
             "top_k": self.tool.config.get("retriever_top_k", 3),
             "similarity_threshold": self.tool.config.get("similarity_threshold"),
-            "prompt_template": self.tool.config.get("prompt_template"),
-            "llm_model": self.tool.config.get("llm_model", "openai/gpt-3.5-turbo"),
+            "llm_followup_prompt": self.tool.config.get("llm_followup_prompt"),
         }

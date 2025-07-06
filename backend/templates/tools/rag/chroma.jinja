@@ -3,7 +3,7 @@ from langchain.embeddings import OpenAIEmbeddings
 
 {{ name }}_vectorstore = Chroma(
     persist_directory="{{ vector_store_path }}",
-    collection_name="{{ collection_name }}",
+    collection_name="{{ index_name }}",
     embedding_function=OpenAIEmbeddings()
 )
 
@@ -20,5 +20,5 @@ from langchain.embeddings import OpenAIEmbeddings
 def {{ name }}(input):
     docs = {{ name }}_retriever.get_relevant_documents(input["question"])
     context = " ".join([doc.page_content for doc in docs])
-    prompt = f"""{{ prompt_template }}""".replace("{{context}}", context).replace("{{question}}", input["question"])
+    prompt = f"""{{ llm_followup_prompt }}""".replace("{context}", context).replace("{question}", input["question"])
     return llm.invoke(prompt)
