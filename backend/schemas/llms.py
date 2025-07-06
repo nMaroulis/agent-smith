@@ -101,3 +101,8 @@ class ListLLMs(BaseModel):
 
 # Union type that can represent any LLM type
 LLM = RemoteLLM | LocalLLM
+
+
+class LLMValidationRequest(BaseModel):
+    provider: str  # "openai", "anthropic", etc.
+    api_key: str

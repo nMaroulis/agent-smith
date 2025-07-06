@@ -1,4 +1,4 @@
-from ...base import BaseLocalLLM
+from services.llms.base import BaseLocalLLM
 
 
 class LlamaCppLLM(BaseLocalLLM):

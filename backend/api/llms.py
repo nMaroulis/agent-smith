@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from schemas.llms import RemoteLLM, LocalLLM, ListLLMs, RemoteLLMOut, LocalLLMOut
+from schemas.llms import RemoteLLM, LocalLLM, ListLLMs, RemoteLLMOut, LocalLLMOut, LLMValidationRequest
 from crud.llms import get_remote_llms, create_remote_llm, update_remote_llm_by_id, get_remote_llm_by_id, delete_remote_llm_by_id, create_local_llm, get_local_llms, get_local_llm_by_id, update_local_llm_by_id, delete_local_llm_by_id
 from typing import Optional
 from sqlalchemy.orm import Session
 from db.session import get_db
+from services.llms.factory import get_llm_client
+
 
 router = APIRouter(prefix="/llms", tags=["LLM"])
 
@@ -51,26 +53,15 @@ def delete_api_key(id: int, db: Session = Depends(get_db)):
 
 # API Status Check
 
-class APIKeyRequest(BaseModel):
-    api_key: str
-
-@router.post("/validate-openai-key")
-def validate_openai_key(request: APIKeyRequest):
-    """
-    Validates an OpenAI API key by attempting to list available models.
-    """
+@router.post("/validate-key")
+def validate_llm_key(data: LLMValidationRequest):
     try:
-        client = OpenAI(api_key=request.api_key)
-        response = client.models.list()
-        model_ids = [model.id for model in response.data]
-        return {
-            "valid": True,
-            "models": model_ids
-        }
-    except AuthenticationError:
-        raise HTTPException(status_code=401, detail="Invalid OpenAI API key.")
-    except OpenAIError as e:
-        raise HTTPException(status_code=500, detail=f"OpenAI error: {str(e)}")
+        llm = get_llm_client(name=data.provider.lower().replace(" ", "_"))
+        if not llm.validate_key(api_key=data.api_key):
+            raise HTTPException(status_code=401, detail="Invalid API key.")
+        return {"valid": True} # , "models": llm.list_models()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 #############

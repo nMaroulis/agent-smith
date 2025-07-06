@@ -1,9 +1,9 @@
 from services.llms.providers.anthropic import AnthropicAPILLM
 from services.llms.providers.openai import OpenAIAPILLM
 from services.llms.local.llama_cpp import LlamaCppLLM
-# etc.
 
-def get_llm(name: str, **kwargs):
+
+def get_llm_client(name: str, **kwargs):
     if name == "anthropic":
         return AnthropicAPILLM()
     elif name == "openai":
