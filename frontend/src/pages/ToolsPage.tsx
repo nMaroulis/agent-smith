@@ -1,15 +1,24 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { FiPlus, FiCode, FiSearch, FiX, FiMaximize2, FiMinimize2, FiHelpCircle } from 'react-icons/fi';
-import { Popover } from '@headlessui/react';
+import { useState, useRef, useCallback, useMemo, useEffect, Suspense, lazy } from 'react';
 import { useServer } from '../contexts/ServerContext';
+import { FiCode, FiPlus, FiX, FiSearch, FiMaximize2, FiMinimize2, FiHelpCircle } from 'react-icons/fi';
+import { Popover } from '@headlessui/react';
 
-type IStandaloneCodeEditor = any;
-
+// Lazy load the Monaco Editor
 const MonacoEditor = lazy(() => import('@monaco-editor/react'));
 
+// Fallback component for editor loading
 const EditorLoading = () => (
-  <div className="p-4 bg-gray-800 rounded-lg">Loading editor...</div>
+  <div className="flex items-center justify-center h-full bg-gray-900">
+    <div className="animate-pulse text-gray-500">Loading editor...</div>
+  </div>
 );
+
+// Define types for the code editor
+interface IStandaloneCodeEditor {
+  getValue: () => string;
+  setValue: (value: string) => void;
+  focus: () => void;
+}
 
 type ToolType = 'rag' | 'web_search' | 'custom_code' | 'agent' | 'api_call' | 'llm_tool' | 'other';
 
@@ -21,6 +30,8 @@ interface ToolParameter {
   name: string;
   type: string;
   description: string;
+  required?: boolean;
+  default?: any;
 }
 
 interface ToolBase {
@@ -37,28 +48,27 @@ interface Tool extends ToolBase {
   id: number;
 }
 
-const toolTypeOptions = [
-  { value: 'rag', label: 'RAG' },
-  { value: 'web_search', label: 'Web Search' },
-  { value: 'custom_code', label: 'Custom Code' },
-  { value: 'agent', label: 'Agent' },
-  { value: 'api_call', label: 'API Call' },
-  { value: 'llm_tool', label: 'LLM Tool' },
-  { value: 'other', label: 'Other' },
-];
-
 const ToolsPage = () => {
+  // Initialize server URL from context
   const { serverUrl } = useServer();
+  
+  // State management
   const [tools, setTools] = useState<Tool[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<string>('all');
   const [isCreating, setIsCreating] = useState(false);
   const [editingTool, setEditingTool] = useState<Tool | null>(null);
+  const [isPreview, setIsPreview] = useState(false);
+  const [previewCode, setPreviewCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
+  
+  // Refs
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
   
+  // Form data state
   const [formData, setFormData] = useState<ToolBase>({
     name: '',
     description: '',
@@ -69,6 +79,44 @@ const ToolsPage = () => {
     parameters: []
   });
 
+  // Memoize the tool type options to prevent unnecessary re-renders
+  const toolTypeOptions = useMemo(() => [
+    { value: 'rag', label: 'RAG' },
+    { value: 'web_search', label: 'Web Search' },
+    { value: 'custom_code', label: 'Custom Code' },
+    { value: 'agent', label: 'Agent' },
+    { value: 'api_call', label: 'API Call' },
+    { value: 'llm_tool', label: 'LLM Tool' },
+    { value: 'other', label: 'Other' },
+  ], []);
+
+  // Fetch tools from the server
+  const fetchTools = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${serverUrl}/api/tools/`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch tools');
+      }
+      const data = await response.json();
+      setTools(data);
+      setError(null);
+      return data;
+    } catch (err) {
+      console.error('Error fetching tools:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch tools');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [serverUrl]);
+
+  // Initialize tools on component mount
+  useEffect(() => {
+    fetchTools().catch(console.error);
+  }, [fetchTools]);
+
+  // Reset form to initial state
   const resetForm = useCallback(() => {
     setFormData({
       name: '',
@@ -80,6 +128,9 @@ const ToolsPage = () => {
       parameters: []
     });
     setEditingTool(null);
+    setIsPreview(false);
+    setPreviewCode('');
+    setError(null);
   }, []);
 
   const toggleForm = useCallback(() => {
@@ -90,6 +141,7 @@ const ToolsPage = () => {
     }
   }, [isCreating, resetForm]);
   
+  // Handle editor initialization
   const handleEditorDidMount = useCallback((editor: IStandaloneCodeEditor) => {
     editorRef.current = editor;
     setTimeout(() => {
@@ -101,10 +153,12 @@ const ToolsPage = () => {
     }, 0);
   }, []);
   
+  // Toggle fullscreen mode
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(prev => !prev);
   }, []);
   
+  // Generate default RAG prompt
   const generateDefaultRAGPrompt = useCallback(() => {
     const defaultPrompt = `You are a helpful assistant that provides accurate information based on the retrieved context.
 
@@ -124,6 +178,7 @@ Please provide a detailed and accurate answer based on the context above. If the
     }));
   }, []);
 
+  // Generate default web search prompt
   const generateDefaultWebSearchPrompt = useCallback(() => {
     const defaultPrompt = `You are a helpful research assistant. Below are search results for the query: "{query}"
 
@@ -141,13 +196,15 @@ Please provide a comprehensive summary of the search results, focusing on the mo
     }));
   }, []);
 
+  // Handle code changes in the editor
   const handleCodeChange = useCallback((value: string = '') => {
     setFormData(prev => ({ ...prev, code: value }));
   }, []);
   
+  // Handle input changes in the form
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const target = e.target as HTMLInputElement;
-    const { name, type, dataset } = target;
+    const { name, type } = target;
     const value = type === 'checkbox' ? target.checked : target.value;
     
     // Handle nested config properties
@@ -168,26 +225,41 @@ Please provide a comprehensive summary of the search results, focusing on the mo
     }
   }, []);
 
-  const fetchTools = async () => {
+  const handlePreview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
     try {
-      setLoading(true);
-      const response = await fetch(`${serverUrl}/api/tools/`);
-      if (!response.ok) throw new Error('Failed to fetch tools');
-      const data = await response.json();
-      setTools(data);
+      const response = await fetch(`${serverUrl}/api/tools/preview_code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          // Ensure we don't send the ID for new tools
+          id: undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to generate preview');
+      }
+
+      const { code } = await response.json();
+      setPreviewCode(code);
+      setIsPreview(true);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Failed to generate preview');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  useEffect(() => {
-    fetchTools();
-  }, [serverUrl]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const url = editingTool 
         ? `${serverUrl}/api/tools/${editingTool.id}`
@@ -195,12 +267,17 @@ Please provide a comprehensive summary of the search results, focusing on the mo
       
       const method = editingTool ? 'PUT' : 'POST';
       
+      // Use preview code if available, otherwise use the form data
+      const submissionData = isPreview && previewCode
+        ? { ...formData, code: previewCode }
+        : formData;
+      
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       });
 
       if (!response.ok) throw new Error('Failed to save tool');
@@ -208,23 +285,50 @@ Please provide a comprehensive summary of the search results, focusing on the mo
       await fetchTools();
       resetForm();
       setIsCreating(false);
+      setIsPreview(false);
+      setPreviewCode('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save tool');
     }
   };
 
-  const handleEditTool = (tool: Tool) => {
-    setEditingTool(tool);
+  const handleEditTool = async (toolToEdit: Tool) => {
+    // First set the form data with the tool to edit
     setFormData({
-      name: tool.name,
-      description: tool.description || '',
-      type: tool.type,
-      config: tool.config || {},
-      code: tool.code || '',
-      is_active: tool.is_active,
-      parameters: tool.parameters || []
+      name: toolToEdit.name,
+      description: toolToEdit.description || '',
+      type: toolToEdit.type,
+      config: toolToEdit.config || {},
+      code: toolToEdit.code || '',
+      is_active: toolToEdit.is_active,
+      parameters: toolToEdit.parameters || []
     });
+    
+    setEditingTool(toolToEdit);
     setIsCreating(true);
+    
+    // Generate and show preview code when editing
+    try {
+      const response = await fetch(`${serverUrl}/api/tools/preview_code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...toolToEdit,
+          id: undefined, // Don't send ID for preview
+        }),
+      });
+
+      if (response.ok) {
+        const { code } = await response.json();
+        setPreviewCode(code);
+        setIsPreview(true);
+      }
+    } catch (err) {
+      console.error('Failed to generate preview:', err);
+      setError('Failed to generate code preview');
+    }
   };
 
   const handleDeleteTool = async (id: number | string) => {
@@ -348,22 +452,31 @@ Please provide a comprehensive summary of the search results, focusing on the mo
 
                   <div>
                     <label htmlFor="type" className="block text-sm font-medium text-gray-300 mb-1">
-                      Type *
+                      Tool Type
                     </label>
-                    <select
-                      id="type"
-                      name="type"
-                      required
-                      className="mt-1 block w-full border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-800 text-white"
-                      value={formData.type}
-                      onChange={handleInputChange}
-                    >
-                      {toolTypeOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    {isPreview ? (
+                      <input
+                        type="text"
+                        className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none sm:text-sm rounded-md bg-gray-700 text-gray-300 cursor-not-allowed"
+                        value={toolTypeOptions.find(opt => opt.value === formData.type)?.label || formData.type}
+                        disabled
+                      />
+                    ) : (
+                      <select
+                        id="type"
+                        name="type"
+                        className={`mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md ${editingTool ? 'bg-gray-700/50 text-gray-400 cursor-not-allowed' : 'bg-gray-700 text-white'}`}
+                        value={formData.type}
+                        onChange={handleInputChange}
+                        disabled={!!editingTool}
+                      >
+                        {toolTypeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   <div>
@@ -828,50 +941,91 @@ Please provide a comprehensive summary of the search results, focusing on the mo
                     <div className="mt-4">
                       <div className="flex justify-between items-center mb-1">
                         <label className="block text-sm font-medium text-gray-300">
-                          Code
+                          {isPreview ? 'Generated Code Preview' : 'Code'}
                         </label>
                         <button
                           type="button"
                           onClick={toggleFullscreen}
-                          className="text-gray-400 hover:text-blue-400 p-1 rounded-full"
-                          title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                          className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
                         >
-                          {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
+                          {isFullscreen ? <FiMinimize2 size={12} /> : <FiMaximize2 size={12} />}
                         </button>
                       </div>
-                      <div className={`border border-gray-700 rounded-md overflow-hidden ${isFullscreen ? 'fixed inset-4 z-50 bg-gray-900' : 'relative h-96'}`}>
+                      <div className={`${isFullscreen ? 'fixed inset-0 z-50 bg-gray-900 p-4' : 'relative'}`}>
                         {isFullscreen && (
-                          <div className="flex justify-between items-center p-2 bg-gray-800 border-b border-gray-700">
-                            <span className="text-sm font-medium text-gray-300">
-                              {formData.name || 'Untitled Tool'} - Python Code
-                            </span>
+                          <div className="absolute top-4 right-4 z-10">
                             <button
                               type="button"
                               onClick={toggleFullscreen}
-                              className="text-gray-400 hover:text-white"
+                              className="text-gray-300 hover:text-white"
                             >
                               <FiX size={20} />
                             </button>
                           </div>
                         )}
-                        <Suspense fallback={<EditorLoading />}>
-                          <MonacoEditor
-                            height={isFullscreen ? 'calc(100% - 40px)' : '100%'}
-                            defaultLanguage="python"
-                            value={formData.code}
-                            onChange={handleCodeChange}
-                            onMount={handleEditorDidMount}
-                            theme="vs-dark"
-                            options={{
-                              minimap: { enabled: true },
-                              scrollBeyondLastLine: false,
-                              fontSize: 14,
-                              wordWrap: 'on',
-                              automaticLayout: true,
-                              tabSize: 2,
-                            }}
-                          />
-                        </Suspense>
+                        {isPreview ? (
+                          <div className="h-96 w-full bg-gray-900 p-4 rounded-md overflow-auto">
+                            <pre className="text-gray-200 text-sm font-mono whitespace-pre-wrap">
+                              {previewCode || 'No code generated'}
+                            </pre>
+                          </div>
+                        ) : (
+                          <div className="h-96 w-full">
+                            <Suspense fallback={<EditorLoading />}>
+                              <MonacoEditor
+                                height="100%"
+                                language="python"
+                                theme="vs-dark"
+                                value={formData.code}
+                                onChange={handleCodeChange}
+                                onMount={handleEditorDidMount}
+                                options={{
+                                  minimap: { enabled: true },
+                                  scrollBeyondLastLine: false,
+                                  fontSize: 14,
+                                  wordWrap: 'on',
+                                  automaticLayout: true,
+                                }}
+                              />
+                            </Suspense>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {isPreview && formData.type !== 'custom_code' && (
+                    <div className="mt-4">
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-sm font-medium text-gray-300">
+                          Generated Code
+                        </label>
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={toggleFullscreen}
+                            className="text-gray-400 hover:text-gray-200"
+                            title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                          >
+                            {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="relative h-96 w-full bg-gray-900 p-4 rounded-md overflow-auto">
+                        {isFullscreen && (
+                          <div className="absolute top-4 right-4 z-10">
+                            <button
+                              type="button"
+                              onClick={toggleFullscreen}
+                              className="text-gray-300 hover:text-white"
+                            >
+                              <FiX size={20} />
+                            </button>
+                          </div>
+                        )}
+                        <pre className="text-gray-200 text-sm font-mono whitespace-pre-wrap">
+                          {previewCode || 'No code generated'}
+                        </pre>
                       </div>
                     </div>
                   )}
@@ -898,16 +1052,48 @@ Please provide a comprehensive summary of the search results, focusing on the mo
                           setIsCreating(false);
                           resetForm();
                         }}
-                        className="px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="px-4 py-2 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                       >
                         Cancel
                       </button>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        {editingTool ? 'Update Tool' : 'Create Tool'}
-                      </button>
+                      {isPreview ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setIsPreview(false)}
+                            className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                          >
+                            Back to Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isSubmitting ? 'Saving...' : 'Save Tool'}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handlePreview}
+                            disabled={isSubmitting}
+                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isSubmitting ? 'Generating...' : 'Preview Code'}
+                          </button>
+                          <button
+                            type="submit"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {editingTool ? 'Update Tool' : 'Create Tool'}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </form>

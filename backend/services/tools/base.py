@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
-from schemas import Tool
+from schemas.tools import ToolCreate
+import os
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 
 class BaseTool(ABC):
-    def __init__(self, tool: Tool):
+    def __init__(self, tool: ToolCreate):
         self.tool = tool
 
         # Setup Jinja2 once for all subclasses
@@ -35,10 +37,10 @@ class BaseTool(ABC):
 
 
 class BaseRAGTool(BaseTool):
-    def __init__(self, tool: Tool):
-        self.tool = tool
+    def __init__(self, tool: ToolCreate):
+        super().__init__(tool)
 
 
 class BaseWebSearchTool(BaseTool):
-    def __init__(self, tool: Tool):
-        self.tool = tool
+    def __init__(self, tool: ToolCreate):
+        super().__init__(tool)

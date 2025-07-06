@@ -3,19 +3,21 @@ from services.tools.rag.qdrant import QdrantRAGTool
 from services.tools.base import BaseTool
 from services.tools.web_search.duckduckgo import DuckDuckGoWebSearchTool
 from schemas.tools import ToolCreate
+from models.tools import ToolType
 
 
 def get_tool(tool: ToolCreate) -> BaseTool:
-    if tool.type == "rag":
-        if tool.library == "chromadb":
+    # .lower().replace(" ", "_")
+    if tool.type == ToolType.RAG:
+        if tool.config.get("library", "").lower() == "chromadb":
             return ChromaRAGTool(tool)
-        elif tool.library == "qdrant":
+        elif tool.config.get("library", "").lower() == "qdrant":
             return QdrantRAGTool(tool)
         else:
-            raise ValueError("Unsupported RAG library")
-    elif tool.type == "web_search":
-        if tool.library == "duckduckgo":
+            raise ValueError(f"Unsupported RAG library: {tool.library}")
+    elif tool.type == ToolType.WEB_SEARCH:
+        if tool.config.get("library", "").lower() == "duckduckgo":
             return DuckDuckGoWebSearchTool(tool)
         else:
-            raise ValueError("Unsupported web search library")
-    raise ValueError("Unsupported tool type")
+            raise ValueError(f"Unsupported web search library: {tool.library}")
+    raise ValueError(f"Unsupported tool type: {tool.type}")

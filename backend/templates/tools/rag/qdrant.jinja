@@ -1,0 +1,80 @@
+from langchain.vectorstores import Qdrant
+
+{% set has_local = vector_store_path is defined %}
+{% set has_remote = vector_store_url is defined %}
+
+
+{% if has_local %}
+from qdrant_client import QdrantClient
+
+local_client = QdrantClient(path="{{ vector_store_path }}")
+local_vectorstore = Qdrant(
+    client=local_client,
+    collection_name="{{ index_name }}",
+    embeddings=embeddings_model
+)
+{% endif %}
+
+{% if has_remote %}
+from qdrant_client import QdrantClient
+
+remote_client = QdrantClient(url="{{ vector_store_url }}")
+remote_vectorstore = Qdrant(
+    client=remote_client,
+    collection_name="{{ index_name }}",
+    embeddings=embeddings_model
+)
+{% endif %}
+
+{% if has_local and has_remote %}
+def {{ name }}(input):
+    local_docs = local_vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={
+            "k": {{ top_k }}
+            {% if similarity_threshold is defined %}
+            , "score_threshold": {{ similarity_threshold }}
+            {% endif %}
+        }
+    ).get_relevant_documents(input["question"])
+
+    remote_docs = remote_vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={
+            "k": {{ top_k }}
+            {% if similarity_threshold is defined %}
+            , "score_threshold": {{ similarity_threshold }}
+            {% endif %}
+        }
+    ).get_relevant_documents(input["question"])
+
+    all_docs = local_docs + remote_docs
+    context = " ".join([doc.page_content for doc in all_docs])
+{% elif has_remote %}
+def {{ name }}(input):
+    docs = remote_vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={
+            "k": {{ top_k }}
+            {% if similarity_threshold is defined %}
+            , "score_threshold": {{ similarity_threshold }}
+            {% endif %}
+        }
+    ).get_relevant_documents(input["question"])
+    context = " ".join([doc.page_content for doc in docs])
+{% elif has_local %}
+def {{ name }}(input):
+    docs = local_vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={
+            "k": {{ top_k }}
+            {% if similarity_threshold is defined %}
+            , "score_threshold": {{ similarity_threshold }}
+            {% endif %}
+        }
+    ).get_relevant_documents(input["question"])
+    context = " ".join([doc.page_content for doc in docs])
+{% endif %}
+
+    prompt = f"""{{ llm_followup_prompt }}""".replace("{context}", context).replace("{question}", input["question"])
+    return llm.invoke(prompt)

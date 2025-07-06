@@ -49,6 +49,29 @@ def delete_api_key(id: int, db: Session = Depends(get_db)):
     return deleted
 
 
+# API Status Check
+
+class APIKeyRequest(BaseModel):
+    api_key: str
+
+@router.post("/validate-openai-key")
+def validate_openai_key(request: APIKeyRequest):
+    """
+    Validates an OpenAI API key by attempting to list available models.
+    """
+    try:
+        client = OpenAI(api_key=request.api_key)
+        response = client.models.list()
+        model_ids = [model.id for model in response.data]
+        return {
+            "valid": True,
+            "models": model_ids
+        }
+    except AuthenticationError:
+        raise HTTPException(status_code=401, detail="Invalid OpenAI API key.")
+    except OpenAIError as e:
+        raise HTTPException(status_code=500, detail=f"OpenAI error: {str(e)}")
+
 
 #############
 ## Local LLMs

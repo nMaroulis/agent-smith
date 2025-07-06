@@ -1,17 +1,18 @@
 from services.tools.base import BaseRAGTool
-from schemas import Tool
+from schemas.tools import ToolCreate
 
 
 class ChromaRAGTool(BaseRAGTool):
 
-    def __init__(self, tool: Tool):
+    def __init__(self, tool: ToolCreate):
         super().__init__(tool)
 
 
     def to_code(self) -> str:
-        return self.render_template("tools/rag/chroma_rag_tool.py.jinja",
-            name=self.tool.name,
-            vector_store_path=self.tool.config.get("vector_store_path", "./data"),
+        return self.render_template("tools/rag/chroma.jinja",
+            name=self.tool.name.lower().replace(" ", "_"),
+            vector_store_path=self.tool.config.get("vector_store_path"),
+            vector_store_url=self.tool.config.get("vector_store_url"),
             index_name=self.tool.config.get("index_name", "default"),
             top_k=self.tool.config.get("retriever_top_k", 3),
             similarity_threshold=self.tool.config.get("similarity_threshold"),
