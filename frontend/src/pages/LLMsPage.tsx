@@ -32,6 +32,8 @@ const LLMsPage = () => {
   const [selectedModel, setSelectedModel] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationStatus, setValidationStatus] = useState<{valid: boolean | null, message: string}>({valid: null, message: ''});
   const [error, setError] = useState<string | null>(null);
 
   // Helper function to get provider display name
@@ -155,6 +157,49 @@ const LLMsPage = () => {
     setName('');
     setError(null);
     setIsEditing(null);
+    setValidationStatus({valid: null, message: ''});
+  };
+
+  const validateApiKey = async () => {
+    if (!apiKey) {
+      setValidationStatus({valid: false, message: 'API key is required'});
+      return;
+    }
+
+    setIsValidating(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/validate-key`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider: apiProvider,
+          api_key: apiKey  // This matches the backend schema's field name
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to validate API key');
+      }
+
+      setValidationStatus({
+        valid: data.valid,
+        message: data.message || (data.valid ? 'API key is valid' : 'Invalid API key')
+      });
+    } catch (err) {
+      console.error('Validation error:', err);
+      setValidationStatus({
+        valid: false,
+        message: err instanceof Error ? err.message : 'Failed to validate API key'
+      });
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   // Render the list of LLMs
@@ -472,22 +517,75 @@ onClick={() => setLocalProvider('llama-cpp' as APIProvider)}
                   <label className="block text-sm font-medium text-gray-300 mb-1">
                     API Key
                   </label>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder={
-                        apiProvider === 'openai' ? 'sk-...' : 
-                        apiProvider === 'anthropic' ? 'sk-ant-...' :
-                        'hf_...'
-                      }
-                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
-                      required
-                    />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <FiKey className="h-4 w-4 text-gray-400" />
+                  <div className="space-y-2">
+                    <div className="relative flex items-center">
+                      <input
+                        type="password"
+                        value={apiKey}
+                        onChange={(e) => {
+                          setApiKey(e.target.value);
+                          // Reset validation when key changes
+                          if (validationStatus.valid !== null) {
+                            setValidationStatus({valid: null, message: ''});
+                          }
+                        }}
+                        placeholder={
+                          apiProvider === 'openai' ? 'sk-...' : 
+                          apiProvider === 'anthropic' ? 'sk-ant-...' :
+                          'hf_...'
+                        }
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-32"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={validateApiKey}
+                        disabled={!apiKey || isValidating}
+                        className={`absolute right-2 px-3 py-1 text-xs font-medium rounded-md flex items-center space-x-1.5 ${
+                          validationStatus.valid === true 
+                            ? 'bg-green-900/50 text-green-300 hover:bg-green-800/50' 
+                            : validationStatus.valid === false 
+                              ? 'bg-red-900/50 text-red-300 hover:bg-red-800/50' 
+                              : 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/50'
+                        } transition-colors ${!apiKey ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={!apiKey ? 'Enter an API key to validate' : 'Validate API key'}
+                      >
+                        {isValidating ? (
+                          <>
+                            <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            <span>Validating...</span>
+                          </>
+                        ) : validationStatus.valid === true ? (
+                          <>
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Valid</span>
+                          </>
+                        ) : validationStatus.valid === false ? (
+                          <>
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span>Invalid</span>
+                          </>
+                        ) : (
+                          <>
+                            <FiKey className="h-3 w-3" />
+                            <span>Validate</span>
+                          </>
+                        )}
+                      </button>
                     </div>
+                    {validationStatus.message && (
+                      <p className={`text-xs ${validationStatus.valid === true 
+                        ? 'text-green-400' 
+                        : validationStatus.valid === false 
+                          ? 'text-red-400' 
+                          : 'text-gray-400'}`}>
+                        {validationStatus.message}
+                      </p>
+                    )}
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
                     Your API key is stored locally on your PC in an SQLite encrypted database.

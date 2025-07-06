@@ -4,8 +4,9 @@ from anthropic import Anthropic
 
 class AnthropicAPILLM(BaseAPILLM):
     """Anthropic API LLM."""
-    def __init__(self, api_key: str):
-        super().__init__(api_key)
+    def __init__(self):
+        super().__init__("anthropic")
+        self.client = None # TODO add client initialization with anthropic and api key from DB
     
 
     def generate(self, prompt: str, **kwargs) -> str:
@@ -26,13 +27,15 @@ class AnthropicAPILLM(BaseAPILLM):
         """
         try:
             temp_client = Anthropic(api_key=api_key)
-            temp_client.models()
+            temp_client.models.list()
             return True
         except AnthropicAuthError:
             return False
-        except Exception:
+        except Exception as e:
+            print(e)
             return False
-    
+
+
     def list_models(self):
         """List available models from the Anthropic client."""
         return [model["id"] for model in self.client.models.list()["data"]]

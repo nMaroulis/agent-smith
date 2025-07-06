@@ -12,12 +12,6 @@ class BaseLLM(ABC):
         """Generate a response from the LLM."""
         ...
 
-
-    @abstractmethod
-    def get_name(self) -> str:
-        """Get the name of the LLM."""
-        return self.name
-
     
     @abstractmethod
     def list_models(self) -> list[str]:
@@ -28,8 +22,8 @@ class BaseLLM(ABC):
 class BaseAPILLM(BaseLLM):
     """Base class for API LLMs."""
 
-    def __init__(self):
-        super().__init__("BaseAPILLM")
+    def __init__(self, name: str):
+        super().__init__(name)
 
 
     @staticmethod
