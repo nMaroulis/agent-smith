@@ -55,15 +55,12 @@ def delete_api_key(id: int, db: Session = Depends(get_db)):
 
 @router.post("/validate-key")
 async def validate_llm_key(data: LLMValidationRequest):
-    print(data)
     try:
-        print(f"Validating key for provider: {data.provider}")
         llm = get_llm_client(name=data.provider.lower().replace(" ", "_"))
         if not llm.validate_key(api_key=data.api_key):
             return {"valid": False, "message": "Invalid API key"}
         return {"valid": True, "message": "API key is valid"}
     except Exception as e:
-        print(f"Validation error: {str(e)}")
         return {"valid": False, "message": f"Validation error: {str(e)}"}
 
 

@@ -38,3 +38,18 @@ class OpenAIAPILLM(BaseAPILLM):
     def list_models(self):
         """List available models from the OpenAI client."""
         return [model.id for model in self.client.models.list().data]
+    
+
+    def list_embeddings_models(self):
+        """
+        List available embeddings models from the OpenAI client.
+        Currently hardcoded. TODO: implement filtering in models list.
+        Returns:
+            list[str]: List of available embeddings models.
+        """
+        return [
+            "text-embedding-3-small",
+            "text-embedding-3-large",
+            "text-embedding-ada-002"
+        ]
+        

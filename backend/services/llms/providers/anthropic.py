@@ -39,3 +39,14 @@ class AnthropicAPILLM(BaseAPILLM):
     def list_models(self):
         """List available models from the Anthropic client."""
         return [model["id"] for model in self.client.models.list()["data"]]
+
+
+    def list_embeddings_models(self):
+        """
+        List available embeddings models from the Anthropic client.
+        Currently hardcoded. TODO: implement filtering in models list.
+        Returns:
+            list[str]: List of available embeddings models.
+        """
+        # raise NotImplementedError("Anthropic does not support embedding models.")
+        return []

@@ -19,6 +19,12 @@ class BaseLLM(ABC):
         ...
 
 
+    @abstractmethod
+    def list_embeddings_models(self) -> list[str]:
+        """List available embeddings models."""
+        ...
+
+
 class BaseAPILLM(BaseLLM):
     """Base class for API LLMs."""
 
