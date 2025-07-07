@@ -28,18 +28,15 @@ class BaseLLM(ABC):
 class BaseAPILLM(BaseLLM):
     """Base class for API LLMs."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, api_key: str):
         super().__init__(name)
+        self.api_key = api_key
 
 
-    @staticmethod
     @abstractmethod
-    def validate_key(api_key: str) -> bool:
+    def validate_key(self) -> bool:
         """
         Validate the API key.
-
-        Args:
-            api_key (str): The API key to validate.
 
         Returns:
             bool: True if the key is valid, otherwise False.

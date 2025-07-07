@@ -129,33 +129,11 @@ const Navigation = () => {
   );
 };
 
-const LLM_PROVIDERS = [
-  { id: 'openai', name: 'OpenAI' },
-  { id: 'anthropic', name: 'Anthropic' },
-  { id: 'google', name: 'Google' },
-  { id: 'meta', name: 'Meta' },
-];
-
-const LLM_MODELS = {
-  openai: [
-    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
-    { id: 'gpt-4', name: 'GPT-4' },
-    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
-  ],
-  anthropic: [
-    { id: 'claude-3-opus', name: 'Claude 3 Opus' },
-    { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet' },
-    { id: 'claude-3-haiku', name: 'Claude 3 Haiku' },
-  ],
-  google: [
-    { id: 'gemini-pro', name: 'Gemini Pro' },
-    { id: 'gemini-ultra', name: 'Gemini Ultra' },
-  ],
-  meta: [
-    { id: 'llama-3-70b', name: 'Llama 3 70B' },
-    { id: 'llama-3-8b', name: 'Llama 3 8B' },
-  ],
-};
+interface RemoteLLM {
+  id: number;
+  provider: string;
+  name: string;
+}
 
 const TOOL_OPTIONS = [
   { id: 'process_data', name: 'Process Data' },
@@ -168,9 +146,110 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
   const [isProviderOpen, setIsProviderOpen] = useState(false);
   const [isModelOpen, setIsModelOpen] = useState(false);
   const [isToolOpen, setIsToolOpen] = useState(false);
+  const [llmType, setLlmType] = useState<'local' | 'remote'>('remote');
+  const [availableModels, setAvailableModels] = useState<Array<{id: string, name: string}>>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [llmProviders, setLlmProviders] = useState<RemoteLLM[]>([]);
+  const [isLoadingProviders, setIsLoadingProviders] = useState(true);
 
   const currentProvider = node?.data.llm?.provider || '';
-  const availableModels = currentProvider ? LLM_MODELS[currentProvider as keyof typeof LLM_MODELS] || [] : [];
+
+  // Fetch available LLM providers when llmType changes
+  useEffect(() => {
+    const fetchProviders = async () => {
+      try {
+        setIsLoadingProviders(true);
+        const endpoint = llmType === 'local' 
+          ? 'http://localhost:8000/api/llms/local' 
+          : 'http://localhost:8000/api/llms/remote';
+        
+        const response = await fetch(endpoint);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${llmType} LLM providers`);
+        }
+        const providers = await response.json();
+        setLlmProviders(providers);
+        
+        // If we have a selected provider from node data, find and set it
+        if (node?.data.llm?.provider) {
+          const matchedProvider = providers.find((p: RemoteLLM) => 
+            p.provider === node.data.llm?.provider
+          );
+          if (matchedProvider) {
+            setSelectedProvider(matchedProvider);
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching ${llmType} LLM providers:`, error);
+        setLlmProviders([]);
+      } finally {
+        setIsLoadingProviders(false);
+      }
+    };
+
+    fetchProviders();
+  }, [llmType]);
+
+  // Track the selected provider separately from the node data
+  const [selectedProvider, setSelectedProvider] = useState<RemoteLLM | null>(null);
+
+  // Initialize selected provider when node data changes
+  useEffect(() => {
+    if (node?.data.llm?.provider) {
+      setSelectedProvider({
+        id: 0, // This will be updated when providers are loaded
+        provider: node.data.llm.provider,
+        name: node.data.llm.providerName || node.data.llm.provider
+      });
+    } else {
+      setSelectedProvider(null);
+    }
+  }, [node?.data.llm?.provider, node?.data.llm?.providerName]);
+
+  // Fetch models when the selected provider or llmType changes
+  useEffect(() => {
+    const fetchModels = async () => {
+      if (!selectedProvider) {
+        setAvailableModels([]);
+        return;
+      }
+
+      try {
+        setIsLoadingModels(true);
+        let url: URL;
+        
+        if (llmType === 'remote') {
+          url = new URL('http://localhost:8000/api/llms/remote/models/available');
+          url.searchParams.append('provider', selectedProvider.provider);
+          url.searchParams.append('name', selectedProvider.name);
+        } else {
+          url = new URL('http://localhost:8000/api/llms/local/models/available');
+          url.searchParams.append('provider', selectedProvider.provider);
+        }
+        
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch models');
+        }
+        
+        const models = await response.json();
+        setAvailableModels(Array.isArray(models) ? models : []);
+      } catch (error) {
+        console.error('Error fetching models:', error);
+        setAvailableModels([]);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+
+    fetchModels();
+  }, [selectedProvider, llmType]);
 
   const handleChange = (field: string, value: any) => {
     if (!node) return;
@@ -183,25 +262,37 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
     });
   };
 
-  const handleProviderSelect = (provider: { id: string; name: string }) => {
-    // When provider changes, reset the model
+  const handleProviderSelect = (provider: RemoteLLM) => {
+    setSelectedProvider(provider);
+    // Update the node data
     handleChange('llm', { 
-      provider: provider.id,
+      provider: provider.provider,
       providerName: provider.name,
       model: '',
-      modelName: ''
+      modelName: 'Select a model'
     });
     setIsProviderOpen(false);
+    // Clear models when provider changes
+    setAvailableModels([]);
   };
 
-  const handleModelSelect = (model: { id: string; name: string }) => {
+  const handleModelSelect = (model: { id: string; name: string } | null) => {
     if (!node?.data.llm) return;
-    handleChange('llm', { 
+    
+    const updatedLlm = {
       ...node.data.llm,
-      model: model.id,
-      modelName: model.name
-    });
+      model: model?.id || '',
+      modelName: model?.name || 'Select a model'
+    };
+    
+    handleChange('llm', updatedLlm);
     setIsModelOpen(false);
+    
+    // Force a re-fetch of models to ensure we have the latest list
+    if (selectedProvider) {
+      setAvailableModels([]);
+      setSelectedProvider({...selectedProvider});
+    }
   };
 
   const handleToolSelect = (tool: { id: string; name: string }) => {
@@ -212,6 +303,24 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
   const handleAddTool = () => {
     // This would open a modal or navigate to a tool creation page in a real app
     console.log('Add new tool');
+  };
+
+  const handleLlmTypeChange = (type: 'local' | 'remote') => {
+    if (llmType !== type) {
+      setLlmType(type);
+      setAvailableModels([]);
+      setSelectedProvider(null); // Clear the selected provider
+      
+      // Reset the LLM data when switching types
+      if (node?.data.llm) {
+        handleChange('llm', {
+          provider: '',
+          providerName: 'Select Provider',
+          model: '',
+          modelName: 'Select a model'
+        });
+      }
+    }
   };
 
   return (
@@ -236,7 +345,34 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
               />
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Type</label>
+                <div className="flex space-x-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => handleLlmTypeChange('local')}
+                    className={`flex-1 py-2 px-3 text-sm rounded-lg border ${
+                      llmType === 'local' 
+                        ? 'bg-blue-600 border-blue-600 text-white' 
+                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600/50'
+                    }`}
+                  >
+                    Local
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLlmTypeChange('remote')}
+                    className={`flex-1 py-2 px-3 text-sm rounded-lg border ${
+                      llmType === 'remote' 
+                        ? 'bg-blue-600 border-blue-600 text-white' 
+                        : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600/50'
+                    }`}
+                  >
+                    Remote
+                  </button>
+                </div>
+              </div>
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Provider</label>
                 <div className="relative">
@@ -245,25 +381,34 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
                     onClick={() => setIsProviderOpen(!isProviderOpen)}
                     className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
-                    <span>{node.data.llm?.providerName || 'Select Provider'}</span>
+                    <span>{
+                      selectedProvider?.name || 
+                      (isLoadingProviders ? 'Loading...' : `Select ${llmType} Provider`)
+                    }</span>
                     <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isProviderOpen ? 'transform rotate-180' : ''}`} />
                   </button>
                   {isProviderOpen && (
                     <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
                       <div className="py-1 max-h-60 overflow-auto">
-                        {LLM_PROVIDERS.map((provider) => (
+                        {isLoadingProviders ? (
+                          <div key="loading" className="px-4 py-2 text-sm text-gray-400">Loading providers...</div>
+                        ) : llmProviders.length > 0 ? (
+                          llmProviders.map((provider) => (
                           <button
                             key={provider.id}
                             onClick={() => handleProviderSelect(provider)}
                             className={`w-full text-left px-4 py-2 text-sm ${
-                              node.data.llm?.provider === provider.id
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-300 hover:bg-gray-700'
+                              selectedProvider?.id === provider.id
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-300 hover:bg-gray-700'
                             }`}
                           >
-                            {provider.name}
+                            {provider.name} ({provider.provider})
                           </button>
-                        ))}
+                        )))
+                        : (
+                          <div key="no-providers" className="px-4 py-2 text-sm text-gray-400">No providers available</div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -275,22 +420,39 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
                 <div className="relative">
                   <button
                     type="button"
-                    disabled={!currentProvider}
-                    onClick={() => setIsModelOpen(!isModelOpen)}
+                    disabled={!currentProvider || isLoadingModels}
+                    onClick={() => !isLoadingModels && setIsModelOpen(!isModelOpen)}
                     className={`w-full flex items-center justify-between bg-gray-700 border ${
-                      currentProvider ? 'border-gray-600' : 'border-gray-700 bg-gray-800/50 cursor-not-allowed'
+                      currentProvider && !isLoadingModels 
+                        ? 'border-gray-600' 
+                        : 'border-gray-700 bg-gray-800/50 cursor-not-allowed'
                     } rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                   >
-                    <span className={!currentProvider ? 'text-gray-500' : ''}>
-                      {node.data.llm?.modelName || (currentProvider ? 'Select Model' : 'Select provider first')}
+                    <span className={!currentProvider || isLoadingModels ? 'text-gray-500' : ''}>
+                      {isLoadingModels 
+                        ? 'Loading models...' 
+                        : node.data.llm?.modelName || (currentProvider ? 'Select a model' : 'Select provider first')}
                     </span>
-                    <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${
-                      isModelOpen ? 'transform rotate-180' : ''
-                    } ${!currentProvider ? 'opacity-50' : ''}`} />
+                    {!isLoadingModels && (
+                      <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${
+                        isModelOpen ? 'transform rotate-180' : ''
+                      } ${!currentProvider ? 'opacity-50' : ''}`} />
+                    )}
                   </button>
-                  {isModelOpen && currentProvider && (
+                  {isModelOpen && currentProvider && availableModels.length > 0 && (
                     <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
                       <div className="py-1 max-h-60 overflow-auto">
+                        <button
+                          key="select-none"
+                          onClick={() => handleModelSelect(null)}
+                          className={`w-full text-left px-4 py-2 text-sm ${
+                            !node.data.llm?.model
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-300 hover:bg-gray-700'
+                          }`}
+                        >
+                          Select a model
+                        </button>
                         {availableModels.map((model) => (
                           <button
                             key={model.id}
@@ -301,9 +463,18 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
                                 : 'text-gray-300 hover:bg-gray-700'
                             }`}
                           >
-                            {model.name}
+                            {model.name} ({model.id})
                           </button>
                         ))}
+                      </div>
+                    </div>
+                  )}
+                  {isModelOpen && currentProvider && availableModels.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
+                      <div className="px-4 py-2 text-sm text-gray-400">
+                        {llmType === 'local' 
+                          ? 'No local models available' 
+                          : 'No models available for this provider'}
                       </div>
                     </div>
                   )}

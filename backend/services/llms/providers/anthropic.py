@@ -4,30 +4,25 @@ from anthropic import Anthropic
 
 class AnthropicAPILLM(BaseAPILLM):
     """Anthropic API LLM."""
-    def __init__(self):
-        super().__init__("anthropic")
-        self.client = None # TODO add client initialization with anthropic and api key from DB
-    
+    def __init__(self, api_key: str):
+        super().__init__("anthropic", api_key)
+        self.client = Anthropic(api_key=self.api_key)
+
 
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate a response from the LLM."""
         ...
     
 
-    @staticmethod
-    def validate_key(api_key: str) -> bool:
+    def validate_key(self) -> bool:
         """
         Validate the API key by attempting to list models from the Anthropic API.
-
-        Args:
-            api_key (str): The API key to validate.
 
         Returns:
             bool: True if the API key is valid, False if it is invalid.
         """
         try:
-            temp_client = Anthropic(api_key=api_key)
-            temp_client.models.list()
+            self.client.models.list()
             return True
         except AnthropicAuthError:
             return False
@@ -36,12 +31,18 @@ class AnthropicAPILLM(BaseAPILLM):
             return False
 
 
-    def list_models(self):
+    def list_models(self) -> list[str]:
         """List available models from the Anthropic client."""
-        return [model["id"] for model in self.client.models.list()["data"]]
+        try:
+            models = self.client.models.list()
+            # Convert ModelInfo objects to model IDs
+            return [model.id for model in models.data]
+        except Exception as e:
+            print(f"Error listing Anthropic models: {e}")
+            return []
 
 
-    def list_embeddings_models(self):
+    def list_embeddings_models(self) -> list[str]:
         """
         List available embeddings models from the Anthropic client.
         Currently hardcoded. TODO: implement filtering in models list.

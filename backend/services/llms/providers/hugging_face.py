@@ -3,35 +3,31 @@ from huggingface_hub import InferenceClient
 
 class HuggingFaceAPILLM(BaseAPILLM):
     """Hugging Face API LLM."""
-    def __init__(self):
-        super().__init__(name="huggingface")
-        self.client = None # TODO add client initialization with huggingface and api key from DB
+    def __init__(self, api_key: str):
+        super().__init__(name="huggingface", api_key=api_key)
+        self.client = InferenceClient(api_key=self.api_key)
     
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate a response from the LLM."""
         ...
     
-    @staticmethod
-    def validate_key(api_key: str) -> bool:
+    def validate_key(self) -> bool:
         """
         Validate the API key.
-
-        Args:
-            api_key (str): The API key to validate.
 
         Returns:
             bool: True if the key is valid, otherwise False.
         """
         try:
-            temp_client = InferenceClient(api_key=api_key)
-            temp_client.models.list()
+            self.client.models.list()
             return True
         except Exception as e:
             print(e)
             return False
         
-    def list_models(self):
+    def list_models(self) -> list[str]:
         """List available models from the Hugging Face client."""
+
         return [
             # 🔷 Open-source Chat Models
             "mistralai/Mistral-7B-Instruct-v0.2",        # Top open-source model for chat
@@ -62,7 +58,7 @@ class HuggingFaceAPILLM(BaseAPILLM):
             "01-ai/Yi-34B-Chat",                         # High-quality multilingual chat model
         ]
 
-    def list_embeddings_models(self):
+    def list_embeddings_models(self) -> list[str]:
         """
         List available embeddings models from the Hugging Face client.
         Currently hardcoded. TODO: implement filtering in models list.

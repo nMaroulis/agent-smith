@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from models.llms import LLMRemote, LLMLocal
 from typing import Optional
-from core.encryption import fernet_encrypt
+from core.encryption import fernet_encrypt, fernet_decrypt
 
 
 #####################
@@ -46,6 +46,12 @@ def delete_remote_llm_by_id(db: Session, id: int):
     db.commit()
     return llm
 
+
+def get_api_key_by_name(db: Session, provider: str, name: str) -> Optional[str]:
+    llm = db.query(LLMRemote).filter_by(provider=provider, name=name).first()
+    if not llm:
+        return None
+    return fernet_decrypt(llm.api_key)
 
 ###############
 ## Local LLMs

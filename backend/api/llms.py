@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from schemas.llms import RemoteLLM, LocalLLM, ListLLMs, RemoteLLMOut, LocalLLMOut, LLMValidationRequest
-from crud.llms import get_remote_llms, create_remote_llm, update_remote_llm_by_id, get_remote_llm_by_id, delete_remote_llm_by_id, create_local_llm, get_local_llms, get_local_llm_by_id, update_local_llm_by_id, delete_local_llm_by_id
+from crud.llms import get_remote_llms, create_remote_llm, update_remote_llm_by_id, get_remote_llm_by_id, delete_remote_llm_by_id, create_local_llm, get_local_llms, get_local_llm_by_id, update_local_llm_by_id, delete_local_llm_by_id, get_api_key_by_name
 from typing import Optional
 from sqlalchemy.orm import Session
 from db.session import get_db
@@ -51,13 +51,24 @@ def delete_api_key(id: int, db: Session = Depends(get_db)):
     return deleted
 
 
+@router.get("/remote/models/available", response_model=list[str])
+async def get_available_remote_models(provider: str = Query(..., description="The LLM provider (e.g., openai, anthropic)"), name: str = Query(..., description="The LLM name"), db: Session = Depends(get_db)):
+    try:
+        api_key = get_api_key_by_name(db, provider=provider, name=name)
+        llm = get_llm_client(provider=provider.lower().replace(" ", "_"), api_key=api_key)
+        return llm.list_models()
+    except Exception as e:
+        print(e)
+        return {"error": f"Validation error: {str(e)}"}
+
+
 # API Status Check
 
 @router.post("/validate-key")
 async def validate_llm_key(data: LLMValidationRequest):
     try:
-        llm = get_llm_client(name=data.provider.lower().replace(" ", "_"))
-        if not llm.validate_key(api_key=data.api_key):
+        llm = get_llm_client(provider=data.provider.lower().replace(" ", "_"), api_key=data.api_key)
+        if not llm.validate_key():
             return {"valid": False, "message": "Invalid API key"}
         return {"valid": True, "message": "API key is valid"}
     except Exception as e:
@@ -97,3 +108,12 @@ def delete_local_llm(id: int, db: Session = Depends(get_db)):
     if not deleted:
         raise HTTPException(status_code=404, detail="LLM not found")
     return deleted
+
+
+@router.get("/local/models/available", response_model=list[str])
+async def get_available_local_models(provider: str):
+    try:
+        llm = get_llm_client(provider=provider.lower().replace(" ", "_"))
+        return llm.list_models()
+    except Exception as e:
+        return {"error": f"Validation error: {str(e)}"}

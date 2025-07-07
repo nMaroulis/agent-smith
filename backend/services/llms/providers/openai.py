@@ -4,30 +4,30 @@ from openai import OpenAI, AuthenticationError, OpenAIError
 
 class OpenAIAPILLM(BaseAPILLM):
     """OpenAI API LLM."""
-    def __init__(self):
-        super().__init__(name="openai")
-        self.client = None # TODO add client initialization with openAI and api key from DB
+
+    def __init__(self, api_key: str):
+        super().__init__(name="openai", api_key=api_key)
+        self.client = OpenAI(api_key=self.api_key)
 
 
     def generate(self, prompt: str, **kwargs) -> str:
-        """Generate a response from the LLM."""
-        ...
+        """Generate a response from the LLM. - Dummy code"""
+        return self.client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            **kwargs
+        ).choices[0].message.content
 
 
-    @staticmethod
-    def validate_key(api_key: str) -> bool:
+    def validate_key(self) -> bool:
         """
         Validate the API key by attempting to list models from the OpenAI API.
-
-        Args:
-            api_key (str): The API key to validate.
 
         Returns:
             bool: True if the API key is valid, False if it is invalid.
         """
         try:
-            temp_client = OpenAI(api_key=api_key)
-            temp_client.models.list()
+            self.client.models.list()
             return True
         except AuthenticationError:
             return False
@@ -35,12 +35,18 @@ class OpenAIAPILLM(BaseAPILLM):
             return False
 
 
-    def list_models(self):
+    def list_models(self) -> list[str]:
         """List available models from the OpenAI client."""
-        return [model.id for model in self.client.models.list().data]
+        try:
+            return [model.id for model in self.client.models.list().data]
+        except OpenAIError:
+            return []
+        except Exception as e:
+            print(e)
+            return []
     
 
-    def list_embeddings_models(self):
+    def list_embeddings_models(self) -> list[str]:
         """
         List available embeddings models from the OpenAI client.
         Currently hardcoded. TODO: implement filtering in models list.
