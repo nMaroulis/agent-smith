@@ -1,5 +1,5 @@
 from services.llms.base import BaseAPILLM
-from huggingface_hub import HuggingFaceHub, AuthenticationError
+from huggingface_hub import InferenceClient
 
 class HuggingFaceAPILLM(BaseAPILLM):
     """Hugging Face API LLM."""
@@ -23,11 +23,9 @@ class HuggingFaceAPILLM(BaseAPILLM):
             bool: True if the key is valid, otherwise False.
         """
         try:
-            temp_client = HuggingFaceHub(api_key=api_key)
+            temp_client = InferenceClient(api_key=api_key)
             temp_client.models.list()
             return True
-        except AuthenticationError:
-            return False
         except Exception as e:
             print(e)
             return False
