@@ -3,3 +3,8 @@ __pycache__
 .env.example
 storage/test.db
 backend/tests/*
+backend/.venv
+frontend/node_modules
+frontend/.venv
+frontend/.vscode
+frontend/.idea

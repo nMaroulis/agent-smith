@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiRefreshCw, FiEdit2, FiTrash2, FiCpu, FiServer, FiAlertCircle, FiKey } from 'react-icons/fi'; // Removed unused FiChevronDown
+import { FiRefreshCw, FiEdit2, FiTrash2, FiCpu, FiServer, FiAlertCircle, FiKey, FiArrowLeft } from 'react-icons/fi';
 import { llmService, type LLM, type APIProvider } from '../services/llmService';
 
 type LLMType = 'api' | 'local';
@@ -16,6 +16,10 @@ const LLMsPage = () => {
   const [llms, setLlms] = useState<LLM[]>([]);
   const [filter, setFilter] = useState<'all' | 'api' | 'local'>('all');
   const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [selectedLLM, setSelectedLLM] = useState<LLM | null>(null);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [availableEmbeddings, setAvailableEmbeddings] = useState<string[]>([]);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   
   // Filter LLMs based on the selected filter
@@ -33,7 +37,8 @@ const LLMsPage = () => {
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
-  const [validationStatus, setValidationStatus] = useState<{valid: boolean | null, message: string}>({valid: null, message: ''});
+  type ValidationStatus = { valid: boolean | null; message: string };
+  const [validationStatus, setValidationStatus] = useState<ValidationStatus>({valid: null, message: ''});
   const [error, setError] = useState<string | null>(null);
 
   // Helper function to get provider display name
@@ -158,6 +163,7 @@ const LLMsPage = () => {
     setError(null);
     setIsEditing(null);
     setValidationStatus({valid: null, message: ''});
+    setSelectedLLM(null);
   };
 
   const validateApiKey = async () => {
@@ -200,6 +206,166 @@ const LLMsPage = () => {
     } finally {
       setIsValidating(false);
     }
+  };
+
+  const handleViewLLM = async (llm: LLM) => {
+    setSelectedLLM(llm);
+    setIsLoadingDetails(true);
+    setValidationStatus({valid: null, message: ''});
+    setAvailableModels([]);
+    setAvailableEmbeddings([]);
+
+    try {
+      // Validate API key for remote LLMs
+      if (llm.type === 'api') {
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/validate-key?provider=${encodeURIComponent(llm.provider)}&name=${encodeURIComponent(llm.name)}`);
+        const data = await response.json();
+        setValidationStatus({
+          valid: data.valid,
+          message: data.message || (data.valid ? 'API key is valid' : 'Invalid API key')
+        });
+
+        // Fetch available models if key is valid
+        if (data.valid) {
+          try {
+            const modelsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/models/llms?provider=${encodeURIComponent(llm.provider)}&name=${encodeURIComponent(llm.name)}`);
+            const modelsData = await modelsResponse.ok ? await modelsResponse.json() : [];
+            setAvailableModels(Array.isArray(modelsData) ? modelsData : []);
+
+            const embeddingsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/models/embeddings?provider=${encodeURIComponent(llm.provider)}&name=${encodeURIComponent(llm.name)}`);
+            const embeddingsData = embeddingsResponse.ok ? await embeddingsResponse.json() : [];
+            setAvailableEmbeddings(Array.isArray(embeddingsData) ? embeddingsData : []);
+          } catch (err) {
+            console.error('Error fetching models:', err);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error validating API key:', err);
+      setValidationStatus({
+        valid: false,
+        message: 'Failed to validate API key'
+      });
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  };
+
+  const renderLLMDetails = () => {
+    if (!selectedLLM) return null;
+    
+    const currentValidationStatus: ValidationStatus = validationStatus || { valid: null, message: '' };
+
+    return (
+      <div className="space-y-6">
+        <button
+          onClick={() => setSelectedLLM(null)}
+          className="flex items-center text-sm text-blue-400 hover:text-blue-300 mb-4"
+        >
+          <FiArrowLeft className="mr-1" /> Back to list
+        </button>
+
+        <div className="bg-gray-750 rounded-lg p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-xl font-semibold text-white">{selectedLLM.name}</h2>
+              <div className="flex items-center mt-2 space-x-3">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  selectedLLM.type === 'api' ? 'bg-blue-900/50 text-blue-300' : 'bg-purple-900/50 text-purple-300'
+                }`}>
+                  {selectedLLM.type === 'api' ? 'API' : 'Local'}
+                </span>
+                <span className="text-gray-400">•</span>
+                <span className="text-gray-300">
+                  {selectedLLM.type === 'api' ? getProviderName(selectedLLM.provider) : 'LLaMA.cpp'}
+                </span>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handleEdit(selectedLLM)}
+                className="text-gray-400 hover:text-blue-400 p-1.5 rounded-full hover:bg-blue-900/20 transition-colors"
+                title="Edit model"
+              >
+                <FiEdit2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => handleDelete(selectedLLM.id, selectedLLM.type)}
+                className="text-gray-400 hover:text-red-400 p-1.5 rounded-full hover:bg-red-900/20 transition-colors"
+                title="Delete model"
+              >
+                <FiTrash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {selectedLLM.type === 'api' && (
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-gray-300 mb-2">API Key Status</h3>
+              {isLoadingDetails ? (
+                <div className="flex items-center text-gray-400 text-sm">
+                  <div className="inline-block h-4 w-4 mr-2 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  Validating API key...
+                </div>
+              ) : (
+                <div className={`flex items-center text-sm ${currentValidationStatus.valid ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`h-2 w-2 rounded-full mr-2 ${currentValidationStatus.valid ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  {currentValidationStatus.message || 'Validation status unknown'}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-sm font-medium text-gray-300 mb-2">Available Models</h3>
+              {selectedLLM.type === 'local' ? (
+                <div className="text-sm text-gray-400">
+                  Local model support coming soon
+                </div>
+              ) : availableModels.length > 0 ? (
+                <div className="bg-gray-800 rounded-lg p-3 max-h-60 overflow-y-auto">
+                  {availableModels.map((model, index) => (
+                    <div key={index} className="py-1 text-sm text-gray-300">
+                      {model}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400">
+                  {currentValidationStatus.valid === false 
+                    ? 'Please fix API key to load models' 
+                    : 'No models available'}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-gray-300 mb-2">Available Embeddings</h3>
+              {selectedLLM.type === 'local' ? (
+                <div className="text-sm text-gray-400">
+                  Local embeddings support coming soon
+                </div>
+              ) : availableEmbeddings.length > 0 ? (
+                <div className="bg-gray-800 rounded-lg p-3 max-h-60 overflow-y-auto">
+                  {availableEmbeddings.map((model, index) => (
+                    <div key={index} className="py-1 text-sm text-gray-300">
+                      {model}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400">
+                  {currentValidationStatus.valid === false 
+                    ? 'Please fix API key to load embeddings' 
+                    : 'No embeddings available'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Render the list of LLMs
@@ -251,7 +417,11 @@ const LLMsPage = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredLLMs.map((llm) => (
-          <div key={`${llm.type}-${llm.id}`} className="bg-gray-750 rounded-lg p-4 border border-gray-700 flex flex-col h-full">
+          <div 
+            key={`${llm.type}-${llm.id}`} 
+            className="bg-gray-750 rounded-lg p-4 border border-gray-700 flex flex-col h-full cursor-pointer hover:border-blue-500 transition-colors"
+            onClick={() => handleViewLLM(llm)}
+          >
             <div className="flex justify-between items-start">
               <div className="min-w-0 flex-1">
                 <h3 className="font-medium text-white truncate">{llm.name}</h3>
@@ -356,7 +526,9 @@ const LLMsPage = () => {
         </div>
 
         <div className="p-6">
-          {activeTab === 'active' ? (
+          {selectedLLM ? (
+            renderLLMDetails()
+          ) : activeTab === 'active' ? (
             <div className="space-y-4">
               <div className="space-y-4 mb-4">
                 <div className="flex justify-between items-center">

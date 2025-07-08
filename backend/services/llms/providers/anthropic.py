@@ -35,7 +35,6 @@ class AnthropicAPILLM(BaseAPILLM):
         """List available models from the Anthropic client."""
         try:
             models = self.client.models.list()
-            # Convert ModelInfo objects to model IDs
             return [model.id for model in models.data]
         except Exception as e:
             print(f"Error listing Anthropic models: {e}")

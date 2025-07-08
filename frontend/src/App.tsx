@@ -219,11 +219,11 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
         let url: URL;
         
         if (llmType === 'remote') {
-          url = new URL('http://localhost:8000/api/llms/remote/models/available');
+          url = new URL('http://localhost:8000/api/llms/remote/models/llms');
           url.searchParams.append('provider', selectedProvider.provider);
           url.searchParams.append('name', selectedProvider.name);
         } else {
-          url = new URL('http://localhost:8000/api/llms/local/models/available');
+          url = new URL('http://localhost:8000/api/llms/local/models/llms');
           url.searchParams.append('provider', selectedProvider.provider);
         }
         
@@ -239,7 +239,14 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
         }
         
         const models = await response.json();
-        setAvailableModels(Array.isArray(models) ? models : []);
+        // Transform array of strings into array of objects with id and name
+        const formattedModels = Array.isArray(models) 
+          ? models.map(model => ({
+              id: model,
+              name: model
+            }))
+          : [];
+        setAvailableModels(formattedModels);
       } catch (error) {
         console.error('Error fetching models:', error);
         setAvailableModels([]);
@@ -463,7 +470,7 @@ const LeftSidebar = ({ node, onUpdate }: { node: CustomNode | null, onUpdate: (n
                                 : 'text-gray-300 hover:bg-gray-700'
                             }`}
                           >
-                            {model.name} ({model.id})
+                            {model.name}
                           </button>
                         ))}
                       </div>

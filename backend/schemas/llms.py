@@ -106,3 +106,8 @@ LLM = RemoteLLM | LocalLLM
 class LLMValidationRequest(BaseModel):
     provider: str  # "openai", "anthropic", etc.
     api_key: str
+
+
+class LLMValidationResponse(BaseModel):
+    valid: bool
+    message: str
