@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useMemo, useState, memo } from 'react';
-import StateModal from './StateModal';
+import StateModal, { type StateField } from './StateModal';
 import MemoryModal from './MemoryModal';
 import SaveLoadFlow from './SaveLoadFlow';
 import ReactFlow, {
@@ -52,18 +52,18 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const { 
     nodes, 
     edges, 
-    addNode, 
     onNodesChange, 
     onEdgesChange, 
-    addEdge, 
-    setNodes, 
-    setEdges 
+    addEdge,
+    addNode,
+    setNodes,
+    setEdges
   } = useFlowStore();
   
   // State for the modals
   const [isStateModalOpen, setIsStateModalOpen] = useState(false);
   const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
-  const [stateFields, setStateFields] = useState([]);
+  const [stateFields, setStateFields] = useState<StateField[]>([]);
   const [memorySettings, setMemorySettings] = useState({
     enabled: true,
     backend: 'memory',
@@ -89,7 +89,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     setIsMemoryModalOpen(false);
   }, []);
 
-  const handleStateSave = useCallback((fields: any) => {
+  const handleStateSave = useCallback((fields: StateField[]) => {
     setStateFields(fields);
     setIsStateModalOpen(false);
     console.log('State fields saved:', fields);
@@ -193,12 +193,15 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       
       // Load state fields if they exist
       if (serializedGraph.state) {
-        // Check if state is in the new format with fields property
-        const stateFields = Array.isArray(serializedGraph.state.fields) 
-          ? serializedGraph.state.fields 
-          : Array.isArray(serializedGraph.state) 
-            ? serializedGraph.state 
-            : [];
+        // Convert state to StateField[] format if needed
+        const stateFields = (Array.isArray(serializedGraph.state) ? serializedGraph.state : []).map((field: any) => ({
+          id: field.id || `field-${Math.random().toString(36).substr(2, 9)}`,
+          name: field.name || field.id || '',
+          type: field.type || 'str',
+          isOptional: field.isOptional || false,
+          initialValue: field.initialValue !== undefined ? String(field.initialValue) : '',
+          isInternal: field.isInternal || false
+        }));
         
         console.log('Loading state fields:', stateFields);
         setStateFields(stateFields);
@@ -320,6 +323,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     loadFlow
   ]);
 
+  const optimizedNodes = useMemo(() => nodes, [nodes]);
+
   return (
     <div 
       className={`h-full w-full relative ${className}`} 
@@ -327,7 +332,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       style={style}
     >
       <ReactFlow
-        nodes={nodes}
+        nodes={optimizedNodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}

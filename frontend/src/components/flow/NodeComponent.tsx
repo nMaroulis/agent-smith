@@ -110,11 +110,26 @@ const ToolDetails = ({ tool, hasNode }: { tool?: any; hasNode: boolean }) => {
   );
 };
 
+// Helper to compare node data for memoization
+const areNodeDataEqual = (a: any, b: any) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  
+  return (
+    a.label === b.label &&
+    a.description === b.description &&
+    a.type === b.type &&
+    (!a.node && !b.node || (a.node?.model === b.node?.model)) &&
+    (!a.tool && !b.tool || (a.tool?.name === b.tool?.name))
+  );
+};
+
 const NodeComponent = memo(({ 
   data, 
   selected, 
-  isConnectable 
-}: NodeProps<NodeData>) => {
+  isConnectable,
+  dragging
+}: NodeProps<NodeData> & { dragging?: boolean }) => {
   const colors = NODE_COLORS[data.type] || NODE_COLORS.node;
   
   // Special case for start/end nodes
@@ -124,10 +139,12 @@ const NodeComponent = memo(({
   
   return (
     <div 
-      className={`relative w-56 ${selected ? 'scale-105' : 'scale-100'}`}
+      className="relative w-56"
       style={{
-        transition: 'transform 0.2s ease-in-out',
-        willChange: 'transform'
+        transform: selected ? 'scale(105%)' : 'none',
+        transition: dragging ? 'none' : 'transform 100ms ease-out',
+        willChange: dragging ? 'transform' : 'auto',
+        opacity: dragging ? 0.9 : 1
       }}
     >
       {/* Left handle (target) */}
@@ -148,8 +165,8 @@ const NodeComponent = memo(({
         }`}
         style={{
           boxShadow: selected ? `0 0 0 4px ${colors.border}4D` : 'none',
-          transition: 'box-shadow 0.2s ease-in-out',
-          willChange: 'box-shadow'
+          transition: dragging ? 'none' : 'box-shadow 100ms ease-out',
+          willChange: dragging ? 'box-shadow' : 'auto'
         }}
       >
         <NodeContent data={data} />
@@ -171,15 +188,14 @@ const NodeComponent = memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison function for React.memo
+  // Skip expensive checks if dragging
+  if (nextProps.dragging) return false;
+  
   return (
     prevProps.selected === nextProps.selected &&
     prevProps.isConnectable === nextProps.isConnectable &&
-    prevProps.data.label === nextProps.data.label &&
-    prevProps.data.description === nextProps.data.description &&
-    JSON.stringify(prevProps.data.node) === JSON.stringify(nextProps.data.node) &&
-    JSON.stringify(prevProps.data.tool) === JSON.stringify(nextProps.data.tool) &&
-    prevProps.data.type === nextProps.data.type
+    prevProps.dragging === nextProps.dragging &&
+    areNodeDataEqual(prevProps.data, nextProps.data)
   );
 });
 
