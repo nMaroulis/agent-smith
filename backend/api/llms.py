@@ -139,3 +139,12 @@ async def get_available_local_models(provider: str):
         return llm.list_models()
     except Exception as e:
         return {"error": f"Validation error: {str(e)}"}
+
+
+@router.get("/local/models/embeddings", response_model=list[str])
+async def get_available_local_embeddings_models(provider: str):
+    try:
+        llm = get_llm_client(provider=provider.lower().replace(" ", "_"))
+        return llm.list_embeddings_models()
+    except Exception as e:
+        return {"error": f"Validation error: {str(e)}"}

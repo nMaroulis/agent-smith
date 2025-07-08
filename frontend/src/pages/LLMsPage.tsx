@@ -562,37 +562,57 @@ const LLMsPage = () => {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  LLM Type
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    className={`flex items-center justify-center p-4 rounded-lg border transition-colors ${
-                      llmType === 'api'
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                        : 'border-gray-600 hover:border-gray-500 text-gray-400 hover:text-white'
-                    }`}
-                    onClick={() => setLlmType('api')}
-                  >
-                    <FiServer className="mr-2" />
-                    API
-                  </button>
-                  <button
-                    type="button"
-                    className={`flex items-center justify-center p-4 rounded-lg border transition-colors ${
-                      llmType === 'local'
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-                        : 'border-gray-600 hover:border-gray-500 text-gray-400 hover:text-white'
-                    }`}
-                    onClick={() => setLlmType('local')}
-                  >
-                    <FiCpu className="mr-2" />
-                    Local
-                  </button>
+              {isEditing ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    LLM Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div 
+                      className={`flex items-center justify-center p-4 rounded-lg border ${
+                        llmType === 'api' 
+                          ? 'border-blue-500 bg-blue-500/10 text-blue-400' 
+                          : 'border-gray-600 text-gray-400'
+                      }`}
+                    >
+                      <FiServer className="mr-2" />
+                      {llmType === 'api' ? 'API' : 'Local'}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    LLM Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      className={`flex items-center justify-center p-4 rounded-lg border transition-colors ${
+                        llmType === 'api'
+                          ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                          : 'border-gray-600 hover:border-gray-500 text-gray-400 hover:text-white'
+                      }`}
+                      onClick={() => setLlmType('api')}
+                    >
+                      <FiServer className="mr-2" />
+                      API
+                    </button>
+                    <button
+                      type="button"
+                      className={`flex items-center justify-center p-4 rounded-lg border transition-colors ${
+                        llmType === 'local'
+                          ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                          : 'border-gray-600 hover:border-gray-500 text-gray-400 hover:text-white'
+                      }`}
+                      onClick={() => setLlmType('local')}
+                    >
+                      <FiCpu className="mr-2" />
+                      Local
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -613,30 +633,46 @@ const LLMsPage = () => {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Provider
                     </label>
-                    <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm" role="group">
-                      {['openai', 'anthropic', 'huggingface'].map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => setApiProvider(p as APIProvider)}
-                          className={`relative px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
-                            apiProvider === p
-                              ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
-                              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-                          } ${p === 'openai' ? 'rounded-l-lg' : ''} ${
-                            p === 'huggingface' ? 'rounded-r-lg' : ''
-                          }`}
+                    {isEditing ? (
+                      <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm">
+                        <div 
+                          className="relative px-5 py-2.5 text-sm font-medium text-white"
                           style={{
                             minWidth: '100px',
                             backdropFilter: 'blur(4px)'
                           }}
                         >
-                          {p === 'openai' && 'OpenAI'}
-                          {p === 'anthropic' && 'Anthropic'}
-                          {p === 'huggingface' && 'Hugging Face'}
-                        </button>
-                      ))}
-                    </div>
+                          {apiProvider === 'openai' && 'OpenAI'}
+                          {apiProvider === 'anthropic' && 'Anthropic'}
+                          {apiProvider === 'huggingface' && 'Hugging Face'}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm" role="group">
+                        {['openai', 'anthropic', 'huggingface'].map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setApiProvider(p as APIProvider)}
+                            className={`relative px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
+                              apiProvider === p
+                                ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
+                                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                            } ${p === 'openai' ? 'rounded-l-lg' : ''} ${
+                              p === 'huggingface' ? 'rounded-r-lg' : ''
+                            }`}
+                            style={{
+                              minWidth: '100px',
+                              backdropFilter: 'blur(4px)'
+                            }}
+                          >
+                            {p === 'openai' && 'OpenAI'}
+                            {p === 'anthropic' && 'Anthropic'}
+                            {p === 'huggingface' && 'Hugging Face'}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -645,19 +681,17 @@ const LLMsPage = () => {
                         Provider
                       </label>
                       <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm">
-                        <button
-                          type="button"
-onClick={() => setLocalProvider('llama-cpp' as APIProvider)}
-                          className="relative px-5 py-2.5 text-sm font-medium transition-all duration-200 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-lg shadow-lg shadow-blue-500/20"
-                          style={{
-                            minWidth: '120px',
-                            backdropFilter: 'blur(4px)',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          LLaMA.cpp
-                        </button>
+                      <div 
+                        className="relative px-5 py-2.5 text-sm font-medium text-white rounded-lg"
+                        style={{
+                          minWidth: '120px',
+                          backdropFilter: 'blur(4px)',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        LLaMA.cpp
                       </div>
+                    </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">
