@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Toaster } from 'react-hot-toast';
 import { ServerProvider, useServer } from './contexts/ServerContext';
 import { BrowserRouter as Router, Link, useLocation, Routes, Route } from 'react-router-dom';
@@ -20,7 +21,40 @@ const Navigation = () => {
   const location = useLocation();
   
   const [isSandboxOpen, setIsSandboxOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [buttonRect, setButtonRect] = useState<DOMRect | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const portalRef = useRef<HTMLDivElement>(document.createElement('div'));
+  
+  // Create portal container on mount
+  useEffect(() => {
+    const portalId = 'dropdown-portal';
+    let portalElement = document.getElementById(portalId);
+    
+    if (!portalElement) {
+      portalElement = document.createElement('div');
+      portalElement.id = portalId;
+      portalElement.style.position = 'fixed';
+      portalElement.style.top = '0';
+      portalElement.style.left = '0';
+      portalElement.style.zIndex = '9999';
+      document.body.appendChild(portalElement);
+    }
+    
+    portalRef.current = portalElement as HTMLDivElement;
+    
+    return () => {
+      if (document.body.contains(portalElement as Node)) {
+        document.body.removeChild(portalElement as Node);
+      }
+    };
+  }, []);
+  
+  // Update button position when dropdown opens
+  useEffect(() => {
+    if (isSandboxOpen && buttonRef.current) {
+      setButtonRect(buttonRef.current.getBoundingClientRect());
+    }
+  }, [isSandboxOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -118,8 +152,9 @@ const Navigation = () => {
         
         if (item.isDropdown) {
           return (
-            <div key={item.id} className="relative h-full flex items-center" ref={dropdownRef}>
+            <div key={item.id} className="relative h-full flex items-center">
               <button
+                ref={buttonRef}
                 onClick={() => setIsSandboxOpen(!isSandboxOpen)}
                 className={`group relative flex items-center px-4 py-3 h-full transition-all duration-200 rounded-lg mx-1 ${
                   isSandboxItemActive 
@@ -142,26 +177,36 @@ const Navigation = () => {
               </button>
               
               {/* Dropdown menu */}
-              {isSandboxOpen && (
-                <div className="absolute left-0 top-full mt-1 w-48 bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden border border-gray-700">
+              {isSandboxOpen && buttonRect && createPortal(
+                <div 
+                  className="fixed bg-gray-800 rounded-lg shadow-xl overflow-hidden border border-gray-700"
+                  style={{
+                    top: `${buttonRect.bottom}px`,
+                    left: `${buttonRect.left}px`,
+                    width: '12rem',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {item.dropdownItems?.map((subItem) => {
                     const isSubItemActive = location.pathname === subItem.path;
                     return (
-                      <Link
-                        key={subItem.id}
-                        to={subItem.path}
-                        onClick={() => setIsSandboxOpen(false)}
-                        className={`block px-4 py-3 text-sm ${
-                          isSubItemActive 
-                            ? 'bg-gray-700 text-white' 
-                            : 'text-gray-300 hover:bg-gray-700/50'
-                        } transition-colors duration-200`}
-                      >
-                        {subItem.label}
-                      </Link>
+                      <div key={subItem.id} className="w-full">
+                        <Link
+                          to={subItem.path}
+                          onClick={() => setIsSandboxOpen(false)}
+                          className={`block w-full px-4 py-3 text-sm text-left ${
+                            isSubItemActive 
+                              ? 'bg-gray-700 text-white' 
+                              : 'text-gray-300 hover:bg-gray-700/50'
+                          } transition-colors duration-200`}
+                        >
+                          {subItem.label}
+                        </Link>
+                      </div>
                     );
                   })}
-                </div>
+                </div>,
+                portalRef.current
               )}
             </div>
           );
