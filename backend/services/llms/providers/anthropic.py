@@ -50,3 +50,18 @@ class AnthropicAPILLM(BaseAPILLM):
         """
         # raise NotImplementedError("Anthropic does not support embedding models.")
         return []
+
+
+    def to_code(self) -> str:
+        """Generate a Python code snippet for the LLM."""
+        return self.render_template("llms/api/anthropic.jinja",
+            model_name="claude-3-5-sonnet-20240620",
+        )
+
+
+    def to_node(self) -> dict:
+        pass
+
+    
+    def env_variables(self) -> list[str]:
+        return f"ANTHROPIC_API_KEY={self.api_key}"

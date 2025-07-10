@@ -1,0 +1,4 @@
+from huggingface_hub import InferenceClient
+
+API_KEY = os.getenv("HUGGING_FACE_API_KEY")
+llm = InferenceClient(api_key=API_KEY, model="{{ model_name }}")

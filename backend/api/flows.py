@@ -26,12 +26,12 @@ def list_flows(limit: Optional[int] = None, db: Session = Depends(get_db)):
     return get_flows(db, limit)
 
 
-@router.get("/{id}", description="Get a flow by ID")
+@router.get("/{id}", description="Get a flow by ID", response_model=FlowOut)
 def get_flow(id: int, db: Session = Depends(get_db)):
     return get_flow_by_id(db, id)
 
 
-@router.put("/{id}", response_model=FlowOut)
+@router.put("/{id}", description="Update a flow by ID", response_model=FlowOut)
 def update_flow(id: int, flow: FlowCreate, db: Session = Depends(get_db)):
     updated = update_flow_by_id(db, id, flow.name, flow.description, flow.graph, flow.state)
     if updated:
@@ -39,7 +39,7 @@ def update_flow(id: int, flow: FlowCreate, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Flow not found")
 
 
-@router.delete("/{id}", response_model=FlowOut)
+@router.delete("/{id}", description="Delete a flow by ID", response_model=FlowOut)
 def delete_flow(id: int, db: Session = Depends(get_db)):
     deleted = delete_flow_by_id(db, id)
     if deleted:

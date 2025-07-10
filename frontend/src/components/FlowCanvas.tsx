@@ -143,36 +143,42 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       case 'node':
         return {
           ...baseNode,
+          type: 'node',
           data: {
             ...baseNode.data,
+            type: 'node',
             node: {
               provider: '',
-              providerName: 'OpenAI',
-              model: 'gpt-4',
-              modelName: 'GPT-4',
+              providerName: '',
+              model: '',
+              modelName: '',
             },
-            tool: {
-              name: 'process_input',
-              description: 'Processes the input',
-            },
+            tool: null,
           },
-        } as CustomNode;
+        } as unknown as CustomNode;
       case 'router':
         return {
           ...baseNode,
+          type: 'router',
           data: {
             ...baseNode.data,
-            tool: {
-              name: 'router_name',
-              description: 'Router description',
-            },
+            type: 'router',
+            tool: null
           },
-        };
+        } as unknown as CustomNode;
       case 'trigger':
       case 'start':
       case 'end':
       default:
-        return baseNode;
+        return {
+          ...baseNode,
+          type: type as NodeType,
+          data: {
+            ...baseNode.data,
+            type: type as NodeType,
+            tool: null,
+          },
+        } as unknown as CustomNode;
     }
   }, []);
 

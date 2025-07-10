@@ -78,18 +78,35 @@ const NodeDescription = ({ description }: { description?: string }) => {
   return <div className="text-xs text-white/70">{description}</div>;
 };
 
-const NodeDetails = ({ node, tool }: { node?: any; tool?: any }) => {
+interface NodeDetailsProps {
+  node?: any;
+  tool?: any;
+  llm?: {
+    provider?: string;
+    model?: string;
+  };
+}
+
+const NodeDetails = ({ node, tool, llm }: NodeDetailsProps) => {
   if (!node) return null;
+  
+  // Use the passed llm prop or fall back to node.llm
+  const llmData = llm || node.llm || {};
   
   return (
     <div className="mt-2 pt-2 border-t border-white/10">
-      <div className="text-xs font-medium text-white/80">
-        {node.providerName || 'Node'}
-      </div>
-      <div className="text-xs text-white/60">
-        {node.modelName || 'Select a model'}
-      </div>
-      {tool && (
+      {/* Display the node label */}
+      
+      {/* Display LLM info if available */}
+      {llmData.provider && (
+        <div className="text-xs text-white/60">
+          {llmData.provider}
+          {llmData.model && ` • ${llmData.model}`}
+        </div>
+      )}
+      
+      {/* Display tool info if available */}
+      {tool?.name && (
         <div className="text-xs text-white/80 mt-1 pt-1 border-t border-white/5">
           {tool.name}
         </div>
@@ -171,8 +188,12 @@ const NodeComponent = memo(({
       >
         <NodeContent data={data} />
         <NodeDescription description={data.description} />
-        <NodeDetails node={data.node} tool={data.tool} />
-        <ToolDetails tool={data.tool} hasNode={!!data.node} />
+        <NodeDetails 
+          node={data} 
+          tool={data.tool} 
+          llm={data.llm} 
+        />
+        <ToolDetails tool={data.tool} hasNode={!!data.llm} />
       </div>
       
       {/* Right handle (source) */}

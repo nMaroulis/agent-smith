@@ -14,9 +14,10 @@ export interface CustomNode {
       modelName: string;
     };
     tool?: {
+      id: string;
       name: string;
       description: string;
-    };
+    } | null;
   };
   position: {
     x: number;

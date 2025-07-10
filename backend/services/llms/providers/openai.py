@@ -58,4 +58,18 @@ class OpenAIAPILLM(BaseAPILLM):
             "text-embedding-3-large",
             "text-embedding-ada-002"
         ]
-        
+
+
+    def to_code(self) -> str:
+        """Generate a Python code snippet for the LLM."""
+        return self.render_template("llms/api/openai.jinja",
+            model_name="gpt-4",
+        )
+
+
+    def to_node(self) -> dict:
+        pass
+
+    
+    def env_variables(self) -> list[str]:
+        return f"OPENAI_API_KEY={self.api_key}"

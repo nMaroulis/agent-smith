@@ -1,0 +1,4 @@
+from anthropic import Anthropic
+
+API_KEY = os.getenv("ANTHROPIC_API_KEY")
+llm = Anthropic(api_key=API_KEY, model="{{ model_name }}")

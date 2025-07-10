@@ -75,3 +75,18 @@ class HuggingFaceAPILLM(BaseAPILLM):
             "BAAI/bge-base-en-v1.5",
             "thenlper/gte-small",                              # open-source alternative to E5
         ]
+
+
+    def to_code(self) -> str:
+        """Generate a Python code snippet for the LLM."""
+        return self.render_template("llms/api/hugging_face.jinja",
+            model_name="mistralai/Mistral-7B-Instruct-v0.2",
+        )
+
+
+    def to_node(self) -> dict:
+        pass
+
+    
+    def env_variables(self) -> list[str]:
+        return f"HUGGING_FACE_API_KEY={self.api_key}"

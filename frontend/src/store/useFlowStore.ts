@@ -11,6 +11,7 @@ export interface LLMData {
 }
 
 export interface ToolData {
+  id: string;
   name: string;
   description: string;
 }
@@ -20,7 +21,8 @@ export interface NodeData {
   description?: string;
   type: NodeType;
   node?: LLMData;
-  tool?: ToolData;
+  llm?: LLMData;
+  tool?: ToolData | null;
 }
 
 export interface FlowState {
@@ -112,15 +114,35 @@ const useFlowStore = create<FlowState>((set, get) => ({
   
   updateNode: (id, updates) =>
     set((state) => ({
-      nodes: state.nodes.map((node) =>
-        node.id === id 
-          ? { 
-              ...node, 
-              ...updates,
-              data: { ...node.data, ...(updates.data || {}) } 
-            } 
-          : node
-      ),
+      nodes: state.nodes.map((node) => {
+        if (node.id !== id) return node;
+        
+        // Create a new node with the updates
+        const updatedNode = { ...node, ...updates };
+        
+        // Handle data updates
+        if (updates.data) {
+          updatedNode.data = { ...node.data };
+          
+          // Merge llm object if it exists in updates
+          if (updates.data.llm) {
+            updatedNode.data.llm = {
+              ...(node.data.llm || {}),
+              ...updates.data.llm
+            };
+          }
+          
+          // Merge the rest of the data
+          updatedNode.data = {
+            ...updatedNode.data,
+            ...updates.data,
+            // Prevent llm from being overwritten by the spread above
+            llm: updatedNode.data.llm
+          };
+        }
+        
+        return updatedNode;
+      }),
     })),
     
   removeNode: (nodeId) =>

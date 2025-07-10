@@ -180,7 +180,15 @@ const FlowCanvasWithSidebar = () => {
   }, [nodes, selectedNode]);
 
   const handleNodeUpdate = (updatedNode: CustomNode) => {
-    updateNode(updatedNode.id, updatedNode);
+    console.log('Updating node:', updatedNode);
+    updateNode(updatedNode.id, {
+      ...updatedNode,
+      data: {
+        ...updatedNode.data,
+        // Ensure llm is properly included in the update
+        llm: updatedNode.data.llm ? { ...updatedNode.data.llm } : undefined
+      }
+    });
     setSelectedNode(updatedNode);
   };
 

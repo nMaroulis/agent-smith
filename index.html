@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentSmith - Visual LangGraph Agent Builder</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .code-block {
+            background-color: #1e293b;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <i class="fas fa-robot text-2xl"></i>
+                    <span class="text-xl font-bold">AgentSmith</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="hover:text-blue-200 transition">Features</a>
+                    <a href="#tech-stack" class="hover:text-blue-200 transition">Tech Stack</a>
+                    <a href="#quickstart" class="hover:text-blue-200 transition">Quickstart</a>
+                    <a href="https://github.com/nMaroulis/agent-smith" target="_blank" class="bg-white text-blue-700 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="gradient-bg text-white py-20">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-4xl md:text-6xl font-bold mb-6">Build AI Agents Visually</h1>
+            <p class="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">Design, test, and export LangGraph-based AI agents with a drag-and-drop interface</p>
+            <div class="space-x-4">
+                <a href="#quickstart" class="bg-white text-blue-700 px-8 py-3 rounded-lg font-bold text-lg hover:bg-blue-50 transition">
+                    Get Started
+                </a>
+                <a href="#features" class="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-white hover:bg-opacity-10 transition">
+                    Learn More
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-16">Powerful Features for Agent Development</h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card bg-white p-6 rounded-xl shadow-lg transition duration-300">
+                    <div class="text-blue-600 text-4xl mb-4">
+                        <i class="fas fa-puzzle-piece"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Drag & Drop Builder</h3>
+                    <p class="text-gray-600">Design nodes, edges, and async flows using an intuitive visual interface powered by React Flow.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card bg-white p-6 rounded-xl shadow-lg transition duration-300">
+                    <div class="text-blue-600 text-4xl mb-4">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Python Code Export</h3>
+                    <p class="text-gray-600">Export your agent as a standalone Python module using LangGraph. Ready to run with no modifications.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card bg-white p-6 rounded-xl shadow-lg transition duration-300">
+                    <div class="text-blue-600 text-4xl mb-4">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Custom Tools</h3>
+                    <p class="text-gray-600">Define and reuse custom tools via code or natural language descriptions.</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card bg-white p-6 rounded-xl shadow-lg transition duration-300">
+                    <div class="text-blue-600 text-4xl mb-4">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Multi-LLM Support</h3>
+                    <p class="text-gray-600">Built-in support for OpenAI, Anthropic, Hugging Face, and local LLMs like Llama.cpp.</p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-card bg-white p-6 rounded-xl shadow-lg transition duration-300">
+                    <div class="text-blue-600 text-4xl mb-4">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">State Management</h3>
+                    <p class="text-gray-600">Visually define TypedDict-based agent state and message schemas.</p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-card bg-white p-6 rounded-xl shadow-lg transition duration-300">
+                    <div class="text-blue-600 text-4xl mb-4">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">Code Editor</h3>
+                    <p class="text-gray-600">Edit node logic directly in a Monaco (VSCode-style) editor with syntax highlighting.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack Section -->
+    <section id="tech-stack" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-16">Built With Modern Technologies</h2>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Frontend -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 text-center">Frontend</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center"><i class="fab fa-react text-blue-500 mr-2"></i> React</li>
+                        <li class="flex items-center"><i class="fas fa-project-diagram text-blue-500 mr-2"></i> React Flow</li>
+                        <li class="flex items-center"><i class="fas fa-paint-brush text-blue-500 mr-2"></i> TailwindCSS</li>
+                        <li class="flex items-center"><i class="fas fa-code text-blue-500 mr-2"></i> Monaco Editor</li>
+                    </ul>
+                </div>
+
+                <!-- Backend -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 text-center">Backend</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center"><i class="fab fa-python text-blue-500 mr-2"></i> Python 3.13</li>
+                        <li class="flex items-center"><i class="fas fa-bolt text-blue-500 mr-2"></i> FastAPI</li>
+                        <li class="flex items-center"><i class="fas fa-link text-blue-500 mr-2"></i> LangChain</li>
+                        <li class="flex items-center"><i class="fas fa-project-diagram text-blue-500 mr-2"></i> LangGraph</li>
+                    </ul>
+                </div>
+
+                <!-- LLM Providers -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-bold mb-4 text-center">LLM Support</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center"><i class="fab fa-openai text-blue-500 mr-2"></i> OpenAI</li>
+                        <li class="flex items-center"><i class="fas fa-robot text-blue-500 mr-2"></i> Anthropic</li>
+                        <li class="flex items-center"><i class="fab fa-hubspot text-blue-500 mr-2"></i> HuggingFace</li>
+                        <li class="flex items-center"><i class="fas fa-laptop-code text-blue-500 mr-2"></i> Local LLMs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quickstart Section -->
+    <section id="quickstart" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <h2 class="text-3xl font-bold text-center mb-8">Get Started in Minutes</h2>
+            <p class="text-center text-gray-600 max-w-3xl mx-auto mb-12">Follow these simple steps to start building your first AI agent with AgentSmith.</p>
+            
+            <div class="max-w-4xl mx-auto">
+                <!-- Step 1 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">1</span>
+                        Clone the Repository
+                    </h3>
+                    <div class="code-block text-white">
+                        <code>git clone https://github.com/nMaroulis/agent-smith</code>
+                        <br>
+                        <code>cd agent-smith</code>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">2</span>
+                        Set Up the Backend
+                    </h3>
+                    <div class="code-block text-white">
+                        <code>cd backend</code>
+                        <br>
+                        <code>uv venv .venv</code>
+                        <br>
+                        <code>source .venv/bin/activate</code>
+                        <br>
+                        <code>uv pip install -r requirements.txt</code>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">3</span>
+                        Set Up the Frontend
+                    </h3>
+                    <div class="code-block text-white">
+                        <code>cd ../frontend</code>
+                        <br>
+                        <code>npm install</code>
+                    </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-3">4</span>
+                        Start the Application
+                    </h3>
+                    <p class="mb-4 text-gray-700">In one terminal, start the backend:</p>
+                    <div class="code-block text-white mb-4">
+                        <code>cd backend</code>
+                        <br>
+                        <code>python main.py</code>
+                    </div>
+                    <p class="mb-4 text-gray-700">In another terminal, start the frontend:</p>
+                    <div class="code-block text-white">
+                        <code>cd frontend</code>
+                        <br>
+                        <code>npm start</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="gradient-bg text-white py-16">
+        <div class="container mx-auto px-6 text-center">
+            <h2 class="text-3xl font-bold mb-6">Ready to Build Your First Agent?</h2>
+            <p class="text-xl mb-8 max-w-2xl mx-auto">Join the community of developers creating powerful AI agents with AgentSmith.</p>
+            <div class="space-x-4">
+                <a href="https://github.com/nMaroulis/agent-smith" target="_blank" class="bg-white text-blue-700 px-8 py-3 rounded-lg font-bold text-lg hover:bg-blue-50 transition">
+                    <i class="fab fa-github"></i> Star on GitHub
+                </a>
+                <a href="#quickstart" class="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-white hover:bg-opacity-10 transition">
+                    Get Started
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center">
+                        <i class="fas fa-robot text-2xl mr-2"></i>
+                        <span class="text-xl font-bold">AgentSmith</span>
+                    </div>
+                    <p class="text-gray-400 mt-2">Visual framework for building LangGraph-based AI agents</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-github text-2xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-twitter text-2xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-discord text-2xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2024 AgentSmith. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to top button -->
+    <button id="backToTop" class="fixed bottom-8 right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition hidden">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script>
+        // Back to top button
+        const backToTopButton = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                backToTopButton.classList.remove('hidden');
+            } else {
+                backToTopButton.classList.add('hidden');
+            }
+        });
+        
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+from openai import OpenAI, AuthenticationError, OpenAIError
+
+API_KEY = os.getenv("OPENAI_API_KEY")
+llm = OpenAI(api_key=API_KEY, model="{{ model_name }}")

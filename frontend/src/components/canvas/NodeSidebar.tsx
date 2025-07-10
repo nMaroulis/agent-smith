@@ -1,14 +1,6 @@
 import { useState, useEffect } from "react";
-import { FiCpu, FiPlus, FiChevronDown } from 'react-icons/fi';
+import { FiCpu, FiPlus, FiChevronDown, FiTool } from 'react-icons/fi';
 import type { CustomNode } from '../../types';
-
-
-const TOOL_OPTIONS = [
-  { id: 'process_data', name: 'Process Data' },
-  { id: 'generate_text', name: 'Generate Text' },
-  { id: 'analyze_sentiment', name: 'Analyze Sentiment' },
-  { id: 'extract_entities', name: 'Extract Entities' },
-];
 
 interface RemoteLLM {
   id: number;
@@ -26,11 +18,41 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   const [isProviderOpen, setIsProviderOpen] = useState(false);
   const [isModelOpen, setIsModelOpen] = useState(false);
   const [isToolOpen, setIsToolOpen] = useState(false);
+  interface Tool {
+    id: string;
+    name: string;
+    description?: string;
+  }
+
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [isLoadingTools, setIsLoadingTools] = useState(false);
   const [llmType, setLlmType] = useState<'local' | 'remote'>('remote');
   const [availableModels, setAvailableModels] = useState<Array<{id: string, name: string}>>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [llmProviders, setLlmProviders] = useState<RemoteLLM[]>([]);
   const [isLoadingProviders, setIsLoadingProviders] = useState(true);
+
+  // Fetch available tools
+  useEffect(() => {
+    const fetchTools = async () => {
+      setIsLoadingTools(true);
+      try {
+        const response = await fetch('http://localhost:8000/api/tools');
+        if (!response.ok) {
+          throw new Error('Failed to fetch tools');
+        }
+        const data = await response.json();
+        setTools(data);
+      } catch (error) {
+        console.error('Error fetching tools:', error);
+        setTools([]);
+      } finally {
+        setIsLoadingTools(false);
+      }
+    };
+
+    fetchTools();
+  }, []);
 
   const currentProvider = node?.data.llm?.provider || '';
 
@@ -140,56 +162,126 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
 
   const handleChange = (field: string, value: any) => {
     if (!node) return;
-    onUpdate({
+    
+    const updatedNode = {
       ...node,
       data: {
         ...node.data,
         [field]: value,
       },
-    });
+    };
+    
+    // If updating LLM, make sure to preserve existing LLM properties
+    if (field === 'llm' && node.data.llm) {
+      updatedNode.data.llm = {
+        ...node.data.llm,
+        ...value
+      };
+    }
+    
+    onUpdate(updatedNode);
   };
 
   const handleProviderSelect = (provider: RemoteLLM) => {
+    if (!node) return;
+    
+    console.log('Selected provider:', provider);
     setSelectedProvider(provider);
-    // Update the node data
-    handleChange('llm', { 
-      provider: provider.provider,
-      providerName: provider.name,
-      model: '',
-      modelName: 'Select a model'
-    });
+    
+    // Create a completely new object to ensure React detects the change
+    const updatedNode = JSON.parse(JSON.stringify(node));
+    
+    // Initialize llm object if it doesn't exist
+    if (!updatedNode.data.llm) {
+      updatedNode.data.llm = {};
+    }
+    
+    // Update the LLM data
+    updatedNode.data.llm.provider = provider.provider;
+    updatedNode.data.llm.providerName = provider.name;
+    updatedNode.data.llm.model = '';
+    updatedNode.data.llm.modelName = 'Select a model';
+    
+    console.log('Updated node with provider:', updatedNode);
+    
+    // Force a new object reference
+    const nodeToUpdate = {
+      ...updatedNode,
+      data: {
+        ...updatedNode.data,
+        llm: { ...updatedNode.data.llm }
+      }
+    };
+    
+    console.log('Node to update:', nodeToUpdate);
+    onUpdate(nodeToUpdate);
+    
     setIsProviderOpen(false);
-    // Clear models when provider changes
     setAvailableModels([]);
   };
 
   const handleModelSelect = (model: { id: string; name: string } | null) => {
-    if (!node?.data.llm) return;
+    if (!node) return;
     
-    const updatedLlm = {
-      ...node.data.llm,
-      model: model?.id || '',
-      modelName: model?.name || 'Select a model'
+    console.log('Selected model:', model);
+    
+    // Create a completely new object to ensure React detects the change
+    const updatedNode = JSON.parse(JSON.stringify(node));
+    
+    // Initialize llm object if it doesn't exist
+    if (!updatedNode.data.llm) {
+      updatedNode.data.llm = {};
+    }
+    
+    // Update the model data
+    updatedNode.data.llm.model = model?.id || '';
+    updatedNode.data.llm.modelName = model?.name || 'Select a model';
+    
+    console.log('Updated node with model:', updatedNode);
+    
+    // Force a new object reference
+    const nodeToUpdate = {
+      ...updatedNode,
+      data: {
+        ...updatedNode.data,
+        llm: { ...updatedNode.data.llm }
+      }
     };
     
-    handleChange('llm', updatedLlm);
+    console.log('Node to update:', nodeToUpdate);
+    onUpdate(nodeToUpdate);
+    
     setIsModelOpen(false);
     
-    // Force a re-fetch of models to ensure we have the latest list
+    // Refresh the models list
     if (selectedProvider) {
       setAvailableModels([]);
       setSelectedProvider({...selectedProvider});
     }
   };
 
-  const handleToolSelect = (tool: { id: string; name: string }) => {
-    handleChange('tool', { name: tool.id, description: tool.name });
+  const handleToolSelect = (tool: Tool) => {
+    if (!node) return;
+    
+    const updatedNode = {
+      ...node,
+      data: {
+        ...node.data,
+        tool: {
+          id: tool.id,
+          name: tool.name,
+          description: tool.description || ''
+        }
+      }
+    };
+    
+    onUpdate(updatedNode);
     setIsToolOpen(false);
   };
 
   const handleAddTool = () => {
-    // This would open a modal or navigate to a tool creation page in a real app
-    console.log('Add new tool');
+    // Open the tools page in a new tab
+    window.open('/tools', '_blank');
   };
 
   const handleLlmTypeChange = (type: 'local' | 'remote') => {
@@ -387,25 +479,45 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                   onClick={() => setIsToolOpen(!isToolOpen)}
                   className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
-                  <span>{node.data.tool?.name ? node.data.tool.name.replace('_', ' ') : 'Select Tool'}</span>
+                  <span>{node?.data?.tool?.name || 'Select Tool'}</span>
                   <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isToolOpen ? 'transform rotate-180' : ''}`} />
                 </button>
                 {isToolOpen && (
                   <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
                     <div className="py-1 max-h-60 overflow-auto">
-                      {TOOL_OPTIONS.map((tool) => (
-                        <button
-                          key={tool.id}
-                          onClick={() => handleToolSelect(tool)}
-                          className={`w-full text-left px-4 py-2 text-sm ${
-                            node.data.tool?.name === tool.id
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-300 hover:bg-gray-700'
-                          }`}
-                        >
-                          {tool.name}
-                        </button>
-                      ))}
+                      {isLoadingTools ? (
+                        <div className="px-4 py-2 text-sm text-gray-400">Loading tools...</div>
+                      ) : tools.length > 0 ? (
+                        tools.map((tool) => (
+                          <button
+                            key={tool.id}
+                            onClick={() => handleToolSelect(tool)}
+                            className={`w-full text-left px-4 py-2 text-sm ${
+                              node.data.tool?.id === tool.id
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-300 hover:bg-gray-700'
+                            }`}
+                            title={tool.description}
+                          >
+                            <div className="flex items-center">
+                              <FiTool className="mr-2 flex-shrink-0" size={14} />
+                              <div className="truncate">
+                                <span className="truncate">{tool.name}</span>
+                                <div className="text-xs text-gray-400 truncate">{tool.description}</div>
+                              </div>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-sm text-gray-400">
+                          No tools available. <button 
+                            onClick={handleAddTool}
+                            className="text-blue-400 hover:text-blue-300 underline"
+                          >
+                            Add tools
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
