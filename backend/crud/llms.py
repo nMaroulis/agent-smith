@@ -14,32 +14,31 @@ def get_remote_llms(db: Session, limit: Optional[int] = None):
     return db.query(LLMRemote).all()
 
 
-def get_remote_llm_by_id(db: Session, id: int):
-    return db.query(LLMRemote).filter(LLMRemote.id == id).first()
+def get_remote_llm_by_alias(db: Session, alias: str):
+    return db.query(LLMRemote).filter(LLMRemote.alias == alias).first()
 
 
-def create_remote_llm(db: Session, provider: str, name: str, api_key: str):
-    cred = LLMRemote(provider=provider, name=name)
+def create_remote_llm(db: Session, alias: str, provider: str, api_key: str):
+    cred = LLMRemote(alias=alias, provider=provider)
     cred.api_key = fernet_encrypt(api_key)
     db.add(cred)
     db.commit()
     db.refresh(cred)
     return cred
 
-def update_remote_llm_by_id(db: Session, id: int, provider: str, name: str, api_key: str):
-    llm = db.query(LLMRemote).filter(LLMRemote.id == id).first()
+def update_remote_llm_by_alias(db: Session, old_alias: str, new_alias: str, api_key: str):
+    llm = db.query(LLMRemote).filter(LLMRemote.alias == old_alias).first()
     if not llm:
         return None
-    llm.provider = provider
-    llm.name = name
+    llm.alias = new_alias
     llm.api_key = fernet_encrypt(api_key)
     db.commit()
     db.refresh(llm)
     return llm
 
 
-def delete_remote_llm_by_id(db: Session, id: int):
-    llm = db.query(LLMRemote).filter(LLMRemote.id == id).first()
+def delete_remote_llm_by_alias(db: Session, alias: str):
+    llm = db.query(LLMRemote).filter(LLMRemote.alias == alias).first()
     if not llm:
         return None
     db.delete(llm)
@@ -47,8 +46,8 @@ def delete_remote_llm_by_id(db: Session, id: int):
     return llm
 
 
-def get_api_key_by_name(db: Session, provider: str, name: str) -> Optional[str]:
-    llm = db.query(LLMRemote).filter_by(provider=provider, name=name).first()
+def get_api_key_by_alias(db: Session, alias: str) -> Optional[str]:
+    llm = db.query(LLMRemote).filter_by(alias=alias).first()
     if not llm:
         return None
     return fernet_decrypt(llm.api_key)

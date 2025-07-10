@@ -1,30 +1,37 @@
 from services.llms.base import BaseAPILLM
 from huggingface_hub import InferenceClient
+from typing import Optional
 
 class HuggingFaceAPILLM(BaseAPILLM):
     """Hugging Face API LLM."""
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: Optional[str] = None):
         super().__init__(name="huggingface", api_key=api_key)
-        self.client = InferenceClient(api_key=self.api_key)
+        if api_key is not None:
+            self.client = InferenceClient(api_key=self.api_key)
     
     def generate(self, prompt: str, **kwargs) -> str:
         """Generate a response from the LLM."""
         ...
     
-    def validate_key(self) -> bool:
+    @staticmethod
+    def validate_key(api_key: str) -> bool:
         """
-        Validate the API key.
+        Validate the API key by attempting to list models from the Hugging Face API.
 
         Returns:
-            bool: True if the key is valid, otherwise False.
+            bool: True if the API key is valid, False if it is invalid.
         """
         try:
-            self.client.models.list()
+            InferenceClient(api_key=api_key).models.list()
             return True
         except Exception as e:
             print(e)
             return False
-        
+
+
+    def validate(self) -> bool:
+        return self.validate_key(self.api_key)
+
     def list_models(self) -> list[str]:
         """List available models from the Hugging Face client."""
 

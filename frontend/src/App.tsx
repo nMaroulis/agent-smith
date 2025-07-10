@@ -23,6 +23,7 @@ const Navigation = () => {
   const [isSandboxOpen, setIsSandboxOpen] = useState(false);
   const [buttonRect, setButtonRect] = useState<DOMRect | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const portalRef = useRef<HTMLDivElement>(document.createElement('div'));
   
   // Create portal container on mount

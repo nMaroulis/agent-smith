@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from typing import Optional
 
 
 class BaseLLM(ABC):
@@ -56,16 +57,26 @@ class BaseLLM(ABC):
 class BaseAPILLM(BaseLLM):
     """Base class for API LLMs."""
 
-    def __init__(self, name: str, api_key: str):
+    def __init__(self, name: str, api_key: Optional[str] = None):
         super().__init__(name)
         self.api_key = api_key
 
-
+    @staticmethod
     @abstractmethod
-    def validate_key(self) -> bool:
+    def validate_key(api_key: str) -> bool:
         """
         Validate the API key.
+        Args:
+            api_key (str): The API key to validate.
+        Returns:
+            bool: True if the key is valid, otherwise False.
+        """
+        ...
 
+    @abstractmethod
+    def validate(self) -> bool:
+        """
+        Validate the API key.
         Returns:
             bool: True if the key is valid, otherwise False.
         """

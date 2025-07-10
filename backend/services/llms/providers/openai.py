@@ -1,13 +1,14 @@
 from services.llms.base import BaseAPILLM
 from openai import OpenAI, AuthenticationError, OpenAIError
-
+from typing import Optional
 
 class OpenAIAPILLM(BaseAPILLM):
     """OpenAI API LLM."""
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: Optional[str] = None):
         super().__init__(name="openai", api_key=api_key)
-        self.client = OpenAI(api_key=self.api_key)
+        if api_key is not None:
+            self.client = OpenAI(api_key=self.api_key)
 
 
     def generate(self, prompt: str, **kwargs) -> str:
@@ -19,7 +20,8 @@ class OpenAIAPILLM(BaseAPILLM):
         ).choices[0].message.content
 
 
-    def validate_key(self) -> bool:
+    @staticmethod
+    def validate_key(api_key: str) -> bool:
         """
         Validate the API key by attempting to list models from the OpenAI API.
 
@@ -27,12 +29,15 @@ class OpenAIAPILLM(BaseAPILLM):
             bool: True if the API key is valid, False if it is invalid.
         """
         try:
-            self.client.models.list()
+            OpenAI(api_key=api_key).models.list()
             return True
-        except AuthenticationError:
+        except Exception as e:
+            print(e)
             return False
-        except OpenAIError:
-            return False
+
+
+    def validate(self) -> bool:
+        return self.validate_key(self.api_key)
 
 
     def list_models(self) -> list[str]:

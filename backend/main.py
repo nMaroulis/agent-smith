@@ -4,6 +4,7 @@ import uvicorn
 from api.llms import router as llm_router
 from api.flows import router as flow_router
 from api.tools import router as tool_router
+from api.chatbot import router as chatbot_router
 from core.startup import startup
 
 app = FastAPI(title="Agentsmith API", description="Agentsmith API", version="0.0.1")
@@ -26,6 +27,7 @@ router = APIRouter(prefix="/api")
 router.include_router(llm_router)
 router.include_router(flow_router)
 router.include_router(tool_router)
+router.include_router(chatbot_router)
 app.include_router(router)
 
 

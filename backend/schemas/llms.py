@@ -26,6 +26,7 @@ class BaseLLM(BaseModel):
 
 class RemoteLLM(BaseLLM):
     """Model for API-based remote LLMs"""
+    alias: str
     type: Literal[LLMType.API] = LLMType.API
     provider: RemoteProvider
     api_key: str = Field(
@@ -41,19 +42,25 @@ class RemoteLLM(BaseLLM):
     class Config:
         json_schema_extra = {
             "example": {
-                "id": "1",
+                "alias": "My OpenAI API",
                 "type": "api",
-                "name": "My OpenAI API",
                 "provider": "openai",
                 "base_url": "https://api.openai.com/v1"
             }
         }
 
 
+class RemoteLLMUpdate(BaseLLM):
+    """Model for updating API-based remote LLMs"""
+    alias: str
+    api_key: str
+    base_url: Optional[HttpUrl] = None
+
+
+
 class RemoteLLMOut(BaseModel):
-    id: int
+    alias: str
     type: Literal[LLMType.API] = LLMType.API
-    name: str
     provider: RemoteProvider
     base_url: Optional[HttpUrl] = None
 
@@ -83,9 +90,8 @@ class LocalLLM(BaseLLM):
         }
 
 class LocalLLMOut(BaseModel):
-    id: int
     type: Literal[LLMType.LOCAL] = LLMType.LOCAL
-    name: str
+    alias: str
     provider: LocalProvider
     path: str
 
