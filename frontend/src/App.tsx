@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { ServerProvider, useServer } from './contexts/ServerContext';
 import { BrowserRouter as Router, Link, useLocation, Routes, Route } from 'react-router-dom';
-import { FiCpu, FiSettings, FiLayers, FiCode, FiInfo } from 'react-icons/fi';
+import { FiCpu, FiSettings, FiLayers, FiCode, FiInfo, FiChevronDown, FiTool } from 'react-icons/fi';
+import ChatbotPage from './pages/ChatbotPage';
+import ToolTesterPage from './pages/ToolTesterPage';
+import RAGLabPage from './pages/RAGLabPage';
 import { FlowCanvas } from './components/FlowCanvas';
 import CodeSidebar from './components/canvas/CodeSidebar';
 import NodeSidebar from './components/canvas/NodeSidebar';
@@ -16,6 +19,21 @@ import type { CustomNode } from './types';
 const Navigation = () => {
   const location = useLocation();
   
+  const [isSandboxOpen, setIsSandboxOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsSandboxOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Navigation items with icons and paths
   const navItems = [
     { 
@@ -41,12 +59,29 @@ const Navigation = () => {
     { 
       id: 'tools', 
       path: '/tools', 
-      icon: <FiCode className="w-5 h-5" />, 
+      icon: <FiTool className="w-5 h-5" />, 
       label: 'Tools',
       activeBg: 'from-green-500/10 to-green-600/10',
       activeText: 'text-green-400',
       hoverBg: 'hover:bg-green-500/10',
       gradient: 'from-green-400 to-green-500'
+    },
+    // Sandbox dropdown
+    {
+      id: 'sandbox',
+      path: null,
+      icon: <FiCode className="w-5 h-5" />,
+      label: 'Sandbox',
+      activeBg: 'from-pink-500/10 to-pink-600/10',
+      activeText: 'text-pink-400',
+      hoverBg: 'hover:bg-pink-500/10',
+      gradient: 'from-pink-400 to-pink-500',
+      isDropdown: true,
+      dropdownItems: [
+        { id: 'chatbot', path: '/sandbox/chatbot', label: 'Chatbot' },
+        { id: 'tool-tester', path: '/sandbox/tool-tester', label: 'Tool Tester' },
+        { id: 'rag-lab', path: '/sandbox/rag-lab', label: 'RAG Lab' },
+      ]
     },
     { 
       id: 'settings', 
@@ -70,14 +105,72 @@ const Navigation = () => {
     },
   ];
 
+  const isSandboxActive = navItems.some(
+    (item) => item.id === 'sandbox' && 
+    item.dropdownItems?.some(subItem => location.pathname.startsWith(subItem.path))
+  );
+
   return (
     <nav className="ml-8 flex space-x-1 h-full items-center">
       {navItems.map((item) => {
-        const isActive = location.pathname === item.path;
+        const isActive = item.path ? location.pathname === item.path : false;
+        const isSandboxItemActive = item.id === 'sandbox' && isSandboxActive;
+        
+        if (item.isDropdown) {
+          return (
+            <div key={item.id} className="relative h-full flex items-center" ref={dropdownRef}>
+              <button
+                onClick={() => setIsSandboxOpen(!isSandboxOpen)}
+                className={`group relative flex items-center px-4 py-3 h-full transition-all duration-200 rounded-lg mx-1 ${
+                  isSandboxItemActive 
+                    ? `${item.activeText} ${item.activeBg} bg-gradient-to-r shadow-lg`
+                    : `text-gray-400 ${item.hoverBg} hover:text-gray-200`
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <span className={`relative z-10 transition-all duration-200 ${isSandboxItemActive ? 'scale-110' : 'group-hover:scale-110'}`}>
+                    <span className={`absolute inset-0 rounded-full bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-200 ${
+                      isSandboxItemActive ? 'opacity-100' : ''
+                    }`}></span>
+                    <span className="relative z-10">{item.icon}</span>
+                  </span>
+                  <span className="font-medium text-sm relative z-10 flex items-center">
+                    {item.label}
+                    <FiChevronDown className={`ml-1 transition-transform duration-200 ${isSandboxOpen ? 'transform rotate-180' : ''}`} />
+                  </span>
+                </div>
+              </button>
+              
+              {/* Dropdown menu */}
+              {isSandboxOpen && (
+                <div className="absolute left-0 top-full mt-1 w-48 bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden border border-gray-700">
+                  {item.dropdownItems?.map((subItem) => {
+                    const isSubItemActive = location.pathname === subItem.path;
+                    return (
+                      <Link
+                        key={subItem.id}
+                        to={subItem.path}
+                        onClick={() => setIsSandboxOpen(false)}
+                        className={`block px-4 py-3 text-sm ${
+                          isSubItemActive 
+                            ? 'bg-gray-700 text-white' 
+                            : 'text-gray-300 hover:bg-gray-700/50'
+                        } transition-colors duration-200`}
+                      >
+                        {subItem.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
         return (
           <Link
             key={item.id}
-            to={item.path}
+            to={item.path || '#'}
             className={`group relative flex items-center px-4 py-3 h-full transition-all duration-200 rounded-lg mx-1 ${
               isActive 
                 ? `${item.activeText} ${item.activeBg} bg-gradient-to-r shadow-lg`
@@ -254,6 +347,11 @@ const App = () => {
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/tools" element={<ToolsPage />} />
               <Route path="/about" element={<AboutPage />} />
+              {/* Sandbox Routes */}
+              <Route path="/sandbox/chatbot" element={<ChatbotPage />} />
+              <Route path="/sandbox/tool-tester" element={<ToolTesterPage />} />
+              <Route path="/sandbox/rag-lab" element={<RAGLabPage />} />
+              <Route path="/sandbox" element={<ChatbotPage />} />
               <Route path="*" element={<MainLayout />} />
             </Routes>
           </main>
