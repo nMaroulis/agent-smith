@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from schemas.llms import RemoteLLM, LocalLLM, ListLLMs, RemoteLLMOut, LocalLLMOut, LLMValidationRequest, LLMValidationResponse, RemoteLLMUpdate
-from crud.llms import get_remote_llms, create_remote_llm, update_remote_llm_by_alias, get_remote_llm_by_alias, delete_remote_llm_by_alias, create_local_llm, get_local_llms, get_local_llm_by_id, update_local_llm_by_id, delete_local_llm_by_id, get_api_key_by_alias
+from fastapi import APIRouter, Depends, HTTPException, Path
+from schemas.llms import RemoteLLM, LocalLLM, ListLLMs, RemoteLLMOut, LocalLLMOut, LLMValidationRequest, LLMValidationResponse, RemoteLLMUpdate, ListModels, ListEmbeddingsModels
+from crud.llms import get_remote_llms, create_remote_llm, update_remote_llm_by_alias, get_remote_llm_by_alias, delete_remote_llm_by_alias, create_local_llm, get_local_llms, get_local_llm_by_id, update_local_llm_by_id, delete_local_llm_by_id
 from typing import Optional
 from sqlalchemy.orm import Session
 from db.session import get_db
@@ -51,8 +51,8 @@ def delete_api_key(alias: str, db: Session = Depends(get_db)):
     return deleted
 
 
-@router.get("/remote/{alias}/models", response_model=dict(str, list[str]))
-async def get_available_remote_models(alias: str = Query(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
+@router.get("/remote/{alias}/models", response_model=ListModels)
+async def get_available_remote_models(alias: str = Path(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
     try:
         llm = get_remote_llm_client_by_alias(alias=alias, db=db)
         return {"models": llm.list_models()}
@@ -61,8 +61,8 @@ async def get_available_remote_models(alias: str = Query(..., description="The r
         return {"error": f"Validation error: {str(e)}"}
 
 
-@router.get("/remote/{alias}/embeddings_models", response_model=dict(str, list[str]))
-async def get_available_remote_embeddings_models(alias: str = Query(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
+@router.get("/remote/{alias}/embeddings_models", response_model=ListEmbeddingsModels)
+async def get_available_remote_embeddings_models(alias: str = Path(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
     try:
         llm = get_remote_llm_client_by_alias(alias=alias, db=db)
         return {"embeddings_models": llm.list_embeddings_models()}
@@ -84,7 +84,7 @@ async def validate_llm_key(data: LLMValidationRequest):
 
 
 @router.get("/remote/{alias}/validate-key", response_model=LLMValidationResponse, description="Validate a saved remote LLM's API key")
-async def validate_remote_llm_key(alias: str = Query(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
+async def validate_remote_llm_key(alias: str = Path(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
     try:
         llm = get_remote_llm_client_by_alias(alias=alias, db=db)
         if not llm.validate():
@@ -108,40 +108,40 @@ def new_local_llm(llm: LocalLLM, db: Session = Depends(get_db)):
     return create_local_llm(db, llm.provider, llm.name, llm.path)
 
 
-@router.get("/local/{id}", description="Get a local LLM by ID", response_model=LocalLLMOut)
-def get_local_llm(id: int, db: Session = Depends(get_db)):
-    return get_local_llm_by_id(db, id)
+# @router.get("/local/{alias}", description="Get a local LLM by alias", response_model=LocalLLMOut)
+# def get_local_llm(alias: str = Path(..., description="The local LLM alias"), db: Session = Depends(get_db)):
+#     return get_local_llm_by_alias(db, alias)
 
 
-@router.put("/local/{id}", description="Update a local LLM by ID")
-def update_local_llm(id: int, llm: LocalLLM, db: Session = Depends(get_db)):
-    updated = update_local_llm_by_id(db, id, llm.provider, llm.name, llm.path)
-    if not updated:
-        raise HTTPException(status_code=404, detail="LLM not found")
-    return updated
+# @router.put("/local/{alias}", description="Update a local LLM by alias")
+# def update_local_llm(alias: str, llm: LocalLLM, db: Session = Depends(get_db)):
+#     updated = update_local_llm_by_alias(db, alias, llm.provider, llm.name, llm.path)
+#     if not updated:
+#         raise HTTPException(status_code=404, detail="LLM not found")
+#     return updated
 
 
-@router.delete("/local/{id}")
-def delete_local_llm(id: int, db: Session = Depends(get_db)):
-    deleted = delete_local_llm_by_id(db, id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="LLM not found")
-    return deleted
+# @router.delete("/local/{alias}")
+# def delete_local_llm(alias: str, db: Session = Depends(get_db)):
+#     deleted = delete_local_llm_by_alias(db, alias)
+#     if not deleted:
+#         raise HTTPException(status_code=404, detail="LLM not found")
+#     return deleted
 
 
-@router.get("/local/models/llms", response_model=list[str])
-async def get_available_local_models(provider: str):
-    try:
-        llm = get_llm_client(provider=provider.lower().replace(" ", "_"))
-        return llm.list_models()
-    except Exception as e:
-        return {"error": f"Validation error: {str(e)}"}
+# @router.get("/local/models/llms", response_model=list[str])
+# async def get_available_local_models(provider: str):
+#     try:
+#         llm = get_llm_client(provider=provider.lower().replace(" ", "_"))
+#         return llm.list_models()
+#     except Exception as e:
+#         return {"error": f"Validation error: {str(e)}"}
 
 
-@router.get("/local/models/embeddings", response_model=list[str])
-async def get_available_local_embeddings_models(provider: str):
-    try:
-        llm = get_llm_client(provider=provider.lower().replace(" ", "_"))
-        return llm.list_embeddings_models()
-    except Exception as e:
-        return {"error": f"Validation error: {str(e)}"}
+# @router.get("/local/{alias}/embeddings", response_model=list[str])
+# async def get_available_local_embeddings_models(alias: str = Path(..., description="The local LLM alias"), db: Session = Depends(get_db)):
+#     try:
+#         llm = get_local_llm_client_by_alias(alias=alias, db=db)
+#         return llm.list_embeddings_models()
+#     except Exception as e:
+#         return {"error": f"Validation error: {str(e)}"}

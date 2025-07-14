@@ -15,7 +15,7 @@ const LLMsPage = () => {
   const [activeTab, setActiveTab] = useState<'active' | 'add'>('active');
   const [llms, setLlms] = useState<LLM[]>([]);
   const [filter, setFilter] = useState<'all' | 'api' | 'local'>('all');
-  const [isEditing, setIsEditing] = useState<string | null>(null);
+
   const [selectedLLM, setSelectedLLM] = useState<LLM | null>(null);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [availableEmbeddings, setAvailableEmbeddings] = useState<string[]>([]);
@@ -33,8 +33,10 @@ const LLMsPage = () => {
   const [apiProvider, setApiProvider] = useState<APIProvider>('openai');
   const [localProvider, setLocalProvider] = useState<APIProvider>('llama-cpp');
   const [apiKey, setApiKey] = useState('');
+  const [baseUrl, setBaseUrl] = useState('');
+  const [alias, setAlias] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
-  const [name, setName] = useState('');
+  const [isEditing, setIsEditing] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isValidating, setIsValidating] = useState(false);
   type ValidationStatus = { valid: boolean | null; message: string };
@@ -42,7 +44,8 @@ const LLMsPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Helper function to get provider display name
-  const getProviderName = (provider: string) => {
+  const getProviderName = (provider?: APIProvider | string) => {
+    if (!provider) return 'Unknown';
     const names: Record<string, string> = {
       'openai': 'OpenAI',
       'anthropic': 'Anthropic',
@@ -77,74 +80,94 @@ const LLMsPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-
+    
+    if (llmType === 'api' && !apiKey) {
+      setError('API key is required');
+      return;
+    }
+    
     try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Create a new LLM object
       const provider = llmType === 'api' ? apiProvider : localProvider;
-      const llmName = name || (llmType === 'api' ? provider : selectedModel.split('/').pop() || 'Local Model');
-      const baseData = {
+      const llmAlias = alias || (llmType === 'api' ? provider : selectedModel.split('/').pop() || 'Local Model');
+      
+      const llmData: Omit<LLM, 'id'> = {
         type: llmType,
         provider,
-        name: llmName,
+        alias: llmAlias,
+        ...(llmType === 'api' && { 
+          apiKey,
+          baseUrl: baseUrl || undefined,
+          model: selectedModel || undefined
+        }),
+        ...(llmType === 'local' && { 
+          path: selectedModel,
+          model: selectedModel.split('/').pop()
+        })
       };
       
-      const llmData = llmType === 'api'
-        ? {
-            ...baseData,
-            apiKey
-          }
-        : {
-            ...baseData,
-            path: selectedModel
-          };
-
+      let updatedLLM: LLM;
+      
       if (isEditing) {
         // Update existing LLM
-        const updatedLLM = await llmService.updateLLM(isEditing, llmData, llmType);
-        setLlms(prevLlms => prevLlms.map(llm => llm.id === isEditing ? updatedLLM : llm));
+        updatedLLM = await llmService.updateLLM(isEditing, llmData, llmType);
+        setLlms(prevLlms => prevLlms.map(llm => llm.alias === isEditing ? updatedLLM : llm));
       } else {
-        // Create new LLM - wait for the creation to complete
-        await llmService.createLLM(llmData, llmType);
-        // Refresh the full list from the server to ensure we have all fields
-        await fetchLLMs();
+        // Create new LLM
+        updatedLLM = await llmService.createLLM(llmData, llmType);
+        setLlms(prevLlms => [...prevLlms, updatedLLM]);
       }
-
-      // Reset form and show success
+      
+      // Reset form
       resetForm();
       setActiveTab('active');
+      
     } catch (err) {
       console.error('Failed to save LLM:', err);
-      setError('Failed to save LLM. Please check your input and try again.');
+      setError('Failed to save LLM. Please check your inputs and try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleEdit = (llm: LLM) => {
+    if (!llm.alias) return;
+    
     setLlmType(llm.type);
     if (llm.type === 'api') {
       setApiProvider(llm.provider as APIProvider);
       setApiKey(llm.apiKey || '');
+      setBaseUrl(llm.baseUrl || '');
     } else {
       setLocalProvider(llm.provider as APIProvider);
     }
-    setSelectedModel(llm.path || '');
-    setName(llm.name);
-    setIsEditing(llm.id);
+    setSelectedModel(llm.path || llm.model || '');
+    setAlias(llm.alias);
+    setIsEditing(llm.alias);
     setActiveTab('add');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id: string, type: 'api' | 'local') => {
-    if (!window.confirm('Are you sure you want to delete this LLM configuration?')) {
+  const handleDelete = async (alias: string, type: 'api' | 'local') => {
+    const llmToDelete = llms.find(llm => llm.alias === alias);
+    if (!llmToDelete) return;
+    
+    if (!window.confirm(`Are you sure you want to delete the LLM configuration "${alias}"?`)) {
       return;
     }
     
     try {
       setIsLoading(true);
-      await llmService.deleteLLM(id, type);
-      setLlms(llms.filter(llm => llm.id !== id));
+      await llmService.deleteLLM(alias, type);
+      // Update the UI by removing the deleted LLM
+      setLlms(prevLlms => prevLlms.filter(llm => llm.alias !== alias));
+      // Clear the selected LLM if it's the one being deleted
+      if (selectedLLM?.alias === alias) {
+        setSelectedLLM(null);
+      }
     } catch (err) {
       console.error('Failed to delete LLM:', err);
       setError('Failed to delete LLM. Please try again.');
@@ -159,7 +182,7 @@ const LLMsPage = () => {
     setLocalProvider('llama-cpp');
     setSelectedModel('');
     setApiKey('');
-    setName('');
+    setAlias('');
     setError(null);
     setIsEditing(null);
     setValidationStatus({valid: null, message: ''});
@@ -176,7 +199,7 @@ const LLMsPage = () => {
     setError(null);
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/validate-key`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/validate-key`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,45 +232,49 @@ const LLMsPage = () => {
   };
 
   const handleViewLLM = async (llm: LLM) => {
+    if (!llm.alias) return;
+    
     setSelectedLLM(llm);
-    setIsLoadingDetails(true);
     setValidationStatus({valid: null, message: ''});
     setAvailableModels([]);
     setAvailableEmbeddings([]);
-
-    try {
-      // Validate API key for remote LLMs
-      if (llm.type === 'api') {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/validate-key?provider=${encodeURIComponent(llm.provider)}&name=${encodeURIComponent(llm.name)}`);
+    
+    if (llm.type === 'api') {
+      try {
+        // Validate API key for remote LLMs using the alias endpoint
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/${encodeURIComponent(llm.alias)}/validate-key`);
         const data = await response.json();
+        
         setValidationStatus({
           valid: data.valid,
           message: data.message || (data.valid ? 'API key is valid' : 'Invalid API key')
         });
-
+        
         // Fetch available models if key is valid
         if (data.valid) {
           try {
-            const modelsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/models/llms?provider=${encodeURIComponent(llm.provider)}&name=${encodeURIComponent(llm.name)}`);
-            const modelsData = await modelsResponse.ok ? await modelsResponse.json() : [];
-            setAvailableModels(Array.isArray(modelsData) ? modelsData : []);
-
-            const embeddingsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/models/embeddings?provider=${encodeURIComponent(llm.provider)}&name=${encodeURIComponent(llm.name)}`);
-            const embeddingsData = embeddingsResponse.ok ? await embeddingsResponse.json() : [];
-            setAvailableEmbeddings(Array.isArray(embeddingsData) ? embeddingsData : []);
+            setIsLoadingDetails(true);
+            const modelsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/${encodeURIComponent(llm.alias)}/models/llms`);
+            const modelsData = await modelsResponse.json();
+            setAvailableModels(modelsData.models || []);
+            
+            // Fetch available embeddings models
+            const embeddingsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/${encodeURIComponent(llm.alias)}/models/embeddings`);
+            const embeddingsData = await embeddingsResponse.json();
+            setAvailableEmbeddings(embeddingsData.embeddings_models || []);
           } catch (err) {
             console.error('Error fetching models:', err);
+          } finally {
+            setIsLoadingDetails(false);
           }
         }
+      } catch (err) {
+        console.error('Error validating API key:', err);
+        setValidationStatus({
+          valid: false,
+          message: 'Failed to validate API key. Please check your connection.'
+        });
       }
-    } catch (err) {
-      console.error('Error validating API key:', err);
-      setValidationStatus({
-        valid: false,
-        message: 'Failed to validate API key'
-      });
-    } finally {
-      setIsLoadingDetails(false);
     }
   };
 
@@ -268,38 +295,40 @@ const LLMsPage = () => {
         <div className="bg-gray-750 rounded-lg p-6">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-xl font-semibold text-white">{selectedLLM.name}</h2>
+              <h2 className="text-xl font-semibold text-white">{selectedLLM?.alias || 'LLM Details'}</h2>
               <div className="flex items-center mt-2 space-x-3">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  selectedLLM.type === 'api' ? 'bg-blue-900/50 text-blue-300' : 'bg-purple-900/50 text-purple-300'
+                  selectedLLM && selectedLLM.type === 'api' ? 'bg-blue-900/50 text-blue-300' : 'bg-purple-900/50 text-purple-300'
                 }`}>
-                  {selectedLLM.type === 'api' ? 'API' : 'Local'}
+                  {selectedLLM && selectedLLM.type === 'api' ? 'API' : 'Local'}
                 </span>
                 <span className="text-gray-400">•</span>
                 <span className="text-gray-300">
-                  {selectedLLM.type === 'api' ? getProviderName(selectedLLM.provider) : 'LLaMA.cpp'}
+                  {selectedLLM?.type === 'api' && selectedLLM?.provider ? getProviderName(selectedLLM.provider) : 'LLaMA.cpp'}
                 </span>
               </div>
             </div>
             <div className="flex space-x-2">
               <button
-                onClick={() => handleEdit(selectedLLM)}
-                className="text-gray-400 hover:text-blue-400 p-1.5 rounded-full hover:bg-blue-900/20 transition-colors"
-                title="Edit model"
+                onClick={() => selectedLLM && handleEdit(selectedLLM)}
+                disabled={!selectedLLM}
+                className="text-gray-400 hover:text-blue-400 p-1.5 rounded-full hover:bg-blue-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title={selectedLLM ? "Edit model" : "No model selected"}
               >
                 <FiEdit2 className="h-4 w-4" />
               </button>
               <button
-                onClick={() => handleDelete(selectedLLM.id, selectedLLM.type)}
-                className="text-gray-400 hover:text-red-400 p-1.5 rounded-full hover:bg-red-900/20 transition-colors"
-                title="Delete model"
+                onClick={() => selectedLLM?.alias && handleDelete(selectedLLM.alias, selectedLLM.type)}
+                disabled={!selectedLLM?.alias}
+                className="text-gray-400 hover:text-red-400 p-1.5 rounded-full hover:bg-red-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title={selectedLLM?.alias ? "Delete model" : "No model selected"}
               >
                 <FiTrash2 className="h-4 w-4" />
               </button>
             </div>
           </div>
 
-          {selectedLLM.type === 'api' && (
+          {selectedLLM && selectedLLM.type === 'api' && (
             <div className="mt-6">
               <h3 className="text-sm font-medium text-gray-300 mb-2">API Key Status</h3>
               {isLoadingDetails ? (
@@ -319,7 +348,7 @@ const LLMsPage = () => {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-sm font-medium text-gray-300 mb-2">Available Models</h3>
-              {selectedLLM.type === 'local' ? (
+              {selectedLLM && selectedLLM.type === 'local' ? (
                 <div className="text-sm text-gray-400">
                   Local model support coming soon
                 </div>
@@ -342,7 +371,7 @@ const LLMsPage = () => {
 
             <div>
               <h3 className="text-sm font-medium text-gray-300 mb-2">Available Embeddings</h3>
-              {selectedLLM.type === 'local' ? (
+              {selectedLLM && selectedLLM.type === 'local' ? (
                 <div className="text-sm text-gray-400">
                   Local embeddings support coming soon
                 </div>
@@ -424,7 +453,7 @@ const LLMsPage = () => {
           >
             <div className="flex justify-between items-start">
               <div className="min-w-0 flex-1">
-                <h3 className="font-medium text-white truncate">{llm.name}</h3>
+                <h3 className="font-medium text-white truncate">{llm.alias}</h3>
                 <div className="flex items-center mt-1 text-sm text-gray-400 flex-wrap gap-x-2">
                   <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
                     llm.type === 'api' 
@@ -435,7 +464,7 @@ const LLMsPage = () => {
                   </span>
                   <span className="text-gray-400">•</span>
                   <span className="text-gray-300 truncate">
-                    {llm.type === 'api' ? getProviderName(llm.provider) : 'LLaMA.cpp'}
+                    {llm.type === 'api' && llm.provider ? getProviderName(llm.provider) : 'LLaMA.cpp'}
                   </span>
                   {llm.type === 'local' && llm.path && (
                     <>
@@ -616,12 +645,12 @@ const LLMsPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Name (Optional)
+                  Alias (Optional)
                 </label>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={alias}
+                  onChange={(e) => setAlias(e.target.value)}
                   placeholder="e.g., My GPT-4 Model"
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />

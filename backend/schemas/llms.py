@@ -21,12 +21,11 @@ class LocalProvider(str, Enum):
 class BaseLLM(BaseModel):
     """Base model for all LLM types"""
     type: LLMType
-    name: str
+    alias: str
 
 
 class RemoteLLM(BaseLLM):
     """Model for API-based remote LLMs"""
-    alias: str
     type: Literal[LLMType.API] = LLMType.API
     provider: RemoteProvider
     api_key: str = Field(
@@ -81,9 +80,8 @@ class LocalLLM(BaseLLM):
     class Config:
         json_schema_extra = {
             "example": {
-                "id": "3",
+                "alias": "My Local LLaMA",
                 "type": "local",
-                "name": "Local LLaMA 3 8B",
                 "provider": "llama-cpp",
                 "path": "/models/llama/llama-3-8b.Q4_K_M.gguf"
             }
@@ -104,6 +102,12 @@ class ListLLMs(BaseModel):
     api: list[RemoteLLMOut]
     local: list[LocalLLMOut]
 
+
+class ListModels(BaseModel):
+    models: list[str]
+
+class ListEmbeddingsModels(BaseModel):
+    embeddings_models: list[str]
 
 # Union type that can represent any LLM type
 LLM = RemoteLLM | LocalLLM

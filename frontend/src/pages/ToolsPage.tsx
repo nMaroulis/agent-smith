@@ -22,7 +22,16 @@ interface IStandaloneCodeEditor {
 
 type ToolType = 'rag' | 'web_search' | 'custom_code' | 'agent' | 'api_call' | 'llm_tool' | 'other';
 
+interface LLMConfig {
+  provider: string;
+  alias: string;
+  model: string;
+  temperature: number;
+  max_tokens: number;
+}
+
 interface ToolConfig {
+  llm_config: LLMConfig | null;
   [key: string]: any;
 }
 
@@ -45,7 +54,7 @@ interface ToolBase {
 }
 
 interface Tool extends ToolBase {
-  id: number;
+  id: number | string;
 }
 
 const ToolsPage = () => {
@@ -64,6 +73,8 @@ const ToolsPage = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [availableLLMs, setAvailableLLMs] = useState<any[]>([]);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   
   // Refs
   const editorRef = useRef<IStandaloneCodeEditor | null>(null);
@@ -72,8 +83,10 @@ const ToolsPage = () => {
   const [formData, setFormData] = useState<ToolBase>({
     name: '',
     description: '',
-    type: 'custom_code',
-    config: {},
+    type: 'custom_code' as ToolType,
+    config: {
+      llm_config: null
+    },
     code: '',
     is_active: true,
     parameters: []
@@ -111,18 +124,87 @@ const ToolsPage = () => {
     }
   }, [serverUrl]);
 
-  // Initialize tools on component mount
+  // Initialize tools and LLMs on component mount
   useEffect(() => {
-    fetchTools().catch(console.error);
+    const initializeData = async () => {
+      try {
+        await fetchTools();
+        await loadLLMs();
+      } catch (error) {
+        console.error('Initialization error:', error);
+      }
+    };
+    initializeData();
   }, [fetchTools]);
+
+  // Load available LLMs
+  const loadLLMs = async () => {
+    try {
+      const response = await fetch(`${serverUrl}/api/llms/remote`);
+      if (!response.ok) throw new Error('Failed to fetch LLMs');
+      const llms = await response.json();
+      setAvailableLLMs(llms);
+      return llms;
+    } catch (error) {
+      console.error('Error fetching LLMs:', error);
+      setError('Failed to load LLMs');
+      return [];
+    }
+  };
+
+  // Fetch models for a specific LLM alias
+  const fetchModels = async (alias: string) => {
+    try {
+      const response = await fetch(`${serverUrl}/api/llms/remote/${alias}/models`);
+      if (!response.ok) throw new Error('Failed to fetch models');
+      const data = await response.json();
+      const models = data.models || [];
+      setAvailableModels(models);
+      return models;
+    } catch (error) {
+      console.error('Error fetching models:', error);
+      setAvailableModels([]);
+      return [];
+    }
+  };
+
+  // Handle LLM provider change
+  const handleLLMProviderChange = async (alias: string) => {
+    const models = await fetchModels(alias);
+    const selectedLLM = availableLLMs.find(llm => llm.alias === alias);
+    
+    if (!selectedLLM) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      config: {
+        ...prev.config,
+        llm_config: {
+          provider: selectedLLM.provider,
+          alias,
+          model: models[0] || '',
+          temperature: 0.7,
+          max_tokens: 1000
+        }
+      }
+    }));
+  };
 
   // Reset form to initial state
   const resetForm = useCallback(() => {
     setFormData({
       name: '',
       description: '',
-      type: 'custom_code',
-      config: {},
+      type: 'custom_code' as ToolType,
+      config: {
+        llm_config: {
+          provider: '',
+          alias: '',
+          model: '',
+          temperature: 0.7,
+          max_tokens: 1000
+        }
+      },
       code: '',
       is_active: true,
       parameters: []
@@ -202,28 +284,59 @@ Please provide a comprehensive summary of the search results, focusing on the mo
   }, []);
   
   // Handle input changes in the form
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const target = e.target as HTMLInputElement;
-    const { name, type } = target;
-    const value = type === 'checkbox' ? target.checked : target.value;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     
-    // Handle nested config properties
-    if (name.startsWith('config.')) {
+    // Handle nested config properties for llm_config
+    if (name.startsWith('config.llm_config.')) {
+      const configKey = name.split('.')[2] as keyof LLMConfig;
+      
+      setFormData(prev => {
+        // Create a new llm_config object with default values if it doesn't exist
+        const currentLLMConfig: LLMConfig = prev.config.llm_config || {
+          provider: '',
+          alias: '',
+          model: '',
+          temperature: 0.7,
+          max_tokens: 1000
+        };
+        
+        // Create a new config with the updated llm_config
+        const newConfig = {
+          ...prev.config,
+          llm_config: {
+            ...currentLLMConfig,
+            [configKey]: type === 'number' ? Number(value) : value
+          }
+        };
+        
+        // Return the new state with the updated config
+        return {
+          ...prev,
+          config: newConfig
+        };
+      });
+    } 
+    // Handle other config properties
+    else if (name.startsWith('config.')) {
       const configKey = name.split('.')[1];
       setFormData(prev => ({
         ...prev,
         config: {
           ...prev.config,
-          [configKey]: type === 'number' ? parseFloat(value as string) : value
+          [configKey]: type === 'checkbox' ? checked : value
         }
       }));
-    } else {
+    } 
+    // Handle top-level form fields
+    else {
       setFormData(prev => ({
         ...prev,
-        [name]: type === 'number' ? parseFloat(value as string) : value
+        [name]: type === 'checkbox' ? checked : value
       }));
     }
-  }, []);
+  };
 
   const handlePreview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,23 +373,42 @@ Please provide a comprehensive summary of the search results, focusing on the mo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
     try {
+      // Create a new config object
+      const newConfig = { ...formData.config };
+      
+      // If this is an LLM tool, ensure llm_config has all required fields
+      if (formData.type === 'llm_tool' && formData.config.llm_config) {
+        newConfig.llm_config = {
+          provider: formData.config.llm_config.provider || '',
+          alias: formData.config.llm_config.alias || '',
+          model: formData.config.llm_config.model || '',
+          temperature: formData.config.llm_config.temperature || 0.7,
+          max_tokens: formData.config.llm_config.max_tokens || 1000
+        };
+      } else {
+        // For non-LLM tools, set llm_config to null
+        newConfig.llm_config = null;
+      }
+      
+      // Prepare submission data
+      const submissionData: ToolBase = {
+        ...formData,
+        config: newConfig,
+        // Use preview code if available
+        ...(isPreview && previewCode ? { code: previewCode } : {})
+      };
+
       const url = editingTool 
         ? `${serverUrl}/api/tools/${editingTool.id}`
         : `${serverUrl}/api/tools/`;
       
       const method = editingTool ? 'PUT' : 'POST';
       
-      // Use preview code if available, otherwise use the form data
-      const submissionData = isPreview && previewCode
-        ? { ...formData, code: previewCode }
-        : formData;
-      
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submissionData),
       });
 
@@ -293,12 +425,24 @@ Please provide a comprehensive summary of the search results, focusing on the mo
   };
 
   const handleEditTool = async (toolToEdit: Tool) => {
-    // First set the form data with the tool to edit
+    // Ensure llm_config exists in the tool's config
+    const toolConfig = { ...toolToEdit.config };
+    if (toolToEdit.type === 'llm_tool') {
+      toolConfig.llm_config = toolConfig.llm_config || {
+        provider: '',
+        alias: '',
+        model: '',
+        temperature: 0.7,
+        max_tokens: 1000
+      };
+    }
+    
+    // Set the form data with the tool to edit
     setFormData({
       name: toolToEdit.name,
       description: toolToEdit.description || '',
       type: toolToEdit.type,
-      config: toolToEdit.config || {},
+      config: toolConfig,
       code: toolToEdit.code || '',
       is_active: toolToEdit.is_active,
       parameters: toolToEdit.parameters || []
@@ -306,6 +450,11 @@ Please provide a comprehensive summary of the search results, focusing on the mo
     
     setEditingTool(toolToEdit);
     setIsCreating(true);
+    
+    // If it's an LLM tool, load the available models for the selected provider
+    if (toolToEdit.type === 'llm_tool' && toolToEdit.config?.llm_config?.alias) {
+      await fetchModels(toolToEdit.config.llm_config.alias);
+    }
     
     // Generate and show preview code when editing
     try {
@@ -1099,6 +1248,298 @@ Please provide a comprehensive summary of the search results, focusing on the mo
                 </form>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Tool configuration form */}
+        {isCreating && (
+          <div className="mb-6 bg-gray-800 p-6 rounded-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-white">
+                {editingTool ? 'Edit Tool' : 'Create New Tool'}
+              </h2>
+              <div className="flex space-x-2">
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                  title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                >
+                  {isFullscreen ? <FiMinimize2 /> : <FiMaximize2 />}
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleForm}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
+                  title="Close"
+                >
+                  <FiX />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Type *
+                  </label>
+                  <select
+                    name="type"
+                    value={formData.type}
+                    onChange={handleInputChange}
+                    className="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm"
+                    required
+                  >
+                    {toolTypeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows={2}
+                  className="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm"
+                />
+              </div>
+
+              {/* LLM Tool Configuration */}
+              {formData.type === 'llm_tool' && (
+                <div className="space-y-4 p-4 bg-gray-750 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-300">LLM Configuration</h3>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      LLM Provider *
+                    </label>
+                    <select
+                      className="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm"
+                      value={formData.config.llm_config?.alias || ''}
+                      onChange={(e) => handleLLMProviderChange(e.target.value)}
+                      required
+                    >
+                      <option value="">Select a provider</option>
+                      {availableLLMs.map((llm) => (
+                        <option key={llm.alias} value={llm.alias}>
+                          {llm.alias} ({llm.provider})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Model *
+                    </label>
+                    <select
+                      className="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm"
+                      value={formData.config.llm_config?.model || ''}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setFormData(prev => {
+                          const currentLLMConfig = prev.config.llm_config || {
+                            provider: '',
+                            alias: '',
+                            model: '',
+                            temperature: 0.7,
+                            max_tokens: 1000
+                          };
+                          
+                          return {
+                            ...prev,
+                            config: {
+                              ...prev.config,
+                              llm_config: {
+                                ...currentLLMConfig,
+                                model: newValue
+                              }
+                            }
+                          };
+                        });
+                      }}
+                      disabled={!formData.config.llm_config?.alias}
+                      required
+                    >
+                      <option value="">Select a model</option>
+                      {availableModels.map((model) => (
+                        <option key={model} value={model}>
+                          {model}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Temperature
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        className="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm"
+                        value={formData.config.llm_config?.temperature ?? 0.7}
+                        onChange={(e) => {
+                          const newValue = parseFloat(e.target.value) || 0.7;
+                          setFormData(prev => {
+                            const currentLLMConfig = prev.config.llm_config || {
+                              provider: '',
+                              alias: '',
+                              model: '',
+                              temperature: 0.7,
+                              max_tokens: 1000
+                            };
+                            
+                            return {
+                              ...prev,
+                              config: {
+                                ...prev.config,
+                                llm_config: {
+                                  ...currentLLMConfig,
+                                  temperature: newValue
+                                }
+                              }
+                            };
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Max Tokens
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="w-full bg-gray-700 text-white rounded px-3 py-2 text-sm"
+                        value={formData.config.llm_config?.max_tokens ?? 1000}
+                        onChange={(e) => {
+                          const newValue = parseInt(e.target.value) || 1000;
+                          setFormData(prev => {
+                            const currentLLMConfig = prev.config.llm_config || {
+                              provider: '',
+                              alias: '',
+                              model: '',
+                              temperature: 0.7,
+                              max_tokens: 1000
+                            };
+                            
+                            return {
+                              ...prev,
+                              config: {
+                                ...prev.config,
+                                llm_config: {
+                                  ...currentLLMConfig,
+                                  max_tokens: newValue
+                                }
+                              }
+                            };
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Code Editor */}
+              <div className="mt-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Code
+                  </label>
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={handlePreview}
+                      disabled={isSubmitting}
+                      className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'Generating...' : 'Preview'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`bg-gray-900 rounded-lg overflow-hidden ${isFullscreen ? 'fixed inset-0 z-50 m-0' : 'h-96'}`}>
+                  <div className="flex justify-between items-center bg-gray-800 px-4 py-2">
+                    <span className="text-xs text-gray-400">
+                      {formData.type}.py
+                    </span>
+                    <button
+                      type="button"
+                      onClick={toggleFullscreen}
+                      className="text-gray-400 hover:text-white"
+                      title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                    >
+                      {isFullscreen ? <FiMinimize2 /> : <FiMaximize2 />}
+                    </button>
+                  </div>
+                  <Suspense fallback={<EditorLoading />}>
+                    <MonacoEditor
+                      height={isFullscreen ? 'calc(100vh - 40px)' : 'calc(24rem - 40px)'}
+                      defaultLanguage="python"
+                      value={isPreview && previewCode ? previewCode : formData.code}
+                      onChange={handleCodeChange}
+                      onMount={handleEditorDidMount}
+                      theme="vs-dark"
+                      options={{
+                        minimap: { enabled: false },
+                        scrollBeyondLastLine: false,
+                        fontSize: 14,
+                        wordWrap: 'on',
+                        automaticLayout: true,
+                      }}
+                    />
+                  </Suspense>
+                </div>
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-700">
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
+                  disabled={isSubmitting}
+                >
+                  Reset
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Saving...' : 'Save Tool'}
+                </button>
+              </div>
+            </form>
           </div>
         )}
 

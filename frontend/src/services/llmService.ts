@@ -5,13 +5,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 export type APIProvider = 'openai' | 'anthropic' | 'huggingface' | 'llama-cpp';
 
 export interface LLM {
-  id: string;
+  id?: string; // Optional, only used for internal frontend tracking
   type: 'api' | 'local';
-  provider: APIProvider;
+  provider?: APIProvider; // Made optional to handle cases where it might be undefined
   /** For API LLMs: model name, for Local LLMs: path to model file */
   model?: string; // Only required for local LLMs
   path?: string; // For local LLMs
-  name: string;
+  alias: string; // Primary identifier for API operations
   apiKey?: string;
   baseUrl?: string;
 }
@@ -23,38 +23,63 @@ export const llmService = {
     return response.data;
   },
 
-  getApiLLM: async (id: string): Promise<LLM> => {
-    const response = await axios.get(`${API_BASE_URL}/llms/remote/${id}`);
+  getApiLLM: async (alias: string): Promise<LLM> => {
+    const response = await axios.get(`${API_BASE_URL}/llms/remote/${encodeURIComponent(alias)}`);
     return response.data;
   },
 
   createApiLLM: async (llm: Omit<LLM, 'id' | 'type'>): Promise<LLM> => {
-    const { apiKey, ...rest } = llm;
+    const { apiKey, alias, provider, baseUrl } = llm;
     const payload = {
-      ...rest,
-      api_key: apiKey,  // Transform to snake_case
+      alias,
+      provider: provider as 'openai' | 'anthropic' | 'huggingface',
+      api_key: apiKey,
+      base_url: baseUrl,
       type: 'api' as const
     };
+    
     console.log('[createApiLLM] Sending payload:', JSON.stringify(payload, null, 2));
-    const response = await axios.post(`${API_BASE_URL}/llms/remote`, payload);
-    console.log('[createApiLLM] Response:', response.data);
-    return response.data;
+    try {
+      const response = await axios.post(`${API_BASE_URL}/llms/remote`, payload);
+      console.log('[createApiLLM] Response:', response.data);
+      return {
+        ...response.data,
+        model: response.data.model || '',
+        apiKey: response.data.api_key
+      };
+    } catch (error: any) {
+      console.error('[createApiLLM] Error:', error.response?.data || error.message);
+      throw error;
+    }
   },
 
-  updateApiLLM: async (id: string, llm: Partial<LLM>): Promise<LLM> => {
-    const { apiKey, ...rest } = llm;
-    const payload = {
-      ...rest,
-      api_key: apiKey  // Transform to snake_case
-    };
-    console.log(`[updateApiLLM] Updating ID ${id} with payload:`, JSON.stringify(payload, null, 2));
-    const response = await axios.put(`${API_BASE_URL}/llms/remote/${id}`, payload);
-    console.log(`[updateApiLLM] Response for ID ${id}:`, response.data);
-    return response.data;
+  updateApiLLM: async (alias: string, llm: Partial<LLM>): Promise<LLM> => {
+    const { apiKey, alias: newAlias, provider, baseUrl } = llm;
+    const payload: Record<string, any> = {};
+    
+    // Only include fields that are actually provided
+    if (newAlias !== undefined) payload.alias = newAlias;
+    if (provider !== undefined) payload.provider = provider;
+    if (apiKey !== undefined) payload.api_key = apiKey;
+    if (baseUrl !== undefined) payload.base_url = baseUrl;
+    
+    console.log(`[updateApiLLM] Updating alias ${alias} with payload:`, JSON.stringify(payload, null, 2));
+    try {
+      const response = await axios.put(`${API_BASE_URL}/llms/remote/${encodeURIComponent(alias)}`, payload);
+      console.log(`[updateApiLLM] Response for alias ${alias}:`, response.data);
+      return {
+        ...response.data,
+        model: response.data.model || '',
+        apiKey: response.data.api_key
+      };
+    } catch (error: any) {
+      console.error(`[updateApiLLM] Error for alias ${alias}:`, error.response?.data || error.message);
+      throw error;
+    }
   },
 
-  deleteApiLLM: async (id: string): Promise<void> => {
-    await axios.delete(`${API_BASE_URL}/llms/remote/${id}`);
+  deleteApiLLM: async (alias: string): Promise<void> => {
+    await axios.delete(`${API_BASE_URL}/llms/remote/${encodeURIComponent(alias)}`);
   },
 
   // Local LLMs
@@ -66,15 +91,12 @@ export const llmService = {
     }));
   },
 
-  getLocalLLM: async (id: string): Promise<LLM> => {
-    const response = await axios.get(`${API_BASE_URL}/llms/local/${id}`);
-    return {
-      ...response.data,
-      path: response.data.path || response.data.model
-    };
+  getLocalLLM: async (alias: string): Promise<LLM> => {
+    const response = await axios.get(`${API_BASE_URL}/llms/local/${encodeURIComponent(alias)}`);
+    return response.data;
   },
 
-  createLocalLLM: async (llm: Omit<LLM, 'id' | 'type'>): Promise<LLM> => {
+  createLocalLLM: async (llm: Omit<LLM, 'type'>): Promise<LLM> => {
     const payload = {
       ...llm,
       type: 'local' as const
@@ -85,19 +107,19 @@ export const llmService = {
     return response.data;
   },
 
-  updateLocalLLM: async (id: string, llm: Partial<LLM>): Promise<LLM> => {
-    console.log(`[updateLocalLLM] Updating ID ${id} with payload:`, JSON.stringify(llm, null, 2));
-    const response = await axios.put(`${API_BASE_URL}/llms/local/${id}`, llm);
+  updateLocalLLM: async (alias: string, llm: Partial<LLM>): Promise<LLM> => {
+    console.log(`[updateLocalLLM] Updating alias ${alias} with payload:`, JSON.stringify(llm, null, 2));
+    const response = await axios.put(`${API_BASE_URL}/llms/local/${encodeURIComponent(alias)}`, llm);
     const responseData = {
       ...response.data,
       path: response.data.path || response.data.model
     };
-    console.log(`[updateLocalLLM] Response for ID ${id}:`, responseData);
+    console.log(`[updateLocalLLM] Response for alias ${alias}:`, responseData);
     return responseData;
   },
 
-  deleteLocalLLM: async (id: string): Promise<void> => {
-    await axios.delete(`${API_BASE_URL}/llms/local/${id}`);
+  deleteLocalLLM: async (alias: string): Promise<void> => {
+    await axios.delete(`${API_BASE_URL}/llms/local/${encodeURIComponent(alias)}`);
   },
 
   // Get all LLMs (both API and local)
@@ -115,19 +137,21 @@ export const llmService = {
   },
   
   // Generic methods that work with both types
-  getLLM: async (id: string, type: 'api' | 'local'): Promise<LLM> => {
-    return type === 'api' ? llmService.getApiLLM(id) : llmService.getLocalLLM(id);
+  getLLM: async (alias: string, type: 'api' | 'local'): Promise<LLM> => {
+    return type === 'api' ? llmService.getApiLLM(alias) : llmService.getLocalLLM(alias);
   },
   
   createLLM: async (llm: Omit<LLM, 'id'>, type: 'api' | 'local'): Promise<LLM> => {
     return type === 'api' ? llmService.createApiLLM(llm) : llmService.createLocalLLM(llm);
   },
   
-  updateLLM: async (id: string, llm: Partial<LLM>, type: 'api' | 'local'): Promise<LLM> => {
-    return type === 'api' ? llmService.updateApiLLM(id, llm) : llmService.updateLocalLLM(id, llm);
+  updateLLM: async (alias: string, llm: Partial<LLM>, type: 'api' | 'local'): Promise<LLM> => {
+    return type === 'api' ? llmService.updateApiLLM(alias, llm) : llmService.updateLocalLLM(alias, llm);
   },
   
-  deleteLLM: async (id: string, type: 'api' | 'local'): Promise<void> => {
-    return type === 'api' ? llmService.deleteApiLLM(id) : llmService.deleteLocalLLM(id);
+  deleteLLM: async (alias: string, type: 'api' | 'local'): Promise<void> => {
+    return type === 'api' 
+      ? llmService.deleteApiLLM(alias) 
+      : llmService.deleteLocalLLM(alias);
   },
 };
