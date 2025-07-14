@@ -22,7 +22,13 @@ const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
   const [error, setError] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  
+  // Toggle sidebar collapsed state
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
   
   // Get nodes and edges from the flow store
   const { nodes, edges } = useFlowStore();
@@ -101,6 +107,28 @@ const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
     }
   };
 
+  // When collapsed, only show a thin bar with a button to expand
+  if (isCollapsed) {
+    return (
+      <div className="h-full w-8 bg-gray-800 border-l border-gray-700 flex items-center justify-center group hover:bg-gray-750 transition-colors">
+        <button
+          onClick={toggleCollapse}
+          className="w-8 h-16 flex items-center justify-center text-gray-400 hover:text-white group-hover:bg-gray-700 rounded-r"
+          title="Show code panel"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-5 w-5 transform -rotate-90" 
+            viewBox="0 0 20 20" 
+            fill="currentColor"
+          >
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div 
       ref={sidebarRef}
@@ -109,6 +137,15 @@ const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
     >
       <div className="flex items-center justify-between p-3 border-b border-gray-700">
         <h2 className="text-lg font-semibold text-white">Generated Code</h2>
+        <button
+          onClick={toggleCollapse}
+          className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700 transition-colors"
+          title="Collapse panel"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        </button>
       </div>
       
       <div className="flex-1 flex flex-col overflow-hidden">
