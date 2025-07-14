@@ -1,22 +1,58 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import useFlowStore from '../../store/useFlowStore';
+import { FiCode } from 'react-icons/fi';
+
+// Lazy load the Monaco Editor
+const MonacoEditor = lazy(() => import('@monaco-editor/react'));
+
+// Fallback component for editor loading
+const EditorLoading = () => (
+  <div className="flex items-center justify-center h-full bg-gray-900 p-4">
+    <div className="animate-pulse text-gray-500">Loading editor...</div>
+  </div>
+);
 
 interface CodeSidebarProps {
   flowId?: string; // Optional flow ID for saving/loading specific flows
 }
 
 const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
-  const [isExpanded, setIsExpanded] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   
   // Get nodes and edges from the flow store
   const { nodes, edges } = useFlowStore();
 
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
   };
+
+  const stopResizing = () => {
+    setIsResizing(false);
+  };
+
+  const resize = (e: MouseEvent) => {
+    if (isResizing && sidebarRef.current) {
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth > 300 && newWidth < 800) {
+        setSidebarWidth(newWidth);
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('mousemove', resize);
+    window.addEventListener('mouseup', stopResizing);
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing]);
 
   const handleGenerateCode = async () => {
     setIsGenerating(true);
@@ -66,69 +102,80 @@ const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
   };
 
   return (
-    <div className={`bg-gray-800 border-l border-gray-700 flex-shrink-0 overflow-hidden transition-all duration-300 ${isExpanded ? 'w-80' : 'w-12'}`}>
-      <div className="h-full flex flex-col">
-        <div className="p-3 border-b border-gray-700 flex items-center justify-between">
-          {isExpanded && <h2 className="text-lg font-semibold text-white">Code</h2>}
+    <div 
+      ref={sidebarRef}
+      className="h-full flex flex-col bg-gray-800 border-l border-gray-700 relative"
+      style={{ width: `${sidebarWidth}px`, minWidth: '300px', maxWidth: '800px' }}
+    >
+      <div className="flex items-center justify-between p-3 border-b border-gray-700">
+        <h2 className="text-lg font-semibold text-white">Generated Code</h2>
+      </div>
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="p-4">
           <button
-            onClick={toggleExpand}
-            className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700 transition-colors"
-            aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            onClick={handleGenerateCode}
+            disabled={isGenerating}
+            className={`w-full py-2 px-4 rounded-md text-sm font-medium flex items-center justify-center space-x-2 ${
+              isGenerating
+                ? 'bg-blue-700 text-blue-200 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            {isExpanded ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            )}
+            <FiCode size={16} />
+            <span>{isGenerating ? 'Generating...' : 'Generate Code'}</span>
           </button>
         </div>
         
-        {isExpanded && (
-          <div className="flex-1 p-4 overflow-y-auto">
-            <div className="mb-6 p-4 bg-gray-700/50 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Generate Code</h3>
-              <p className="text-gray-400 text-xs mb-4">
-                {isGenerating 
-                  ? 'Generating code...' 
-                  : 'Generate Python code from your flow'}
-              </p>
-              <button 
-                onClick={handleGenerateCode}
-                disabled={isGenerating}
-                className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  isGenerating 
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-              >
-                {isGenerating ? 'Generating...' : 'Generate Code'}
-              </button>
-            </div>
-            
-            <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
-              <h3 className="text-sm font-medium text-gray-300 mb-2">Output</h3>
-              <div className="bg-gray-900 p-3 rounded text-xs font-mono text-gray-300 overflow-auto max-h-96">
-                {isGenerating ? (
-                  <div className="animate-pulse space-y-2">
-                    <div className="h-3 bg-gray-700 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-700 rounded w-1/2"></div>
-                  </div>
-                ) : error ? (
-                  <div className="text-red-400">Error: {error}</div>
-                ) : generatedCode ? (
-                  <pre className="whitespace-pre-wrap break-words">{generatedCode}</pre>
-                ) : (
-                  <span className="text-gray-500">Generated code will appear here...</span>
-                )}
+        <div className="flex-1 overflow-hidden border-t border-gray-700">
+          {isGenerating ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="animate-pulse space-y-2 text-center">
+                <div className="h-3 bg-gray-700 rounded w-32 mx-auto"></div>
+                <div className="text-xs text-gray-500">Generating code...</div>
               </div>
             </div>
-          </div>
-        )}
+          ) : error ? (
+            <div className="h-full flex items-center justify-center p-4">
+              <div className="text-red-400 text-center">
+                <div className="font-medium">Error</div>
+                <div className="text-sm mt-1">{error}</div>
+              </div>
+            </div>
+          ) : generatedCode ? (
+            <Suspense fallback={<EditorLoading />}>
+              <MonacoEditor
+                height="100%"
+                defaultLanguage="python"
+                value={generatedCode}
+                theme="vs-dark"
+                options={{
+                  readOnly: true,
+                  minimap: { enabled: true },
+                  scrollBeyondLastLine: false,
+                  fontSize: 13,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                }}
+              />
+            </Suspense>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <FiCode size={32} className="mx-auto mb-2 opacity-50" />
+                <p>Generated code will appear here</p>
+                <p className="text-xs mt-1">Click "Generate Code" to begin</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+      
+      {/* Resize handle */}
+      <div 
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-blue-500 active:bg-blue-600 transition-colors"
+        onMouseDown={startResizing}
+      />
     </div>
   );
 };
