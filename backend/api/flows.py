@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
 from sqlalchemy.orm import Session
-from schemas.flows import FlowCreate, FlowOut
+from schemas.flows import FlowCreate, FlowOut, FlowPayload
 from crud.flows import create_flow, get_flow_by_id, update_flow_by_id, delete_flow_by_id, get_flows
 from db.session import get_db
+from services.flows.codegen import CodeGenerator
 
 router = APIRouter(
     prefix="/flows",
@@ -50,12 +51,19 @@ def delete_flow(id: int, db: Session = Depends(get_db)):
 ## Code Generation
 ##################
 
-@router.post("/{id}/execute", description="Execute a flow")
-def execute_flow(id: int):
+@router.post("/generate/code", description="Generate flow code by submitting the canvas graph")
+def generate_flow_code(flow: FlowPayload):
+    codegen = CodeGenerator()
+    code = codegen.generate(flow)
+    return {"code": code}
+
+
+@router.post("/{id}/code", description="Generate flow code from saved flow")
+def generate_flow_code(id: int):
     return {"Hello": "World"}
 
 
-@router.post("/{id}/code", description="Generate flow code")
+@router.post("/{id}/code", description="Generate flow code from saved flow")
 def generate_flow_code(id: int):
     return {"Hello": "World"}
 
@@ -63,6 +71,3 @@ def generate_flow_code(id: int):
 @router.post("/{id}/test", description="Test a flow")
 def test_flow(id: int):
     return {"Hello": "World"}
-
-
-

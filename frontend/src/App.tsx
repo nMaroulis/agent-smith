@@ -304,7 +304,11 @@ const AppHeader = () => {
 
 
 
-const FlowCanvasWithSidebar = () => {
+interface FlowCanvasWithSidebarProps {
+  flowId?: string;
+}
+
+const FlowCanvasWithSidebar = ({ flowId }: FlowCanvasWithSidebarProps) => {
   const [selectedNode, setSelectedNode] = useState<CustomNode | null>(null);
   const { nodes, updateNode } = useFlowStore();
 
@@ -341,17 +345,23 @@ const FlowCanvasWithSidebar = () => {
           style={{ height: '100%' }}
         />
       </div>
-      <CodeSidebar />
+      <CodeSidebar flowId={flowId} />
     </div>
   );
 };
 
 // Main layout component that includes the FlowCanvasWithSidebar
-const MainLayout = () => (
-  <div className="flex-1 flex flex-col h-full overflow-hidden">
-    <FlowCanvasWithSidebar />
-  </div>
-);
+const MainLayout = () => {
+  // Get the current flow ID from the URL or other state management
+  // For now, we'll pass undefined as we don't have the flow ID in the URL
+  const flowId = undefined;
+  
+  return (
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <FlowCanvasWithSidebar flowId={flowId} />
+    </div>
+  );
+};
 
 // Create a styled component for the app container
 const AppContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => (

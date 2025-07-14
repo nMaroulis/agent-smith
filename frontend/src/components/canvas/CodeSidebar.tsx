@@ -1,19 +1,68 @@
 import { useState } from 'react';
+import useFlowStore from '../../store/useFlowStore';
 
-const CodeSidebar = () => {
+interface CodeSidebarProps {
+  flowId?: string; // Optional flow ID for saving/loading specific flows
+}
+
+const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  
+  // Get nodes and edges from the flow store
+  const { nodes, edges } = useFlowStore();
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
 
-  const handleGenerateCode = () => {
+  const handleGenerateCode = async () => {
     setIsGenerating(true);
-    // Simulate code generation
-    setTimeout(() => {
+    setError(null);
+    
+    try {
+      // Prepare the flow data in the same format as SaveLoadFlow
+      const flowData = {
+        name: flowId ? `Flow ${flowId}` : 'Untitled Flow',
+        description: `Generated on ${new Date().toLocaleString()}`,
+        graph: {
+          nodes,
+          edges
+        },
+        state: { fields: [] } // Empty state as in SaveLoadFlow
+      };
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/flows/generate/code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(flowData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Error: ${response.status} - ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      // The backend returns { code: '...' }
+      const generatedCode = result?.code;
+      
+      if (typeof generatedCode === 'string' && generatedCode.trim()) {
+        setGeneratedCode(generatedCode);
+      } else {
+        throw new Error('No code was generated');
+      }
+    } catch (err) {
+      console.error('Failed to generate code:', err);
+      setError(err instanceof Error ? err.message : 'Failed to generate code');
+      setGeneratedCode('');
+    } finally {
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -62,14 +111,18 @@ const CodeSidebar = () => {
             
             <div className="mt-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
               <h3 className="text-sm font-medium text-gray-300 mb-2">Output</h3>
-              <div className="bg-gray-900 p-3 rounded text-xs font-mono text-gray-400 overflow-auto max-h-40">
+              <div className="bg-gray-900 p-3 rounded text-xs font-mono text-gray-300 overflow-auto max-h-96">
                 {isGenerating ? (
                   <div className="animate-pulse space-y-2">
                     <div className="h-3 bg-gray-700 rounded w-3/4"></div>
                     <div className="h-3 bg-gray-700 rounded w-1/2"></div>
                   </div>
+                ) : error ? (
+                  <div className="text-red-400">Error: {error}</div>
+                ) : generatedCode ? (
+                  <pre className="whitespace-pre-wrap break-words">{generatedCode}</pre>
                 ) : (
-                  <span className="text-gray-500">Code will appear here...</span>
+                  <span className="text-gray-500">Generated code will appear here...</span>
                 )}
               </div>
             </div>
