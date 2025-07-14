@@ -62,32 +62,31 @@ def get_local_llms(db: Session, limit: Optional[int] = None):
     return db.query(LLMLocal).all()
 
 
-def get_local_llm_by_id(db: Session, id: int):
-    return db.query(LLMLocal).filter(LLMLocal.id == id).first()
+def get_local_llm_by_alias(db: Session, alias: str):
+    return db.query(LLMLocal).filter(LLMLocal.alias == alias).first()
 
 
-def create_local_llm(db: Session, provider: str, name: str, path: str):
-    llm = LLMLocal(provider=provider, name=name, path=path)
+def create_local_llm(db: Session, alias: str, provider: str, path: str):
+    llm = LLMLocal(alias=alias, provider=provider, path=path)
     db.add(llm)
     db.commit()
     db.refresh(llm)
     return llm
 
 
-def update_local_llm_by_id(db: Session, id: int, provider: str, name: str, path: str):
-    llm = db.query(LLMLocal).filter(LLMLocal.id == id).first()
+def update_local_llm_by_alias(db: Session, alias: str, provider: str, path: str):
+    llm = db.query(LLMLocal).filter(LLMLocal.alias == alias).first()
     if not llm:
         return None
     llm.provider = provider
-    llm.name = name
     llm.path = path
     db.commit()
     db.refresh(llm)
     return llm
 
 
-def delete_local_llm_by_id(db: Session, id: int):
-    llm = db.query(LLMLocal).filter(LLMLocal.id == id).first()
+def delete_local_llm_by_alias(db: Session, alias: str):
+    llm = db.query(LLMLocal).filter(LLMLocal.alias == alias).first()
     if not llm:
         return None
     db.delete(llm)

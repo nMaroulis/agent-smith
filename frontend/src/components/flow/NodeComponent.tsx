@@ -82,8 +82,11 @@ interface NodeDetailsProps {
   node?: any;
   tool?: any;
   llm?: {
+    alias?: string;
     provider?: string;
     model?: string;
+    modelName?: string;
+    type?: 'api' | 'local';
   };
 }
 
@@ -95,16 +98,24 @@ const NodeDetails = ({ node, tool, llm }: NodeDetailsProps) => {
   
   return (
     <div className="mt-2 pt-2 border-t border-white/10">
-      {/* Display the node label */}
-      
       {/* Display LLM info if available */}
       {llmData.provider && (
-        <div className="text-xs text-white/60">
-          {llmData.provider}
-          {llmData.model && ` • ${llmData.model}`}
+        <div className="flex items-center gap-1 text-xs">
+          <span className="text-white/70 font-medium">{llmData.provider}</span>
+          {llmData.modelName && llmData.modelName !== 'Select a model' ? (
+            <span className="text-white/60">• {llmData.modelName}</span>
+          ) : llmData.model ? (
+            <span className="text-white/60">• {llmData.model}</span>
+          ) : (
+            <span className="text-white/40 italic">• No LLM model selected</span>
+          )}
+          {llmData.type && (
+            <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-white/10 rounded-full">
+              {llmData.type.toUpperCase()}
+            </span>
+          )}
         </div>
       )}
-      
       {/* Display tool info if available */}
       {tool?.name && (
         <div className="text-xs text-white/80 mt-1 pt-1 border-t border-white/5">

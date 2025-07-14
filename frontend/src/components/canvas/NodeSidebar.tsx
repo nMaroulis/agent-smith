@@ -3,9 +3,12 @@ import { FiCpu, FiPlus, FiChevronDown, FiTool } from 'react-icons/fi';
 import type { CustomNode } from '../../types';
 
 interface RemoteLLM {
-  id: number;
-  provider: string;
-  name: string;
+  alias: string;        // Unique identifier for the LLM
+  provider: string;     // The provider (e.g., 'openai', 'anthropic')
+  model?: string;       // The model identifier
+  type: 'api' | 'local';
+  apiKey?: string;
+  baseUrl?: string;
 }
 
 
@@ -69,13 +72,13 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
         if (!response.ok) {
           throw new Error(`Failed to fetch ${llmType} LLM providers`);
         }
-        const providers = await response.json();
+        const providers: RemoteLLM[] = await response.json();
         setLlmProviders(providers);
         
         // If we have a selected provider from node data, find and set it
         if (node?.data.llm?.provider) {
           const matchedProvider = providers.find((p: RemoteLLM) => 
-            p.provider === node.data.llm?.provider
+            p.alias === node.data.llm?.provider || p.provider === node.data.llm?.provider
           );
           if (matchedProvider) {
             setSelectedProvider(matchedProvider);
@@ -97,39 +100,33 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
 
   // Initialize selected provider when node data changes
   useEffect(() => {
-    if (node?.data.llm?.provider) {
+    if (node?.data.llm?.alias) {
       setSelectedProvider({
-        id: 0, // This will be updated when providers are loaded
+        alias: node.data.llm.alias,
         provider: node.data.llm.provider,
-        name: node.data.llm.providerName || node.data.llm.provider
+        type: llmType as 'api' | 'local',
+        model: node.data.llm.model
       });
     } else {
       setSelectedProvider(null);
     }
-  }, [node?.data.llm?.provider, node?.data.llm?.providerName]);
+  }, [node?.data.llm?.alias, node?.data.llm?.provider, llmType]);
 
   // Fetch models when the selected provider or llmType changes
   useEffect(() => {
     const fetchModels = async () => {
-      if (!selectedProvider) {
+      if (!selectedProvider?.alias) {
         setAvailableModels([]);
         return;
       }
 
       try {
         setIsLoadingModels(true);
-        let url: URL;
+        const endpoint = llmType === 'remote' 
+          ? `http://localhost:8000/api/llms/remote/${encodeURIComponent(selectedProvider.alias)}/models`
+          : `http://localhost:8000/api/llms/local/${encodeURIComponent(selectedProvider.alias)}/models`;
         
-        if (llmType === 'remote') {
-          url = new URL('http://localhost:8000/api/llms/remote/models/llms');
-          url.searchParams.append('provider', selectedProvider.provider);
-          url.searchParams.append('name', selectedProvider.name);
-        } else {
-          url = new URL('http://localhost:8000/api/llms/local/models/llms');
-          url.searchParams.append('provider', selectedProvider.provider);
-        }
-        
-        const response = await fetch(url.toString(), {
+        const response = await fetch(endpoint, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
@@ -140,10 +137,11 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
           throw new Error('Failed to fetch models');
         }
         
-        const models = await response.json();
+        const data = await response.json();
+        const models = data.models || [];
         // Transform array of strings into array of objects with id and name
         const formattedModels = Array.isArray(models) 
-          ? models.map(model => ({
+          ? models.map((model: string) => ({
               id: model,
               name: model
             }))
@@ -196,11 +194,12 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
       updatedNode.data.llm = {};
     }
     
-    // Update the LLM data
+    // Update the LLM data with alias and provider info
+    updatedNode.data.llm.alias = provider.alias;
     updatedNode.data.llm.provider = provider.provider;
-    updatedNode.data.llm.providerName = provider.name;
     updatedNode.data.llm.model = '';
     updatedNode.data.llm.modelName = 'Select a model';
+    updatedNode.data.llm.type = provider.type;
     
     console.log('Updated node with provider:', updatedNode);
     
@@ -220,44 +219,43 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
     setAvailableModels([]);
   };
 
-  const handleModelSelect = (model: { id: string; name: string } | null) => {
-    if (!node) return;
+  const handleModelSelect = async (model: { id: string; name: string } | null) => {
+    if (!node || !selectedProvider) return;
     
     console.log('Selected model:', model);
     
     // Create a completely new object to ensure React detects the change
     const updatedNode = JSON.parse(JSON.stringify(node));
     
-    // Initialize llm object if it doesn't exist
-    if (!updatedNode.data.llm) {
-      updatedNode.data.llm = {};
+    if (!model) {
+      // If no model is selected, clear the model-related fields
+      updatedNode.data.llm = {
+        ...updatedNode.data.llm,
+        model: '',
+        modelName: ''
+      };
+    } else {
+      // Initialize llm object with all necessary properties when a model is selected
+      updatedNode.data.llm = {
+        ...updatedNode.data.llm, // Preserve existing llm data
+        alias: selectedProvider.alias,
+        provider: selectedProvider.provider,
+        model: model.id,
+        modelName: model.name,
+        type: selectedProvider.type || 'api'
+      };
     }
-    
-    // Update the model data
-    updatedNode.data.llm.model = model?.id || '';
-    updatedNode.data.llm.modelName = model?.name || 'Select a model';
     
     console.log('Updated node with model:', updatedNode);
     
-    // Force a new object reference
-    const nodeToUpdate = {
-      ...updatedNode,
-      data: {
-        ...updatedNode.data,
-        llm: { ...updatedNode.data.llm }
-      }
-    };
-    
-    console.log('Node to update:', nodeToUpdate);
-    onUpdate(nodeToUpdate);
+    // Update the node
+    onUpdate(updatedNode);
     
     setIsModelOpen(false);
     
-    // Refresh the models list
-    if (selectedProvider) {
-      setAvailableModels([]);
-      setSelectedProvider({...selectedProvider});
-    }
+    // Refresh the models list to ensure UI consistency
+    setAvailableModels([]);
+    setSelectedProvider({...selectedProvider});
   };
 
   const handleToolSelect = (tool: Tool) => {
@@ -285,22 +283,72 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   };
 
   const handleLlmTypeChange = (type: 'local' | 'remote') => {
-    if (llmType !== type) {
-      setLlmType(type);
-      setAvailableModels([]);
-      setSelectedProvider(null); // Clear the selected provider
-      
-      // Reset the LLM data when switching types
-      if (node?.data.llm) {
-        handleChange('llm', {
-          provider: '',
-          providerName: 'Select Provider',
-          model: '',
-          modelName: 'Select a model'
-        });
-      }
+    setLlmType(type);
+    // Reset selected provider and models when changing LLM type
+    setSelectedProvider(null);
+    setAvailableModels([]);
+    
+    if (node) {
+      onUpdate({
+        ...node,
+        data: {
+          ...node.data,
+          llm: {
+            ...node.data.llm,
+            alias: '',
+            provider: '',
+            model: '',
+            modelName: 'Select a model',
+            type: type === 'remote' ? 'api' : 'local'
+          }
+        }
+      });
     }
   };
+
+  const renderProviderDropdown = () => (
+    <div className="relative">
+      <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Alias</label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsProviderOpen(!isProviderOpen)}
+          className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+        >
+          <span>{
+            selectedProvider?.alias || 
+            (isLoadingProviders ? 'Loading...' : `Select ${llmType} Provider`)
+          }</span>
+          <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isProviderOpen ? 'transform rotate-180' : ''}`} />
+        </button>
+        {isProviderOpen && (
+          <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
+            <div className="py-1 max-h-60 overflow-auto">
+              {isLoadingProviders ? (
+                <div key="loading" className="px-4 py-2 text-sm text-gray-400">Loading providers...</div>
+              ) : llmProviders.length > 0 ? (
+                llmProviders.map((provider) => (
+                <button
+                  key={provider.alias}
+                  onClick={() => handleProviderSelect(provider)}
+                  className={`w-full text-left px-4 py-2 text-sm ${
+                    selectedProvider?.alias === provider.alias
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  {provider.alias} ({provider.provider})
+                </button>
+              )))
+              : (
+                <div key="no-providers" className="px-4 py-2 text-sm text-gray-400">No providers available</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="w-72 bg-gray-800 border-r border-gray-700 flex-shrink-0 overflow-y-auto">
@@ -352,47 +400,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                   </button>
                 </div>
               </div>
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Provider</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsProviderOpen(!isProviderOpen)}
-                    className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  >
-                    <span>{
-                      selectedProvider?.name || 
-                      (isLoadingProviders ? 'Loading...' : `Select ${llmType} Provider`)
-                    }</span>
-                    <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isProviderOpen ? 'transform rotate-180' : ''}`} />
-                  </button>
-                  {isProviderOpen && (
-                    <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
-                      <div className="py-1 max-h-60 overflow-auto">
-                        {isLoadingProviders ? (
-                          <div key="loading" className="px-4 py-2 text-sm text-gray-400">Loading providers...</div>
-                        ) : llmProviders.length > 0 ? (
-                          llmProviders.map((provider) => (
-                          <button
-                            key={provider.id}
-                            onClick={() => handleProviderSelect(provider)}
-                            className={`w-full text-left px-4 py-2 text-sm ${
-                              selectedProvider?.id === provider.id
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-300 hover:bg-gray-700'
-                            }`}
-                          >
-                            {provider.name} ({provider.provider})
-                          </button>
-                        )))
-                        : (
-                          <div key="no-providers" className="px-4 py-2 text-sm text-gray-400">No providers available</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              {renderProviderDropdown()}
 
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Model</label>

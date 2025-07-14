@@ -254,12 +254,12 @@ const LLMsPage = () => {
         if (data.valid) {
           try {
             setIsLoadingDetails(true);
-            const modelsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/${encodeURIComponent(llm.alias)}/models/llms`);
+            const modelsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/${encodeURIComponent(llm.alias)}/models`);
             const modelsData = await modelsResponse.json();
             setAvailableModels(modelsData.models || []);
             
             // Fetch available embeddings models
-            const embeddingsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/${encodeURIComponent(llm.alias)}/models/embeddings`);
+            const embeddingsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/remote/${encodeURIComponent(llm.alias)}/embeddings_models`);
             const embeddingsData = await embeddingsResponse.json();
             setAvailableEmbeddings(embeddingsData.embeddings_models || []);
           } catch (err) {

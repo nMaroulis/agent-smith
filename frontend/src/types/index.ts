@@ -8,10 +8,11 @@ export interface CustomNode {
     label: string;
     description?: string;
     llm?: {
-      provider: string;
-      model: string;
-      providerName: string;
-      modelName: string;
+      alias: string;        // Unique identifier for the LLM
+      provider: string;     // The provider (e.g., 'openai', 'anthropic')
+      model: string;        // The model identifier
+      modelName?: string;   // Display name for the model
+      type?: 'api' | 'local';
     };
     tool?: {
       id: string;
