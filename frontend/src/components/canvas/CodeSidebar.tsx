@@ -107,24 +107,49 @@ const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
     }
   };
 
-  // When collapsed, only show a thin bar with a button to expand
+  // When collapsed, show a stylish vertical bar with code generation indicator
   if (isCollapsed) {
     return (
-      <div className="h-full w-8 bg-gray-800 border-l border-gray-700 flex items-center justify-center group hover:bg-gray-750 transition-colors">
-        <button
-          onClick={toggleCollapse}
-          className="w-8 h-16 flex items-center justify-center text-gray-400 hover:text-white group-hover:bg-gray-700 rounded-r"
-          title="Show code panel"
-        >
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className="h-5 w-5 transform -rotate-90" 
-            viewBox="0 0 20 20" 
-            fill="currentColor"
+      <div className="h-full w-10 bg-gradient-to-b from-gray-800 to-gray-900 border-l border-gray-700/50 flex flex-col items-center justify-center transition-all duration-300">
+        <div className="w-full h-full relative hover:shadow-2xl hover:shadow-blue-500/20 group">
+          {/* Glowing accent line - only shows on hover */}
+          <div className="absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 group-hover:shadow-[0_0_8px_2px_rgba(59,130,246,0.6)] transition-all duration-300 group-hover:scale-x-150"></div>
+          
+          {/* Glow effect container - only shows on hover */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          
+          <button
+            onClick={toggleCollapse}
+            className="relative w-full h-full flex flex-col items-center justify-center text-gray-400 hover:text-blue-300 rounded-r transition-all duration-300 z-10"
+            title="Show Code Generator"
           >
-            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </button>
+            {/* Animated icon */}
+            <div className="relative group-hover:scale-110 transition-transform duration-300">
+              <div className="absolute inset-0 rounded-full bg-blue-500/0 group-hover:bg-blue-500/20 blur-sm group-hover:scale-150 transition-all duration-300"></div>
+              <svg 
+                className="h-5 w-5 transform -rotate-90 mb-2 text-blue-400 group-hover:text-blue-300 group-hover:drop-shadow-[0_0_8px_rgba(147,197,253,0.6)] transition-all duration-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" 
+                />
+              </svg>
+            </div>
+            
+            {/* Text label with glow effect */}
+            <span className="text-[10px] font-mono font-bold tracking-wider text-blue-400 group-hover:text-blue-300 group-hover:drop-shadow-[0_0_8px_rgba(147,197,253,0.6)] uppercase transform -rotate-90 origin-center whitespace-nowrap mt-8 transition-all duration-300">
+              Code Gen
+            </span>
+            
+            {/* Subtle pulsing dot indicator */}
+            <span className="absolute bottom-2 w-1.5 h-1.5 bg-blue-400 rounded-full opacity-0 group-hover:opacity-70 group-hover:animate-pulse transition-opacity duration-300"></span>
+          </button>
+        </div>
       </div>
     );
   }
