@@ -180,10 +180,10 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
   }, [config, onConfigChange]);
 
   return (
-    <Card sx={{ width: '100%', mb: 4 }}>
+    <Card sx={{ width: '100%', mb: 4, height: 'calc(100vh - 32px)', display: 'flex', flexDirection: 'column' }}>
       <CardHeader title="Chat Configuration" />
-      <CardContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <CardContent sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 2 }}>
           <Box>
             <Typography variant="subtitle2" gutterBottom>
               Provider
@@ -287,7 +287,7 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
             </Box>
           )}
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 0 }} />
 
           <Box>
             <Typography variant="subtitle2" gutterBottom>
@@ -303,7 +303,7 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
             />
           </Box>
           
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 0 }} />
 
           <Box>
             <FormControlLabel
@@ -345,7 +345,7 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
               }
             />
           </Box>
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 0 }} />
 
           <Box>
             <Typography variant="h6" sx={{ mb: 2 }}>Model Parameters</Typography>
