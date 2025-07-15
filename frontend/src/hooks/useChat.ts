@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchChatCompletion, fetchStreamingChatCompletion } from '../api/chatbot';
+import { sendMessage as sendMessageAPI } from '../api/chatbot';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -64,22 +64,24 @@ export const useChat = () => {
         { role: 'user', content: message }
       ];
 
-      // Handle streaming vs non-streaming
-      if (config.streaming) {
-        const response = await fetchStreamingChatCompletion({
-          messages: chatMessages,
-          model: config.model,
-          temperature: config.temperature,
-          max_tokens: config.maxTokens,
-          top_p: config.topP,
-          frequency_penalty: config.frequencyPenalty,
-          presence_penalty: config.presencePenalty,
-          stream: true
-        });
+      // Send message to API
+      const response = await sendMessageAPI(chatMessages, {
+        provider: config.provider,
+        model: config.model,
+        temperature: config.temperature,
+        maxTokens: config.maxTokens,
+        topP: config.topP,
+        frequencyPenalty: config.frequencyPenalty,
+        presencePenalty: config.presencePenalty,
+        streaming: config.streaming,
+        systemPrompt: config.systemPrompt,
+        aiAgent: config.aiAgent
+      });
 
+      if (config.streaming) {
         // Handle streaming response
         let assistantMessage = '';
-        const reader = response.getReader();
+        const reader = response.data.getReader();
         const decoder = new TextDecoder();
 
         while (true) {
@@ -107,26 +109,23 @@ export const useChat = () => {
           }
         }
 
+        // Add final assistant message if not already added
+        const endTime = Date.now();
+        const latency = endTime - startTime;
+        const tokenCount = assistantMessage.length / 4; // Rough estimate
+        setMetrics(prev => [...prev, { tokens: tokenCount, latency }]);
       } else {
-        const response = await fetchChatCompletion({
-          messages: chatMessages,
-          model: config.model,
-          temperature: config.temperature,
-          max_tokens: config.maxTokens,
-          top_p: config.topP,
-          frequency_penalty: config.frequencyPenalty,
-          presence_penalty: config.presencePenalty,
-          stream: false
-        });
-
-        setMessages(prev => [...prev, { role: 'assistant', content: response.choices[0].message.content }]);
+        // Handle non-streaming response
+        const endTime = Date.now();
+        const latency = endTime - startTime;
+        const tokenCount = response.data.usage.completion_tokens;
+        setMetrics(prev => [...prev, { tokens: tokenCount, latency }]);
+        
+        // Add assistant message
+        if (response.data.choices[0]?.message?.content) {
+          setMessages(prev => [...prev, { role: 'assistant', content: response.data.choices[0].message.content }]);
+        }
       }
-
-      // Calculate metrics
-      const endTime = Date.now();
-      const latency = endTime - timestamp;
-      const tokenCount = assistantMessage.length / 4; // Rough estimate
-      setMetrics(prev => [...prev, { tokens: tokenCount, latency }]);
 
     } catch (error) {
       console.error('Chat error:', error);

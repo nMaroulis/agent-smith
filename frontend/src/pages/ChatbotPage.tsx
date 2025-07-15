@@ -9,7 +9,7 @@ import { useChat } from '../hooks/useChat';
 const ChatbotPage = () => {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const { messages, config, sendMessage, isStreaming, metrics } = useChat();
+  const { messages, config, sendMessage: sendMessage2, isStreaming, metrics } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +63,7 @@ const ChatbotPage = () => {
           }}>
             <ConfigPanel
               onConfigChange={(newConfig) => {
-                // Update config here
+                queryClient.setQueryData(['chat-config'], newConfig);
               }}
             />
           </Paper>
@@ -123,13 +123,7 @@ const ChatbotPage = () => {
               }}
             >
               <ChatInput
-                onSendMessage={(message, files) => {
-                  sendMessage(message, files);
-                  // Add a small delay to ensure the message is rendered before scrolling
-                  setTimeout(() => {
-                    scrollToBottom();
-                  }, 100);
-                }}
+                onSendMessage={sendMessage2}
                 isSubmitting={isStreaming}
               />
             </Box>

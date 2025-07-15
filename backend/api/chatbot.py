@@ -11,7 +11,7 @@ import asyncio
 import uuid
 from typing import AsyncGenerator
 
-router = APIRouter(prefix="/api/playground/chatbot", tags=["Chatbot"])
+router = APIRouter(prefix="/playground/chatbot", tags=["Chatbot"])
 
 # Models
 class Message(BaseModel):

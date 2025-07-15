@@ -1,5 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, Divider, Typography, Box, Slider, Switch, FormControlLabel, TextField, Select, MenuItem, Button, CircularProgress, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  Divider, 
+  Typography, 
+  Box, 
+  Slider, 
+  Switch, 
+  FormControlLabel, 
+  TextField, 
+  Select, 
+  MenuItem, 
+  Button, 
+  CircularProgress, 
+  ToggleButtonGroup, 
+  ToggleButton, 
+  Stack
+} from '@mui/material';
+import SpeedIcon from '@mui/icons-material/Speed';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchRemoteLLMs, fetchLocalLLMs, fetchRemoteModels, fetchLocalModels, fetchModelParameters } from '../../api/llms';
 
@@ -146,7 +166,17 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
   };
 
   useEffect(() => {
-    onConfigChange(config);
+    onConfigChange({
+      provider: config.provider,
+      model: config.model,
+      temperature: config.temperature,
+      maxTokens: config.maxTokens,
+      topP: config.topP,
+      frequencyPenalty: config.frequencyPenalty,
+      presencePenalty: config.presencePenalty,
+      streaming: config.streaming,
+      systemPrompt: config.systemPrompt
+    });
   }, [config, onConfigChange]);
 
   return (
@@ -257,6 +287,8 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
             </Box>
           )}
 
+          <Divider sx={{ my: 2 }} />
+
           <Box>
             <Typography variant="subtitle2" gutterBottom>
               System Prompt
@@ -270,44 +302,29 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
               placeholder="Enter system prompt..."
             />
           </Box>
-
-          <Box>
-            <Typography variant="subtitle2" gutterBottom>
-              Parameters
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {Object.entries(parameters).map(([paramName, paramConfig]) => {
-                if (!paramConfig) return null;
-
-                const { type, min, max, default: defaultValue } = paramConfig;
-                const currentValue = config[paramName as keyof typeof config] || defaultValue;
-
-                return (
-                  <Box key={paramName} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="body2">{paramName.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</Typography>
-                    <Slider
-                      value={currentValue}
-                      onChange={handleParameterChange(paramName)}
-                      min={min}
-                      max={max}
-                      step={type === 'float' ? 0.1 : 1}
-                      valueLabelDisplay="auto"
-                    />
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
+          
+          <Divider sx={{ my: 3 }} />
 
           <Box>
             <FormControlLabel
               control={
                 <Switch
                   checked={config.streaming}
-                  onChange={handleStreamingChange}
+                  onChange={(e) => {
+                    setConfig(prev => ({ ...prev, streaming: e.target.checked }));
+                    onConfigChange({
+                      ...config,
+                      streaming: e.target.checked
+                    });
+                  }}
                 />
               }
-              label="Streaming"
+              label={
+                <Stack direction="row" alignItems="center" gap={1}>
+                  <SpeedIcon sx={{ color: 'primary.main' }} />
+                  <Typography>Streaming</Typography>
+                </Stack>
+              }
             />
           </Box>
 
@@ -320,9 +337,52 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
                   disabled={true}
                 />
               }
-              label="AI Agent (Coming soon)"
+              label={
+                <Stack direction="row" alignItems="center" gap={1}>
+                  <SmartToyIcon sx={{ color: 'success.main' }} />
+                  <Typography>AI Agent (Coming soon)</Typography>
+                </Stack>
+              }
             />
           </Box>
+          <Divider sx={{ my: 3 }} />
+
+          <Box>
+            <Typography variant="h6" sx={{ mb: 2 }}>Model Parameters</Typography>
+            {config.model ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {Object.entries(parameters).map(([paramName, param]) => {
+                  if (!param) return null;
+                  return (
+                    <Box key={paramName}>
+                      <Typography variant="body2" sx={{ mb: 1 }}>{paramName}</Typography>
+                      <Slider
+                        value={config[paramName]}
+                        min={param.min}
+                        max={param.max}
+                        step={0.1}
+                        onChange={(_, value) => {
+                          setConfig(prev => ({ ...prev, [paramName]: value }));
+                          onConfigChange({
+                            ...config,
+                            [paramName]: value
+                          });
+                        }}
+                      />
+                      <Typography variant="caption" sx={{ mt: 1 }}>
+                        {config[paramName]} ({param.min} - {param.max})
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Select a model to configure its parameters
+              </Typography>
+            )}
+          </Box>
+
         </Box>
       </CardContent>
     </Card>

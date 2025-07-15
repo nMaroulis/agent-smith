@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL should match your backend server URL
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -49,32 +49,49 @@ interface ChatCompletionChunk {
   }>;
 }
 
-export const fetchChatCompletion = async (request: ChatRequest) => {
-  try {
-    const response = await axios.post<ChatResponse>(
-      `${BASE_URL}/api/playground/chatbot/chat`,
-      request
-    );
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching chat completion:', error);
-    throw error;
-  }
-};
+export const sendMessage = async (messages: Message[], config: any) => {
+  const { provider, model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, streaming, systemPrompt, aiAgent } = config;
 
-export const fetchStreamingChatCompletion = async (request: ChatRequest) => {
+  const chatRequest: ChatRequest = {
+    messages: [
+      ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+      ...messages
+    ],
+    model,
+    temperature,
+    max_tokens: maxTokens,
+    top_p: topP,
+    frequency_penalty: frequencyPenalty,
+    presence_penalty: presencePenalty,
+    stream: streaming
+  };
+
+  const endpoint = streaming ? '/playground/chatbot/chat/stream' : '/playground/chatbot/chat';
+
   try {
-    const response = await axios.post<AsyncGenerator<ChatCompletionChunk>>(
-      `${BASE_URL}/api/playground/chatbot/chat/stream`,
-      request,
-      {
+    const response = await axios.post(
+      `${BASE_URL}${endpoint}`,
+      chatRequest,
+      streaming ? {
         responseType: 'stream',
+        headers: {
+          'Accept': 'text/event-stream',
+          'Content-Type': 'application/json'
+        }
+      } : {
+        headers: {
+          'Content-Type': 'application/json'
+        }
       }
     );
 
-    return new Response(response.data).body;
+    if (streaming) {
+      return response;
+    } else {
+      return response.data as ChatResponse;
+    }
   } catch (error) {
-    console.error('Error fetching streaming chat completion:', error);
+    console.error('Error sending message:', error);
     throw error;
   }
 };
