@@ -50,13 +50,17 @@ interface ChatCompletionChunk {
 }
 
 export const sendMessage = async (messages: Message[], config: any) => {
-  const { provider, model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, streaming, systemPrompt, aiAgent } = config;
+  const { provider, model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, streaming } = config;
 
+  // Ensure we have a valid model
+  if (!model) {
+    throw new Error('No model selected');
+  }
+
+  // Create the chat request with the provided messages
+  // The messages array should already include the system prompt if needed
   const chatRequest: ChatRequest = {
-    messages: [
-      ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-      ...messages
-    ],
+    messages,
     model,
     temperature,
     max_tokens: maxTokens,

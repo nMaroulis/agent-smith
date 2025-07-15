@@ -132,7 +132,7 @@ async def chat(
     
     if not response:
         raise HTTPException(status_code=500, detail="Failed to generate response")
-    
+    print(response)
     return response
 
 @router.post("/chat/stream")
@@ -163,6 +163,7 @@ async def chat_stream(
             presence_penalty=request.presence_penalty,
             stream=True
         ):
+            print(chunk)
             yield f"data: {json.dumps(chat_completion_chunk_to_dict(chunk))}\n\n"
             await asyncio.sleep(0.01)
         

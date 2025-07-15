@@ -559,7 +559,7 @@ export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) =
             )}
           </Box>
           
-          <Divider sx={{ my: 3, borderColor: '#374151' }} />
+          <Divider sx={{ my: 0, borderColor: '#374151' }} />
           
           <Box sx={{ mt: 2 }}>
             <Button

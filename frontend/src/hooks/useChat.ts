@@ -8,8 +8,11 @@ interface Message {
 }
 
 interface ChatMessage {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
+  isLoading?: boolean;
+  error?: boolean;
 }
 
 interface ChatMetrics {
@@ -47,8 +50,35 @@ export const useChat = () => {
 
   const queryClient = useQueryClient();
 
+  // Helper function to update the assistant's message
+  const updateAssistantMessage = (content: string, exchangeId: number) => {
+    setMessages(prev => {
+      const assistantMsgIndex = prev.findIndex(m => m.id === `assistant-${exchangeId}`);
+      if (assistantMsgIndex === -1) return prev;
+      
+      const newMessages = [...prev];
+      newMessages[assistantMsgIndex] = {
+        ...newMessages[assistantMsgIndex],
+        content,
+        isLoading: false
+      };
+      return newMessages;
+    });
+  };
+
   const sendMessage = async (message: string, files?: File[]) => {
     if (!message.trim() && (!files || files.length === 0)) return;
+    
+    // Ensure we have a valid model selected
+    if (!config.model) {
+      console.error('No model selected');
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Error: Please select a model in the settings before sending a message.',
+        error: true
+      }]);
+      return;
+    }
 
     // Create a unique ID for this message exchange
     const exchangeId = Date.now();
@@ -74,10 +104,14 @@ export const useChat = () => {
       const startTime = Date.now();
 
       // Create message array with system prompt and user message
-      const chatMessages: Message[] = [
-        { role: 'system', content: config.systemPrompt },
-        { role: 'user', content: message }
-      ];
+      // Only include the system message if it's not empty
+      const chatMessages: Message[] = [];
+      
+      if (config.systemPrompt) {
+        chatMessages.push({ role: 'system', content: config.systemPrompt });
+      }
+      
+      chatMessages.push({ role: 'user', content: message });
 
       // Send message to API
       const response = await sendMessageAPI(chatMessages, {
@@ -95,44 +129,73 @@ export const useChat = () => {
       if (config.streaming) {
         // Handle streaming response
         let assistantMessage = '';
-        const reader = response.data.getReader();
-        const decoder = new TextDecoder();
+        const responseData = response.data || response;
+        
+        // Handle different streaming response formats
+        if (responseData.getReader) {
+          // Handle ReadableStream response
+          const reader = responseData.getReader();
+          const decoder = new TextDecoder();
 
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
 
-          const text = decoder.decode(value, { stream: true });
-          const lines = text.split('\n').filter(line => line.trim());
+            const text = decoder.decode(value, { stream: true });
+            const lines = text.split('\n').filter(line => line.trim());
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.substring(6);
-              if (data === '[DONE]') break;
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.substring(6);
+                if (data === '[DONE]') break;
 
-              try {
-                const chunk = JSON.parse(data);
-                if (chunk.choices[0]?.delta?.content) {
-                  assistantMessage += chunk.choices[0].delta.content;
-                  // Update only the assistant's message in the messages array
-                  setMessages(prev => {
-                    const assistantMsgIndex = prev.findIndex(m => m.id === `assistant-${exchangeId}`);
-                    if (assistantMsgIndex === -1) return prev;
-                    
-                    const newMessages = [...prev];
-                    newMessages[assistantMsgIndex] = {
-                      ...newMessages[assistantMsgIndex],
-                      content: assistantMessage,
-                      isLoading: false
-                    };
-                    return newMessages;
-                  });
+                try {
+                  const chunk = JSON.parse(data);
+                  if (chunk.choices?.[0]?.delta?.content) {
+                    assistantMessage += chunk.choices[0].delta.content;
+                    updateAssistantMessage(assistantMessage, exchangeId);
+                  }
+                } catch (error) {
+                  console.error('Error parsing chunk:', error);
                 }
-              } catch (error) {
-                console.error('Error parsing chunk:', error);
               }
             }
           }
+        } else if (responseData.on) {
+          // Handle Node.js stream response
+          responseData.on('data', (chunk: Buffer) => {
+            const text = chunk.toString();
+            const lines = text.split('\n').filter(line => line.trim());
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.substring(6);
+                if (data === '[DONE]') return;
+                
+                try {
+                  const chunk = JSON.parse(data);
+                  if (chunk.choices?.[0]?.delta?.content) {
+                    assistantMessage += chunk.choices[0].delta.content;
+                    updateAssistantMessage(assistantMessage, exchangeId);
+                  }
+                } catch (error) {
+                  console.error('Error parsing chunk:', error);
+                }
+              }
+            }
+          });
+          
+          // Wait for the stream to end
+          await new Promise((resolve) => {
+            responseData.on('end', resolve);
+          });
+        } else {
+          // If it's not a stream, handle as a regular response
+          const responseContent = responseData.choices?.[0]?.message?.content || 
+                                responseData.choices?.[0]?.text || 
+                                'No response content';
+          assistantMessage = responseContent;
+          updateAssistantMessage(assistantMessage, exchangeId);
         }
 
         // Add metrics for the completed message
@@ -144,21 +207,21 @@ export const useChat = () => {
         // Handle non-streaming response
         const endTime = Date.now();
         const latency = endTime - startTime;
-        const tokenCount = response.data.usage?.completion_tokens || 0;
         
-        setMessages(prev => {
-          const assistantMsgIndex = prev.findIndex(m => m.id === `assistant-${exchangeId}`);
-          if (assistantMsgIndex === -1) return prev;
-          
-          const newMessages = [...prev];
-          newMessages[assistantMsgIndex] = {
-            ...newMessages[assistantMsgIndex],
-            content: response.data.choices[0]?.message?.content || '',
-            isLoading: false
-          };
-          return newMessages;
-        });
+        // Safely extract the response content
+        const responseData = response.data || response;
+        const responseContent = responseData.choices?.[0]?.message?.content || 
+                              responseData.choices?.[0]?.text || 
+                              'No response content';
         
+        // Calculate token count (rough estimate if not provided)
+        const tokenCount = responseData.usage?.completion_tokens || 
+                          Math.ceil(responseContent.length / 4);
+        
+        // Update the assistant's message with the response content
+        updateAssistantMessage(responseContent, exchangeId);
+        
+        // Update metrics
         setMetrics(prev => [...prev, { tokens: tokenCount, latency }]);
       }
     } catch (error) {
