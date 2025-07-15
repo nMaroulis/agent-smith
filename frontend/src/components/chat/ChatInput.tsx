@@ -49,9 +49,9 @@ export const ChatInput = ({ onSendMessage, isSubmitting = false }: ChatInputProp
         alignItems: 'center',
         gap: 1,
         p: 2,
-        bgcolor: 'background.paper',
-        borderTop: 1,
-        borderColor: 'divider',
+        bgcolor: '#1f2937', // bg-gray-800
+        borderTop: '1px solid',
+        borderColor: '#374151', // border-gray-700
         position: 'sticky',
         bottom: 0,
         zIndex: 1,
@@ -64,15 +64,20 @@ export const ChatInput = ({ onSendMessage, isSubmitting = false }: ChatInputProp
           alignItems: 'center',
           p: 1,
           borderRadius: 1,
-          bgcolor: isDragActive ? 'primary.light' : 'action.hover',
+          bgcolor: isDragActive ? '#1e40af' : '#1f2937', // bg-blue-900 or bg-gray-800
+          border: '1px solid',
+          borderColor: '#374151', // border-gray-700
           cursor: 'pointer',
           '&:hover': {
-            bgcolor: 'action.hover',
+            bgcolor: '#1e40af', // bg-blue-900
           },
         }}
       >
         <input {...getInputProps()} style={{ display: 'none' }} />
-        <AttachFileIcon color={isDragActive ? 'primary' : 'action'} sx={{ ml: 1 }} />
+        <AttachFileIcon sx={{ 
+          color: isDragActive ? 'white' : '#9ca3af', // text-gray-400
+          ml: 1 
+        }} />
       </Box>
       
       <TextField
@@ -87,6 +92,24 @@ export const ChatInput = ({ onSendMessage, isSubmitting = false }: ChatInputProp
           flex: 1,
           '& .MuiOutlinedInput-root': {
             borderRadius: 1,
+            backgroundColor: '#1f2937', // bg-gray-800
+            color: 'white',
+            '& fieldset': {
+              borderColor: '#374151', // border-gray-700
+            },
+            '&:hover fieldset': {
+              borderColor: '#4b5563', // border-gray-600
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#3b82f6', // border-blue-500
+            },
+          },
+          '& .MuiInputBase-input': {
+            color: 'white',
+            '&::placeholder': {
+              color: '#9ca3af', // text-gray-400
+              opacity: 1,
+            },
           },
         }}
         InputProps={{
@@ -96,8 +119,10 @@ export const ChatInput = ({ onSendMessage, isSubmitting = false }: ChatInputProp
                 onClick={handleSend}
                 disabled={isSubmitting || (!message.trim() && files.length === 0)}
                 sx={{
-                  bgcolor: 'background.paper',
+                  bgcolor: '#1e40af', // bg-blue-900
+                  color: 'white',
                   '&:hover': {
+                    bgcolor: '#1e3a8a', // bg-blue-950
                     bgcolor: 'action.hover',
                   },
                 }}

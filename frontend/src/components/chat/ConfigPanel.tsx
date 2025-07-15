@@ -180,7 +180,58 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
   }, [config, onConfigChange]);
 
   return (
-    <Card sx={{ width: '100%', mb: 4, height: 'calc(100vh - 32px)', display: 'flex', flexDirection: 'column' }}>
+    <Card sx={{ 
+      width: '100%', 
+      mb: 4, 
+      height: 'calc(100vh - 32px)', 
+      display: 'flex', 
+      flexDirection: 'column',
+      backgroundColor: '#111827', // bg-gray-900
+      color: 'white',
+      boxShadow: 'none',
+      borderRight: '1px solid',
+      borderColor: '#1f2937', // border-gray-800
+      '& .MuiCardHeader-root': {
+        borderBottom: '1px solid #1f2937', // border-gray-800
+        backgroundColor: '#111827', // bg-gray-900
+        color: 'white'
+      },
+      '& .MuiCardContent-root': {
+        backgroundColor: '#111827', // bg-gray-800
+        color: 'white',
+        '& .MuiTypography-root': {
+          color: 'rgba(255, 255, 255, 0.87)'
+        },
+        '& .MuiInputBase-root': {
+          backgroundColor: '#1f2937', // bg-gray-800
+          color: 'white',
+          '& fieldset': {
+            borderColor: '#374151' // border-gray-700
+          },
+          '&:hover fieldset': {
+            borderColor: '#4b5563' // border-gray-600
+          },
+          '&.Mui-focused fieldset': {
+            borderColor: '#3b82f6' // border-blue-500
+          }
+        },
+        '& .MuiSlider-root': {
+          color: '#3b82f6' // text-blue-500
+        },
+        '& .MuiSwitch-switchBase': {
+          color: '#6b7280', // text-gray-500
+          '&.Mui-checked': {
+            color: '#3b82f6', // text-blue-500
+            '& + .MuiSwitch-track': {
+              backgroundColor: '#3b82f6' // bg-blue-500
+            }
+          }
+        },
+        '& .MuiSwitch-track': {
+          backgroundColor: '#6b7280' // bg-gray-500
+        }
+      }
+    }}>
       <CardHeader title="Chat Configuration" />
       <CardContent sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 2 }}>
@@ -198,22 +249,36 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
                 '& .MuiToggleButton-root': {
                   textTransform: 'none',
                   borderRadius: 1,
-                  minWidth: '50%'
+                  minWidth: '50%',
+                  color: '#9ca3af', // text-gray-400
+                  borderColor: '#374151', // border-gray-700
+                  backgroundColor: '#1f2937', // bg-gray-800
+                  '&.Mui-selected': {
+                    backgroundColor: '#1e40af', // bg-blue-900
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: '#1e40af' // bg-blue-900
+                    }
+                  },
+                  '&:hover': {
+                    backgroundColor: '#1f2937', // bg-gray-800
+                    color: 'white'
+                  }
                 }
               }}
             >
               <ToggleButton value="remote" sx={{
                 '&.Mui-selected': {
-                  backgroundColor: 'primary.main',
-                  color: 'white'
+                  backgroundColor: 'action.selected',
+                  color: 'text.primary'
                 }
               }}>
                 Remote LLM
               </ToggleButton>
               <ToggleButton value="local" sx={{
                 '&.Mui-selected': {
-                  backgroundColor: 'primary.main',
-                  color: 'white'
+                  backgroundColor: 'action.selected',
+                  color: 'text.primary'
                 }
               }}>
                 Local LLM
@@ -287,7 +352,7 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
             </Box>
           )}
 
-          <Divider sx={{ my: 0 }} />
+          <Divider sx={{ my: 0, borderColor: '#374151' /* gray-700 */ }} />
 
           <Box>
             <Typography variant="subtitle2" gutterBottom>
@@ -303,7 +368,7 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
             />
           </Box>
           
-          <Divider sx={{ my: 0 }} />
+          <Divider sx={{ my: 0, borderColor: '#374151' /* gray-700 */ }} />
 
           <Box>
             <FormControlLabel
@@ -345,7 +410,7 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
               }
             />
           </Box>
-          <Divider sx={{ my: 0 }} />
+          <Divider sx={{ my: 0, borderColor: '#374151' /* gray-700 */ }} />
 
           <Box>
             <Typography variant="h6" sx={{ mb: 2 }}>Model Parameters</Typography>
@@ -377,7 +442,7 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
                 })}
               </Box>
             ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2, color: 'text.secondary' }}>
                 Select a model to configure its parameters
               </Typography>
             )}

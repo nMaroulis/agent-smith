@@ -38,7 +38,8 @@ const ChatbotPage = () => {
       flexDirection: 'column', 
       height: 'calc(100vh - 64px)', // Adjust for navbar height
       width: '100%',
-      bgcolor: theme.palette.background.default 
+      bgcolor: '#111827', // bg-gray-900
+      color: 'white'
     }}>
       <Box sx={{ 
         display: 'flex', 
@@ -51,15 +52,18 @@ const ChatbotPage = () => {
           width: '300px', 
           height: '100%', 
           flexShrink: 0,
-          bgcolor: theme.palette.background.paper,
+          bgcolor: '#111827', // bg-gray-900
           borderRight: '1px solid',
-          borderColor: 'divider'
+          borderColor: '#1f2937' // border-gray-800
         }}>
           <Paper sx={{ 
             height: '100%', 
             display: 'flex', 
             flexDirection: 'column',
-            bgcolor: theme.palette.background.paper 
+            bgcolor: '#111827', // bg-gray-900
+            boxShadow: 'none',
+            borderRadius: 0,
+            borderRight: '1px solid #1f2937' // border-gray-800
           }}>
             <ConfigPanel
               onConfigChange={(newConfig) => {
@@ -74,13 +78,18 @@ const ChatbotPage = () => {
           flex: 1, 
           height: '100%', 
           overflow: 'hidden',
-          bgcolor: theme.palette.background.paper 
+          bgcolor: '#111827', // bg-gray-900
+          borderLeft: '1px solid',
+          borderColor: '#1f2937' // border-gray-800
         }}>
           <Paper sx={{ 
             height: '100%', 
             display: 'flex', 
             flexDirection: 'column',
-            bgcolor: theme.palette.background.paper 
+            bgcolor: '#111827', // bg-gray-900
+            boxShadow: 'none',
+            borderRadius: 0,
+            borderRight: '1px solid #1f2937' // border-gray-800
           }}>
             {/* Chat Messages */}
             <Box
@@ -89,7 +98,7 @@ const ChatbotPage = () => {
                 flex: 1,
                 overflowY: 'auto',
                 p: 2,
-                bgcolor: theme.palette.background.paper,
+                bgcolor: '#1f2937', // bg-gray-800
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 2,
@@ -117,7 +126,7 @@ const ChatbotPage = () => {
                 position: 'sticky',
                 bottom: 0,
                 zIndex: 1,
-                bgcolor: theme.palette.background.paper,
+                bgcolor: '#1f2937', // bg-gray-800
                 borderTop: '1px solid',
                 borderColor: 'divider'
               }}
