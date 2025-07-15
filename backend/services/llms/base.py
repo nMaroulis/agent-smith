@@ -53,6 +53,11 @@ class BaseLLM(ABC):
         """Generate a LangGraph node config for the LLM."""
         ...
 
+    @abstractmethod
+    def get_tunable_parameters(self) -> dict:
+        """Get tunable parameters for the LLM."""
+        ...
+
 
 class BaseAPILLM(BaseLLM):
     """Base class for API LLMs."""

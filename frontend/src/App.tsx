@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Toaster } from 'react-hot-toast';
 import { ServerProvider, useServer } from './contexts/ServerContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter as Router, Link, useLocation, Routes, Route } from 'react-router-dom';
 import { FiCpu, FiSettings, FiLayers, FiCode, FiInfo, FiChevronDown, FiTool } from 'react-icons/fi';
 import ChatbotPage from './pages/ChatbotPage';
@@ -390,9 +391,13 @@ const AppContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   </>
 );
 
+// Create a client
+const queryClient = new QueryClient();
+
 const App = () => {
   return (
-    <ServerProvider>
+    <QueryClientProvider client={queryClient}>
+      <ServerProvider>
       <Router>
         <AppContainer>
           <AppHeader />
@@ -415,6 +420,7 @@ const App = () => {
         </AppContainer>
       </Router>
     </ServerProvider>
+    </QueryClientProvider>
   );
 };
 

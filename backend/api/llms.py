@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Path
-from schemas.llms import RemoteLLM, LocalLLM, ListLLMs, RemoteLLMOut, LocalLLMOut, LLMValidationRequest, LLMValidationResponse, RemoteLLMUpdate, ListModels, ListEmbeddingsModels
+from schemas.llms import RemoteLLM, LocalLLM, ListLLMs, RemoteLLMOut, LocalLLMOut, LLMValidationRequest, LLMValidationResponse, RemoteLLMUpdate, ListModels, ListEmbeddingsModels, LLMTunableParameters
 from crud.llms import get_remote_llms, create_remote_llm, update_remote_llm_by_alias, get_remote_llm_by_alias, delete_remote_llm_by_alias, create_local_llm, get_local_llms, get_local_llm_by_alias, update_local_llm_by_alias, delete_local_llm_by_alias
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -94,6 +94,16 @@ async def validate_remote_llm_key(alias: str = Path(..., description="The remote
         return {"valid": False, "message": f"Validation error: {str(e)}"}
 
 
+@router.get("/remote/{alias}/parameters", response_model=LLMTunableParameters, description="Get tunable parameters for a remote LLM")
+async def get_tunable_parameters(alias: str = Path(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
+    try:
+        llm = get_remote_llm_client_by_alias(alias=alias, db=db)
+        return llm.get_tunable_parameters()
+    except Exception as e:
+        print(e)
+        return {"error": f"Validation error: {str(e)}"}
+
+
 #############
 ## Local LLMs
 #############
@@ -144,4 +154,14 @@ async def get_available_local_embeddings_models(alias: str = Path(..., descripti
         llm = get_local_llm_client_by_alias(alias=alias, db=db)
         return {"embeddings_models": llm.list_embeddings_models()}
     except Exception as e:
+        return {"error": f"Validation error: {str(e)}"}
+
+
+@router.get("/local/{alias}/parameters", response_model=LLMTunableParameters, description="Get tunable parameters for a local LLM")
+async def get_tunable_parameters(alias: str = Path(..., description="The local LLM alias"), db: Session = Depends(get_db)):
+    try:
+        llm = get_local_llm_client_by_alias(alias=alias, db=db)
+        return llm.get_tunable_parameters()
+    except Exception as e:
+        print(e)
         return {"error": f"Validation error: {str(e)}"}

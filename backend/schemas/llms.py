@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict, Any
 from pydantic import BaseModel, Field, HttpUrl
 
 
@@ -121,3 +121,11 @@ class LLMValidationRequest(BaseModel):
 class LLMValidationResponse(BaseModel):
     valid: bool
     message: str
+
+
+class LLMTunableParameters(BaseModel):
+    temperature: Optional[Dict[str, Any]] = None
+    max_tokens: Optional[Dict[str, Any]] = None
+    top_p: Optional[Dict[str, Any]] = None
+    frequency_penalty: Optional[Dict[str, Any]] = None
+    presence_penalty: Optional[Dict[str, Any]] = None
