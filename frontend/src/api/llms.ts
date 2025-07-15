@@ -42,3 +42,13 @@ export const fetchLocalModels = async (alias: string) => {
     throw error;
   }
 };
+
+export const fetchModelParameters = async (provider: string, alias: string) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/api/llms/${provider}/${alias}/parameters`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching model parameters:', error);
+    throw error;
+  }
+};

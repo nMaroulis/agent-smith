@@ -54,8 +54,13 @@ class BaseLLM(ABC):
         ...
 
     @abstractmethod
-    def get_tunable_parameters(self) -> dict:
-        """Get tunable parameters for the LLM."""
+    def get_tunable_parameters(self, model: str) -> dict:
+        """Get tunable parameters for the LLM.
+        Args:
+            model (str): The model to get tunable parameters for.
+        Returns:
+            dict: A dictionary of tunable parameters.
+        """
         ...
 
 

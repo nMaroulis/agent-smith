@@ -99,7 +99,7 @@ class HuggingFaceAPILLM(BaseAPILLM):
         return f"HUGGING_FACE_API_KEY={self.api_key}"
 
 
-    def get_tunable_parameters(self) -> dict:
+    def get_tunable_parameters(self, model: str) -> dict:
         return {
             "temperature": {
                 "type": "float",

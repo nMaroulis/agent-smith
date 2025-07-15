@@ -79,8 +79,8 @@ class OpenAIAPILLM(BaseAPILLM):
     def env_variables(self) -> list[str]:
         return f"OPENAI_API_KEY={self.api_key}"
     
-    
-    def get_tunable_parameters(self) -> dict:
+
+    def get_tunable_parameters(self, model: str) -> dict:
         return {
             "temperature": {
                 "type": "float",
