@@ -26,11 +26,13 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import SpeedIcon from '@mui/icons-material/Speed';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchRemoteLLMs, fetchLocalLLMs, fetchRemoteModels, fetchLocalModels, fetchModelParameters } from '../../api/llms';
 
 interface ConfigPanelProps {
   onConfigChange: (config: any) => void;
+  onClearChat: () => void;
 }
 
 interface ModelConfig {
@@ -52,7 +54,7 @@ interface ParameterConfig {
   default: number;
 }
 
-export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
+export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) => {
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState('');
   
@@ -556,7 +558,32 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
               </Typography>
             )}
           </Box>
-
+          
+          <Divider sx={{ my: 3, borderColor: '#374151' }} />
+          
+          <Box sx={{ mt: 2 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={onClearChat}
+              startIcon={<DeleteOutlineIcon />}
+              sx={{
+                color: '#ef4444',
+                borderColor: '#ef4444',
+                '&:hover': {
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  borderColor: '#dc2626',
+                },
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1,
+                py: 1.5
+              }}
+            >
+              Clear Chat
+            </Button>
+          </Box>
         </Box>
       </CardContent>
     </Card>

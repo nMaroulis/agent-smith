@@ -6,6 +6,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckIcon from '@mui/icons-material/Check';
 
 interface ChatMessageProps {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   metrics?: {
@@ -13,9 +14,19 @@ interface ChatMessageProps {
     latency: number;
   };
   isStreaming?: boolean;
+  isLoading?: boolean;
+  error?: boolean;
 }
 
-export const ChatMessage = ({ role, content, metrics, isStreaming }: ChatMessageProps) => {
+export const ChatMessage = ({ 
+  id, 
+  role, 
+  content, 
+  metrics, 
+  isStreaming, 
+  isLoading = false,
+  error = false 
+}: ChatMessageProps) => {
   const [showMetrics, setShowMetrics] = useState(false);
   const [copied, setCopied] = useState(false);
   const [renderedContent, setRenderedContent] = useState('');
@@ -26,33 +37,49 @@ export const ChatMessage = ({ role, content, metrics, isStreaming }: ChatMessage
 
   // Handle typing animation for assistant messages
   useEffect(() => {
-    if (isStreaming || !content) return;
-    
-    let currentIndex = 0;
-    const contentArray = content.split('');
-    let typingInterval: NodeJS.Timeout;
-
-    if (isAssistant) {
-      setIsTyping(true);
-      setRenderedContent('');
-      
-      typingInterval = setInterval(() => {
-        if (currentIndex < contentArray.length) {
-          setRenderedContent(prev => prev + contentArray[currentIndex]);
-          currentIndex++;
-        } else {
-          clearInterval(typingInterval);
-          setIsTyping(false);
-        }
-      }, 10);
-    } else {
-      setRenderedContent(content);
+    // Skip if content is empty or this is a user message
+    if (!content || !isAssistant) {
+      setRenderedContent(content || '');
+      return;
     }
 
-    return () => {
-      if (typingInterval) clearInterval(typingInterval);
-    };
-  }, [content, isStreaming, isAssistant]);
+    // If we're still loading, show loading state
+    if (isLoading) {
+      setRenderedContent('');
+      setIsTyping(true);
+      return;
+    }
+
+    // If there's an error, just show the error message
+    if (error) {
+      setRenderedContent(content);
+      setIsTyping(false);
+      return;
+    }
+
+    // If we already have the full content, show it
+    if (renderedContent === content) {
+      setIsTyping(false);
+      return;
+    }
+    
+    // Start typing animation for new content
+    const remainingContent = content.slice(renderedContent.length);
+    const remainingArray = remainingContent.split('');
+    let currentIndex = 0;
+    
+    const typingInterval = setInterval(() => {
+      if (currentIndex < remainingArray.length) {
+        setRenderedContent(prev => prev + remainingArray[currentIndex]);
+        currentIndex++;
+      } else {
+        clearInterval(typingInterval);
+        setIsTyping(false);
+      }
+    }, 10);
+    
+    return () => clearInterval(typingInterval);
+  }, [content, isAssistant, isLoading, error]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);

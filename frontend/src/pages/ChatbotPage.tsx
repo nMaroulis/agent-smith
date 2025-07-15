@@ -9,7 +9,15 @@ import { useChat } from '../hooks/useChat';
 const ChatbotPage = () => {
   const theme = useTheme();
   const queryClient = useQueryClient();
-  const { messages, config, sendMessage: sendMessage2, isStreaming, metrics } = useChat();
+  const { 
+    messages, 
+    config, 
+    sendMessage: sendMessage2, 
+    isStreaming, 
+    metrics, 
+    clearChat,
+    updateConfig
+  } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -20,17 +28,27 @@ const ChatbotPage = () => {
       // Then scroll to the ref element
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, []);
+  }, []); // Removed dependencies since refs are stable
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [messages, scrollToBottom]); // Added scrollToBottom to dependencies
+
+  const prevProviderRef = useRef(config.provider);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
-
-  useEffect(() => {
-    // Invalidate cache when config changes
-    queryClient.invalidateQueries(['remoteLLMs']);
-    queryClient.invalidateQueries(['localLLMs']);
-  }, [config.provider]);
+    // Only invalidate if provider actually changed
+    if (prevProviderRef.current !== config.provider) {
+      queryClient.invalidateQueries(['remoteLLMs']);
+      queryClient.invalidateQueries(['localLLMs']);
+      prevProviderRef.current = config.provider;
+    }
+  }, [config.provider, queryClient]);
 
   return (
     <Box sx={{ 
@@ -66,9 +84,9 @@ const ChatbotPage = () => {
             borderRight: '1px solid #1f2937' // border-gray-800
           }}>
             <ConfigPanel
-              onConfigChange={(newConfig) => {
-                queryClient.setQueryData(['chat-config'], newConfig);
-              }}
+              config={config}
+              onConfigChange={updateConfig}
+              onClearChat={clearChat}
             />
           </Paper>
         </Box>
