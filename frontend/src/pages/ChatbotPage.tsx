@@ -11,9 +11,15 @@ const ChatbotPage = () => {
   const queryClient = useQueryClient();
   const { messages, config, sendMessage, isStreaming, metrics } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current && messagesEndRef.current) {
+      // First scroll to bottom with smooth behavior
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      // Then scroll to the ref element
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   }, []);
 
   useEffect(() => {
@@ -78,7 +84,7 @@ const ChatbotPage = () => {
           }}>
             {/* Chat Messages */}
             <Box
-              ref={messagesEndRef}
+              ref={messagesContainerRef}
               sx={{
                 flex: 1,
                 overflowY: 'auto',
@@ -100,7 +106,7 @@ const ChatbotPage = () => {
                 />
               ))}
               {/* Empty div to scroll to */}
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} style={{ height: '1px' }} />
             </Box>
 
             {/* Chat Input */}
@@ -119,7 +125,10 @@ const ChatbotPage = () => {
               <ChatInput
                 onSendMessage={(message, files) => {
                   sendMessage(message, files);
-                  scrollToBottom();
+                  // Add a small delay to ensure the message is rendered before scrolling
+                  setTimeout(() => {
+                    scrollToBottom();
+                  }, 100);
                 }}
                 isSubmitting={isStreaming}
               />
