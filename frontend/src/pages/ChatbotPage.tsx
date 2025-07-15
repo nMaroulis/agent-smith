@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Container, Grid, Paper, Typography, useTheme } from '@mui/material';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConfigPanel } from '../components/chat/ConfigPanel';
@@ -10,6 +10,15 @@ const ChatbotPage = () => {
   const theme = useTheme();
   const queryClient = useQueryClient();
   const { messages, config, sendMessage, isStreaming, metrics } = useChat();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     // Invalidate cache when config changes
@@ -19,16 +28,16 @@ const ChatbotPage = () => {
 
   return (
     <Box sx={{ 
-      height: '100vh', 
       display: 'flex', 
       flexDirection: 'column', 
+      height: 'calc(100vh - 64px)', // Adjust for navbar height
       width: '100%',
       bgcolor: theme.palette.background.default 
     }}>
       <Box sx={{ 
         display: 'flex', 
         height: '100%', 
-        width: '100%', 
+        width: '100%',
         overflow: 'hidden'
       }}>
         {/* Left Column - Config Panel */}
@@ -69,6 +78,7 @@ const ChatbotPage = () => {
           }}>
             {/* Chat Messages */}
             <Box
+              ref={messagesEndRef}
               sx={{
                 flex: 1,
                 overflowY: 'auto',
@@ -77,6 +87,7 @@ const ChatbotPage = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 2,
+                mb: 'auto', // Push messages up
               }}
             >
               {messages.map((message, index) => (
@@ -88,12 +99,28 @@ const ChatbotPage = () => {
                   isStreaming={isStreaming && message.role === 'assistant'}
                 />
               ))}
+              {/* Empty div to scroll to */}
+              <div ref={messagesEndRef} />
             </Box>
 
             {/* Chat Input */}
-            <Box sx={{ width: '100%', position: 'sticky', bottom: 0, zIndex: 1 }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: '80px',
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 1,
+                bgcolor: theme.palette.background.paper,
+                borderTop: '1px solid',
+                borderColor: 'divider'
+              }}
+            >
               <ChatInput
-                onSendMessage={(message, files) => sendMessage(message, files)}
+                onSendMessage={(message, files) => {
+                  sendMessage(message, files);
+                  scrollToBottom();
+                }}
                 isSubmitting={isStreaming}
               />
             </Box>

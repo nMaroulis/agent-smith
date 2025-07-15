@@ -1,4 +1,4 @@
-import { Box, Typography, Avatar, Paper, Grid, CircularProgress } from '@mui/material';
+import { Box, Typography, Avatar, Paper, CircularProgress, Stack, Chip } from '@mui/material';
 import { useEffect, useState } from 'react';
 
 interface ChatMessageProps {
@@ -22,60 +22,124 @@ export const ChatMessage = ({ role, content, metrics, isStreaming }: ChatMessage
     setShowMetrics(false);
   };
 
+  const isUser = role === 'user';
+  const isAssistant = role === 'assistant';
+
+  const getRoleColor = () => {
+    if (isUser) {
+      return {
+        bgcolor: 'rgba(255, 255, 255, 0.95)',
+        color: '#000',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        iconColor: '#666',
+      };
+    }
+    return {
+      bgcolor: '#40444b',
+      color: '#fff',
+      borderColor: 'rgba(0, 0, 0, 0.1)',
+      iconColor: '#fff',
+    };
+  };
+
+  const roleColors = getRoleColor();
+
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        maxWidth: '80%',
-        mx: 'auto',
-        mb: 2,
+        width: '100%',
+        mb: 3,
+        p: 2,
       }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
-      <Paper
-        elevation={1}
+      <Box
         sx={{
-          p: 2,
-          borderRadius: 2,
-          maxWidth: '90%',
-          alignSelf: role === 'user' ? 'flex-start' : 'flex-end',
-          bgcolor: role === 'user' ? 'primary.light' : 'secondary.light',
-          color: role === 'user' ? 'primary.contrastText' : 'secondary.contrastText',
+          display: 'flex',
+          justifyContent: isUser ? 'flex-start' : 'flex-end',
+          gap: 2,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+        {isUser && (
           <Avatar
             sx={{
-              bgcolor: role === 'user' ? 'primary.main' : 'secondary.main',
+              bgcolor: '#666',
+              color: '#fff',
               width: 32,
               height: 32,
-              mr: 1,
+              fontSize: '1rem',
             }}
           >
-            {role === 'user' ? 'U' : 'A'}
+            U
           </Avatar>
-          <Typography variant="subtitle2" component="span">
-            {role === 'user' ? 'User' : 'Assistant'}
+        )}
+        {isAssistant && (
+          <Avatar
+            sx={{
+              bgcolor: '#40444b',
+              color: '#fff',
+              width: 32,
+              height: 32,
+              fontSize: '1rem',
+            }}
+          >
+            A
+          </Avatar>
+        )}
+        <Box
+          sx={{
+            maxWidth: '80%',
+            bgcolor: roleColors.bgcolor,
+            color: roleColors.color,
+            borderRadius: '12px',
+            p: 3,
+            border: '1px solid',
+            borderColor: roleColors.borderColor,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            transition: 'all 0.2s ease',
+            position: 'relative',
+          }}
+        >
+          <Typography
+            variant="body1"
+            sx={{
+              fontSize: '1rem',
+              lineHeight: 1.5,
+              mb: 1,
+            }}
+          >
+            {content}
           </Typography>
           {isStreaming && (
-            <Box sx={{ ml: 'auto' }}>
-              <CircularProgress size={16} />
+            <Box
+              sx={{
+                position: 'absolute',
+                right: 12,
+                bottom: 12,
+              }}
+            >
+              <CircularProgress
+                size={16}
+                sx={{
+                  color: roleColors.iconColor,
+                }}
+              />
             </Box>
           )}
         </Box>
-        <Typography variant="body1" component="div">
-          {content}
-        </Typography>
-      </Paper>
+      </Box>
       {showMetrics && metrics && (
-        <Box sx={{ mt: 1, display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-          <Typography color="textSecondary">
-            {metrics.tokens} tokens
-          </Typography>
-          <Typography color="textSecondary">
-            {metrics.latency.toFixed(2)} ms
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: isUser ? 'flex-start' : 'flex-end',
+            fontSize: '0.8rem',
+            color: roleColors.color,
+            opacity: 0.7,
+            mt: 1,
+          }}
+        >
+          <Typography>
+            {metrics.tokens} tokens • {metrics.latency.toFixed(1)}ms
           </Typography>
         </Box>
       )}
