@@ -202,7 +202,7 @@ export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) =
   return (
     <Card sx={{ 
       width: '100%', 
-      mb: 4, 
+      mb: 0, 
       height: 'calc(100vh - 32px)', 
       display: 'flex', 
       flexDirection: 'column',

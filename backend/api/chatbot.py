@@ -163,7 +163,6 @@ async def chat_stream(
             presence_penalty=request.presence_penalty,
             stream=True
         ):
-            print(chunk)
             yield f"data: {json.dumps(chat_completion_chunk_to_dict(chunk))}\n\n"
             await asyncio.sleep(0.01)
         

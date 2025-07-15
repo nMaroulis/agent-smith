@@ -129,73 +129,44 @@ export const useChat = () => {
       if (config.streaming) {
         // Handle streaming response
         let assistantMessage = '';
-        const responseData = response.data || response;
+        const responseData = response.data;
         
-        // Handle different streaming response formats
-        if (responseData.getReader) {
-          // Handle ReadableStream response
-          const reader = responseData.getReader();
-          const decoder = new TextDecoder();
-
+        if (!responseData) {
+          throw new Error('No response data received');
+        }
+        
+        // Get the reader from the ReadableStream
+        const reader = responseData.getReader();
+        const decoder = new TextDecoder();
+        
+        try {
           while (true) {
-            const { value, done } = await reader.read();
+            const { done, value } = await reader.read();
             if (done) break;
-
-            const text = decoder.decode(value, { stream: true });
-            const lines = text.split('\n').filter(line => line.trim());
-
+            
+            // Decode the chunk of data
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(line => line.trim());
+            
             for (const line of lines) {
               if (line.startsWith('data: ')) {
-                const data = line.substring(6);
+                const data = line.substring(6).trim();
                 if (data === '[DONE]') break;
-
+                
                 try {
-                  const chunk = JSON.parse(data);
-                  if (chunk.choices?.[0]?.delta?.content) {
-                    assistantMessage += chunk.choices[0].delta.content;
+                  const parsed = JSON.parse(data);
+                  if (parsed.choices?.[0]?.delta?.content) {
+                    assistantMessage += parsed.choices[0].delta.content;
                     updateAssistantMessage(assistantMessage, exchangeId);
                   }
                 } catch (error) {
-                  console.error('Error parsing chunk:', error);
+                  console.error('Error parsing chunk:', error, 'Chunk:', data);
                 }
               }
             }
           }
-        } else if (responseData.on) {
-          // Handle Node.js stream response
-          responseData.on('data', (chunk: Buffer) => {
-            const text = chunk.toString();
-            const lines = text.split('\n').filter(line => line.trim());
-            
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.substring(6);
-                if (data === '[DONE]') return;
-                
-                try {
-                  const chunk = JSON.parse(data);
-                  if (chunk.choices?.[0]?.delta?.content) {
-                    assistantMessage += chunk.choices[0].delta.content;
-                    updateAssistantMessage(assistantMessage, exchangeId);
-                  }
-                } catch (error) {
-                  console.error('Error parsing chunk:', error);
-                }
-              }
-            }
-          });
-          
-          // Wait for the stream to end
-          await new Promise((resolve) => {
-            responseData.on('end', resolve);
-          });
-        } else {
-          // If it's not a stream, handle as a regular response
-          const responseContent = responseData.choices?.[0]?.message?.content || 
-                                responseData.choices?.[0]?.text || 
-                                'No response content';
-          assistantMessage = responseContent;
-          updateAssistantMessage(assistantMessage, exchangeId);
+        } finally {
+          reader.releaseLock();
         }
 
         // Add metrics for the completed message

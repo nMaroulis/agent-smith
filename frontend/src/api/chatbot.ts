@@ -71,27 +71,41 @@ export const sendMessage = async (messages: Message[], config: any) => {
   };
 
   const endpoint = streaming ? '/playground/chatbot/chat/stream' : '/playground/chatbot/chat';
+  const url = `${BASE_URL}${endpoint}`;
 
   try {
-    const response = await axios.post(
-      `${BASE_URL}${endpoint}`,
-      chatRequest,
-      streaming ? {
-        responseType: 'stream',
-        headers: {
-          'Accept': 'text/event-stream',
-          'Content-Type': 'application/json'
-        }
-      } : {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
     if (streaming) {
-      return response;
+      // Use Fetch API for streaming responses
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream'
+        },
+        body: JSON.stringify(chatRequest)
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to fetch streaming response');
+      }
+
+      // Return the response body as a ReadableStream
+      if (response.body) {
+        return { data: response.body };
+      }
+      throw new Error('No response body received');
     } else {
+      // For non-streaming, continue using axios
+      const response = await axios.post(
+        url,
+        chatRequest,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       return response.data as ChatResponse;
     }
   } catch (error) {
