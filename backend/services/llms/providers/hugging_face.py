@@ -1,6 +1,7 @@
 from services.llms.base import BaseAPILLM
 from huggingface_hub import InferenceClient
-from typing import Optional
+from typing import Optional, Generator
+
 
 class HuggingFaceAPILLM(BaseAPILLM):
     """Hugging Face API LLM."""
@@ -8,10 +9,17 @@ class HuggingFaceAPILLM(BaseAPILLM):
         super().__init__(name="huggingface", api_key=api_key)
         if api_key is not None:
             self.client = InferenceClient(api_key=self.api_key)
-    
-    def generate(self, prompt: str, **kwargs) -> str:
-        """Generate a response from the LLM."""
+
+
+    def get_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
+        """Get a non-streaming completion from the LLM."""
         ...
+
+
+    def stream_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> Generator[str, None, None]:
+        """Stream a completion from the LLM."""
+        ...
+
     
     @staticmethod
     def validate_key(api_key: str) -> bool:

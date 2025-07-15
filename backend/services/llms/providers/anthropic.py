@@ -1,7 +1,8 @@
 from services.llms.base import BaseAPILLM
 from anthropic import AuthenticationError as AnthropicAuthError
-from anthropic import Anthropic
-from typing import Optional
+from anthropic import Anthropic, APIError
+from anthropic.types import Message
+from typing import Optional, Generator
 
 
 class AnthropicAPILLM(BaseAPILLM):
@@ -12,10 +13,76 @@ class AnthropicAPILLM(BaseAPILLM):
             self.client = Anthropic(api_key=self.api_key)
 
 
-    def generate(self, prompt: str, **kwargs) -> str:
-        """Generate a response from the LLM."""
-        ...
-    
+    def get_completion(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        model: str = "claude-3-5-sonnet-20240620",
+        temperature: float = 0.7,
+        max_tokens: int = 8000,
+    ) -> str:
+        """
+        Get a non-streaming completion from the Anthropic model.
+
+        Args:
+            system_prompt (str): The system-level prompt (instructions for the model).
+            user_prompt (str): The user message prompt.
+            model (str): The model name.
+            temperature (float): Sampling temperature.
+            max_tokens (int): Maximum tokens to generate.
+
+        Returns:
+            str: The generated text from the model.
+        """
+        try:
+            response: Message = self.client.messages.create(
+                model=model,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            return response.content[0].text
+        except APIError as e:
+            raise RuntimeError(f"Anthropic API error: {e}")
+
+
+    def stream_completion(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        model: str = "claude-3-5-sonnet-20240620",
+        temperature: float = 0.7,
+        max_tokens: int = 8000,
+    ) -> Generator[str, None, None]:
+        """
+        Stream completion from the Anthropic model, yielding tokens as they arrive.
+
+        Args:
+            system_prompt (str): The system-level prompt.
+            user_prompt (str): The user message prompt.
+            model (str): The model name.
+            temperature (float): Sampling temperature.
+            max_tokens (int): Maximum tokens to generate.
+
+        Yields:
+            str: Partial response tokens as they arrive.
+        """
+        try:
+            stream = self.client.messages.stream(
+                model=model,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            for event in stream:
+                if event.type == "content_block_delta":
+                    yield event.delta.text
+        except APIError as e:
+            raise RuntimeError(f"Anthropic streaming API error: {e}")
+
+
     @staticmethod
     def validate_key(api_key: str) -> bool:
         """

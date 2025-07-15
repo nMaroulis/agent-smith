@@ -1,5 +1,9 @@
-import { Box, Typography, Avatar, Paper, CircularProgress, Stack, Chip } from '@mui/material';
+import { Box, Typography, Avatar, Paper, CircularProgress, Stack, Chip, IconButton, Tooltip } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -13,92 +17,316 @@ interface ChatMessageProps {
 
 export const ChatMessage = ({ role, content, metrics, isStreaming }: ChatMessageProps) => {
   const [showMetrics, setShowMetrics] = useState(false);
-
-  const handleMouseEnter = () => {
-    setShowMetrics(true);
-  };
-
-  const handleMouseLeave = () => {
-    setShowMetrics(false);
-  };
+  const [copied, setCopied] = useState(false);
+  const [renderedContent, setRenderedContent] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
 
   const isUser = role === 'user';
   const isAssistant = role === 'assistant';
 
-  const getRoleColor = () => {
+  // Handle typing animation for assistant messages
+  useEffect(() => {
+    if (isStreaming || !content) return;
+    
+    let currentIndex = 0;
+    const contentArray = content.split('');
+    let typingInterval: NodeJS.Timeout;
+
+    if (isAssistant) {
+      setIsTyping(true);
+      setRenderedContent('');
+      
+      typingInterval = setInterval(() => {
+        if (currentIndex < contentArray.length) {
+          setRenderedContent(prev => prev + contentArray[currentIndex]);
+          currentIndex++;
+        } else {
+          clearInterval(typingInterval);
+          setIsTyping(false);
+        }
+      }, 10);
+    } else {
+      setRenderedContent(content);
+    }
+
+    return () => {
+      if (typingInterval) clearInterval(typingInterval);
+    };
+  }, [content, isStreaming, isAssistant]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleMouseEnter = () => setShowMetrics(true);
+  const handleMouseLeave = () => setShowMetrics(false);
+
+
+
+  const getRoleStyles = () => {
     if (isUser) {
       return {
-        bgcolor: 'rgba(255, 255, 255, 0.95)',
-        color: '#000',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        iconColor: '#666',
+        bgcolor: 'rgba(255, 255, 255, 0.05)',
+        color: '#fff',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '18px 18px 4px 18px',
+        alignSelf: 'flex-end',
+        maxWidth: '85%',
+        ml: 'auto',
+        position: 'relative',
+        '&:hover': {
+          bgcolor: 'rgba(255, 255, 255, 0.08)',
+        },
       };
     }
     return {
-      bgcolor: '#40444b',
+      bgcolor: 'rgba(32, 33, 35, 0.9)',
       color: '#fff',
-      borderColor: 'rgba(0, 0, 0, 0.1)',
-      iconColor: '#fff',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '18px 18px 18px 4px',
+      alignSelf: 'flex-start',
+      maxWidth: '85%',
+      mr: 'auto',
+      position: 'relative',
+      '&:hover': {
+        bgcolor: 'rgba(32, 33, 35, 0.95)',
+      },
     };
   };
 
-  const roleColors = getRoleColor();
+  const messageStyles = getRoleStyles();
+
+  // Simple markdown code block detection and rendering
+  const renderContent = (text: string) => {
+    if (!text) return null;
+    
+    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)\n```/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = codeBlockRegex.exec(text)) !== null) {
+      const [fullMatch, language, code] = match;
+      const before = text.slice(lastIndex, match.index);
+      
+      if (before) {
+        parts.push(<Box key={`text-${lastIndex}`} sx={{ whiteSpace: 'pre-wrap', mb: 1 }}>{before}</Box>);
+      }
+      
+      parts.push(
+        <Box key={`code-${lastIndex}`} sx={{ position: 'relative', my: 1, borderRadius: '8px', overflow: 'hidden' }}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            bg: '#1e1e1e',
+            p: '4px 12px',
+            fontSize: '0.8rem',
+            color: '#9ca3af',
+            fontFamily: 'monospace',
+          }}>
+            <span>{language || 'code'}</span>
+            <Tooltip title={copied ? 'Copied!' : 'Copy code'}>
+              <IconButton 
+                size="small" 
+                onClick={() => {
+                  navigator.clipboard.writeText(code);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                sx={{ color: '#9ca3af', p: '4px', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+              >
+                {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <SyntaxHighlighter 
+            language={language} 
+            style={vscDarkPlus}
+            customStyle={{
+              margin: 0,
+              padding: '16px',
+              fontSize: '0.9rem',
+              borderRadius: '0 0 8px 8px',
+              background: '#1e1e1e',
+            }}
+          >
+            {code}
+          </SyntaxHighlighter>
+        </Box>
+      );
+      
+      lastIndex = match.index + fullMatch.length;
+    }
+
+    const remaining = text.slice(lastIndex);
+    if (remaining) {
+      parts.push(<Box key={`text-end`} sx={{ whiteSpace: 'pre-wrap' }}>{remaining}</Box>);
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
 
   return (
     <Box
       sx={{
         width: '100%',
-        mb: 3,
-        p: 2,
+        mb: 2,
+        px: 2,
+        py: 1,
+        position: 'relative',
       }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <Box
         sx={{
           display: 'flex',
-          justifyContent: isUser ? 'flex-start' : 'flex-end',
+          flexDirection: isUser ? 'row-reverse' : 'row',
           gap: 2,
+          maxWidth: '1000px',
+          mx: 'auto',
+          width: '100%',
         }}
       >
-        {isUser && (
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          pt: 0.5,
+          opacity: 0.8,
+          '&:hover': { opacity: 1 }
+        }}>
           <Avatar
             sx={{
-              bgcolor: '#666',
+              bgcolor: isUser ? '#10a37f' : '#202123',
               color: '#fff',
-              width: 32,
-              height: 32,
-              fontSize: '1rem',
+              width: 36,
+              height: 36,
+              fontSize: '0.9rem',
+              fontWeight: 600,
+              border: '1px solid',
+              borderColor: isUser ? 'rgba(16, 163, 127, 0.5)' : 'rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+              '&:hover': {
+                transform: 'scale(1.05)',
+                transition: 'all 0.2s ease',
+              },
             }}
           >
-            U
+            {isUser ? 'You' : 'AI'}
           </Avatar>
-        )}
-        {isAssistant && (
-          <Avatar
-            sx={{
-              bgcolor: '#40444b',
-              color: '#fff',
-              width: 32,
-              height: 32,
-              fontSize: '1rem',
-            }}
-          >
-            A
-          </Avatar>
-        )}
+          
+          {showMetrics && metrics && (
+            <Box sx={{ 
+              mt: 0.5,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 0.5,
+            }}>
+              <Chip 
+                size="small" 
+                label={`${metrics.tokens} tokens`}
+                sx={{ height: '20px', fontSize: '0.7rem', bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' }}
+              />
+              <Chip 
+                size="small" 
+                label={`${metrics.latency.toFixed(0)}ms`}
+                sx={{ height: '20px', fontSize: '0.7rem', bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' }}
+              />
+            </Box>
+          )}
+        </Box>
+
         <Box
           sx={{
-            maxWidth: '80%',
-            bgcolor: roleColors.bgcolor,
-            color: roleColors.color,
-            borderRadius: '12px',
+            ...messageStyles,
             p: 3,
-            border: '1px solid',
-            borderColor: roleColors.borderColor,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            boxShadow: '0 0 15px rgba(0,0,0,0.1)',
             transition: 'all 0.2s ease',
-            position: 'relative',
+            '& pre': {
+              m: 0,
+              p: 2,
+              borderRadius: '8px',
+              overflowX: 'auto',
+              fontSize: '0.9rem',
+              fontFamily: 'monospace',
+              bgcolor: '#1e1e1e',
+            },
+            '& code': {
+              fontFamily: 'monospace',
+              bgcolor: 'transparent',
+              p: 0.5,
+              borderRadius: 0.25,
+              color: '#f8f8f2',
+              fontSize: '0.9em',
+            },
+            '& a': {
+              color: '#58a6ff',
+              textDecoration: 'none',
+              '&:hover': {
+                textDecoration: 'underline',
+              },
+            },
+            '& ul, & ol': {
+              pl: 3,
+              my: 1,
+            },
+            '& li': {
+              mb: 0.5,
+            },
+            '& blockquote': {
+              borderLeft: '3px solid #4b5563',
+              pl: 2,
+              ml: 0,
+              color: '#9ca3af',
+              fontStyle: 'italic',
+            },
+            '& table': {
+              width: '100%',
+              borderCollapse: 'collapse',
+              my: 1,
+              '& th, & td': {
+                border: '1px solid #4b5563',
+                p: 1,
+                textAlign: 'left',
+              },
+              '& th': {
+                bgcolor: 'rgba(255,255,255,0.05)',
+              },
+            },
           }}
         >
+          {isAssistant && !isTyping && (
+            <Box sx={{ 
+              position: 'absolute', 
+              top: 8, 
+              right: 8,
+              display: 'flex',
+              gap: 0.5,
+              opacity: showMetrics ? 1 : 0,
+              transition: 'opacity 0.2s ease',
+            }}>
+              <Tooltip title={copied ? 'Copied!' : 'Copy'}>
+                <IconButton 
+                  size="small" 
+                  onClick={handleCopy}
+                  sx={{ 
+                    color: 'rgba(255,255,255,0.5)',
+                    '&:hover': { 
+                      bgcolor: 'rgba(255,255,255,0.1)',
+                      color: 'rgba(255,255,255,0.8)',
+                    },
+                  }}
+                >
+                  {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
           <Typography
             variant="body1"
             sx={{
@@ -115,14 +343,19 @@ export const ChatMessage = ({ role, content, metrics, isStreaming }: ChatMessage
                 position: 'absolute',
                 right: 12,
                 bottom: 12,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                color: isUser ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.7)',
+                fontSize: '0.8rem',
               }}
             >
               <CircularProgress
-                size={16}
-                sx={{
-                  color: roleColors.iconColor,
-                }}
+                size={14}
+                thickness={5}
+                sx={{ color: 'inherit' }}
               />
+              <span>Generating...</span>
             </Box>
           )}
         </Box>

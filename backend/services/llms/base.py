@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from typing import Optional
+from typing import Optional, Generator
 
 
 class BaseLLM(ABC):
@@ -27,8 +27,14 @@ class BaseLLM(ABC):
 
 
     @abstractmethod
-    def generate(self, prompt: str, **kwargs) -> str:
-        """Generate a response from the LLM."""
+    def get_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
+        """Get a non-streaming completion from the LLM."""
+        ...
+
+
+    @abstractmethod
+    def stream_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> Generator[str, None, None]:
+        """Stream a completion from the LLM."""
         ...
 
     

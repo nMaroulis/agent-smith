@@ -3,6 +3,11 @@ import {
   Card, 
   CardContent, 
   CardHeader, 
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
   Divider, 
   Typography, 
   Box, 
@@ -18,6 +23,7 @@ import {
   ToggleButton, 
   Stack
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import SpeedIcon from '@mui/icons-material/Speed';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -47,6 +53,18 @@ interface ParameterConfig {
 }
 
 export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
+  const [promptModalOpen, setPromptModalOpen] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState('');
+  
+  const handleOpenPromptModal = () => {
+    setEditedPrompt(config.systemPrompt);
+    setPromptModalOpen(true);
+  };
+  
+  const handleSavePrompt = () => {
+    setConfig(prev => ({ ...prev, systemPrompt: editedPrompt }));
+    setPromptModalOpen(false);
+  };
   const [config, setConfig] = useState<ModelConfig>({
     provider: '',
     remoteAlias: '',
@@ -358,14 +376,105 @@ export const ConfigPanel = ({ onConfigChange }: ConfigPanelProps) => {
             <Typography variant="subtitle2" gutterBottom>
               System Prompt
             </Typography>
-            <TextField
+            <Button
               fullWidth
-              multiline
-              rows={4}
-              value={config.systemPrompt}
-              onChange={handleSystemPromptChange}
-              placeholder="Enter system prompt..."
-            />
+              variant="outlined"
+              onClick={handleOpenPromptModal}
+              startIcon={<EditIcon />}
+              sx={{
+                justifyContent: 'flex-start',
+                textTransform: 'none',
+                textAlign: 'left',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                color: '#e5e7eb',
+                borderColor: '#374151',
+                '&:hover': {
+                  borderColor: '#4b5563',
+                  backgroundColor: 'rgba(255, 255, 255, 0.04)'
+                }
+              }}
+            >
+              {config.systemPrompt || 'Click to edit system prompt...'}
+            </Button>
+            
+            <Dialog 
+              open={promptModalOpen} 
+              onClose={() => setPromptModalOpen(false)}
+              maxWidth="md"
+              fullWidth
+              PaperProps={{
+                sx: {
+                  bgcolor: '#1f2937',
+                  color: 'white',
+                  minHeight: '50vh',
+                  maxHeight: '80vh',
+                  '& .MuiDialogTitle-root': {
+                    borderBottom: '1px solid #374151',
+                    padding: '16px 24px'
+                  },
+                  '& .MuiDialogContent-root': {
+                    padding: '20px 24px'
+                  },
+                  '& .MuiDialogActions-root': {
+                    padding: '16px 24px',
+                    borderTop: '1px solid #374151'
+                  }
+                }
+              }}
+            >
+              <DialogTitle>Edit System Prompt</DialogTitle>
+              <DialogContent>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={10}
+                  maxRows={20}
+                  value={editedPrompt}
+                  onChange={(e) => setEditedPrompt(e.target.value)}
+                  placeholder="Enter system prompt..."
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: 'white',
+                      '& fieldset': {
+                        borderColor: '#4b5563',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#6b7280',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#3b82f6',
+                      },
+                    },
+                    '& .MuiInputBase-input': {
+                      color: 'white',
+                    },
+                  }}
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button 
+                  onClick={() => setPromptModalOpen(false)}
+                  sx={{ color: '#9ca3af' }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSavePrompt}
+                  variant="contained"
+                  sx={{
+                    bgcolor: '#1e40af',
+                    '&:hover': {
+                      bgcolor: '#1e3a8a',
+                    },
+                  }}
+                >
+                  Save
+                </Button>
+              </DialogActions>
+            </Dialog>
           </Box>
           
           <Divider sx={{ my: 0, borderColor: '#374151' /* gray-700 */ }} />

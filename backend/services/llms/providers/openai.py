@@ -1,6 +1,7 @@
 from services.llms.base import BaseAPILLM
-from openai import OpenAI, AuthenticationError, OpenAIError
-from typing import Optional
+from openai import OpenAI, OpenAIError, APIError, ChatCompletion
+from typing import Optional, Generator
+
 
 class OpenAIAPILLM(BaseAPILLM):
     """OpenAI API LLM."""
@@ -11,13 +12,80 @@ class OpenAIAPILLM(BaseAPILLM):
             self.client = OpenAI(api_key=self.api_key)
 
 
-    def generate(self, prompt: str, **kwargs) -> str:
-        """Generate a response from the LLM. - Dummy code"""
-        return self.client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            **kwargs
-        ).choices[0].message.content
+    def get_completion(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        model: str = "gpt-4o",
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+    ) -> str:
+        """
+        Get a non-streaming completion from OpenAI.
+
+        Args:
+            system_prompt (str): Instructions for the assistant.
+            user_prompt (str): The user message.
+            model (str): OpenAI model name.
+            temperature (float): Sampling temperature.
+            max_tokens (int): Max tokens to generate.
+
+        Returns:
+            str: The model-generated response.
+        """
+        try:
+            response: ChatCompletion = self.client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            return response.choices[0].message.content.strip()
+        except APIError as e:
+            raise RuntimeError(f"OpenAI API error: {e}")
+
+
+    def stream_completion(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        model: str = "gpt-4o",
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+    ) -> Generator[str, None, None]:
+        """
+        Stream a completion from OpenAI, yielding parts of the message as they arrive.
+
+        Args:
+            system_prompt (str): Instructions for the assistant.
+            user_prompt (str): The user message.
+            model (str): OpenAI model name.
+            temperature (float): Sampling temperature.
+            max_tokens (int): Max tokens to generate.
+
+        Yields:
+            str: Partial responses (tokens or phrases).
+        """
+        try:
+            stream = self.client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
+
+            for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        except APIError as e:
+            raise RuntimeError(f"OpenAI streaming API error: {e}")
 
 
     @staticmethod

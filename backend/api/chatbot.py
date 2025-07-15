@@ -1,52 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from typing import Optional, List, Dict, Any, Literal
+from typing import List, Dict, Optional
 from sqlalchemy.orm import Session
 import json
 import time
-from datetime import datetime
-from pydantic import BaseModel, Field
 from db.session import get_db
 import asyncio
 import uuid
 from typing import AsyncGenerator
+from schemas.sandbox.chatbot import Message, ChatRequest, TokenUsage, ChatResponse, ChatCompletionChunk
 
 router = APIRouter(prefix="/playground/chatbot", tags=["Chatbot"])
 
-# Models
-class Message(BaseModel):
-    role: Literal["user", "assistant", "system"]
-    content: str
-
-class ChatRequest(BaseModel):
-    messages: List[Message]
-    model: str
-    temperature: float = Field(0.7, ge=0, le=2)
-    max_tokens: int = Field(2048, ge=1, le=4096)
-    top_p: float = Field(1.0, ge=0, le=1)
-    frequency_penalty: float = Field(0.0, ge=0, le=2)
-    presence_penalty: float = Field(0.0, ge=0, le=2)
-    stream: bool = False
-
-class TokenUsage(BaseModel):
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
-
-class ChatResponse(BaseModel):
-    id: str
-    object: str = "chat.completion"
-    created: int
-    model: str
-    usage: TokenUsage
-    choices: List[Dict[str, Any]]
-
-class ChatCompletionChunk(BaseModel):
-    id: str
-    object: str = "chat.completion.chunk"
-    created: int
-    model: str
-    choices: List[Dict[str, Any]]
 
 # Mock LLM service - replace with actual implementation
 class LLMService:
@@ -54,12 +19,12 @@ class LLMService:
         self, 
         messages: List[Message],
         model: str,
-        temperature: float = 0.7,
-        max_tokens: int = 2048,
-        top_p: float = 1.0,
-        frequency_penalty: float = 0.0,
-        presence_penalty: float = 0.0,
-        stream: bool = False
+        temperature: Optional[float] = 0.7,
+        max_tokens: Optional[int] = 2048,
+        top_p: Optional[float] = 1.0,
+        frequency_penalty: Optional[float] = 0.0,
+        presence_penalty: Optional[float] = 0.0,
+        stream: Optional[bool] = False
     ) -> AsyncGenerator[Dict, None]:
         # This is a mock implementation
         # In a real implementation, this would call the actual LLM API
