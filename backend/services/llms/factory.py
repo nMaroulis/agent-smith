@@ -48,4 +48,3 @@ def get_local_llm_client_by_alias(alias: str, db: Session):
     except Exception as e:
         print(f"Validation error: {str(e)}")
         raise e
-
