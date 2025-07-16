@@ -257,7 +257,7 @@ export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) =
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 2 }}>
           <Box>
             <Typography variant="subtitle2" gutterBottom>
-              Provider
+              LLM Type
             </Typography>
             <ToggleButtonGroup
               value={config.provider}
@@ -309,7 +309,7 @@ export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) =
           {selectedProvider === 'remote' && (
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Remote LLM
+                Remote LLM Alias
               </Typography>
               <Select
                 value={config.remoteAlias}
@@ -329,7 +329,7 @@ export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) =
           {selectedProvider === 'local' && (
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Local LLM
+                Local LLM Alias
               </Typography>
               <Select
                 value={config.localAlias}

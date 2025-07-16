@@ -8,7 +8,7 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: List[Message]
-    model: str
+    model: Optional[str] = Field(None, description="Optional model name")
     llm_alias: Optional[str] = Field(None, description="Optional alias for the LLM configuration")
     llm_type: str = Field(..., description="Type of LLM: 'remote' or 'local'")
     temperature: Optional[float] = Field(0.7, ge=0, le=1)
