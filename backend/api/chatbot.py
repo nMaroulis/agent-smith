@@ -19,6 +19,7 @@ async def chat(
     request: ChatRequest,
     db: Session = Depends(get_db)
 ):
+    print(request)
     """
     Chat with the selected LLM model.
     """
@@ -37,6 +38,8 @@ async def chat(
     async for chunk in llm_service.generate_chat_completion(
         messages=request.messages,
         model=request.model,
+        llm_alias=request.llm_alias,
+        llm_type=request.llm_type,
         temperature=request.temperature,
         max_tokens=request.max_tokens,
         top_p=request.top_p,
@@ -73,6 +76,8 @@ async def chat_stream(
         async for chunk in llm_service.generate_chat_completion(
             messages=request.messages,
             model=request.model,
+            llm_alias=request.llm_alias,
+            llm_type=request.llm_type,
             temperature=request.temperature,
             max_tokens=request.max_tokens,
             top_p=request.top_p,

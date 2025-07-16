@@ -11,6 +11,8 @@ interface Message {
 interface ChatRequest {
   messages: Message[];
   model: string;
+  llm_alias?: string;
+  llm_type: 'remote' | 'local';
   temperature: number;
   max_tokens: number;
   top_p: number;
@@ -50,7 +52,7 @@ interface ChatCompletionChunk {
 }
 
 export const sendMessage = async (messages: Message[], config: any) => {
-  const { provider, model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, streaming } = config;
+  const { provider, model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, streaming, llmAlias, llmType } = config;
 
   // Ensure we have a valid model
   if (!model) {
@@ -62,6 +64,8 @@ export const sendMessage = async (messages: Message[], config: any) => {
   const chatRequest: ChatRequest = {
     messages,
     model,
+    llm_alias: llmAlias,
+    llm_type: llmType || 'remote', // Default to 'remote' if not specified
     temperature,
     max_tokens: maxTokens,
     top_p: topP,

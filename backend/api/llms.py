@@ -4,7 +4,7 @@ from crud.llms import get_remote_llms, create_remote_llm, update_remote_llm_by_a
 from typing import Optional
 from sqlalchemy.orm import Session
 from db.session import get_db
-from services.llms.factory import get_llm_client_by_provider, get_remote_llm_client_by_alias, get_local_llm_client_by_alias
+from services.llms.factory import get_llm_client_by_provider, get_llm_client_by_alias
 
 
 router = APIRouter(prefix="/llms", tags=["LLM"])
@@ -54,7 +54,7 @@ def delete_api_key(alias: str, db: Session = Depends(get_db)):
 @router.get("/remote/{alias}/models", response_model=ListModels)
 async def get_available_remote_models(alias: str = Path(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
     try:
-        llm = get_remote_llm_client_by_alias(alias=alias, db=db)
+        llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=True)
         return {"models": llm.list_models()}
     except Exception as e:
         print(e)
@@ -64,7 +64,7 @@ async def get_available_remote_models(alias: str = Path(..., description="The re
 @router.get("/remote/{alias}/embeddings_models", response_model=ListEmbeddingsModels)
 async def get_available_remote_embeddings_models(alias: str = Path(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
     try:
-        llm = get_remote_llm_client_by_alias(alias=alias, db=db)
+        llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=True)
         return {"embeddings_models": llm.list_embeddings_models()}
     except Exception as e:
         print(e)
@@ -86,7 +86,7 @@ async def validate_llm_key(data: LLMValidationRequest):
 @router.get("/remote/{alias}/validate-key", response_model=LLMValidationResponse, description="Validate a saved remote LLM's API key")
 async def validate_remote_llm_key(alias: str = Path(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
     try:
-        llm = get_remote_llm_client_by_alias(alias=alias, db=db)
+        llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=True)
         if not llm.validate():
             return {"valid": False, "message": "Invalid API key"}
         return {"valid": True, "message": "API key is valid"}
@@ -97,7 +97,7 @@ async def validate_remote_llm_key(alias: str = Path(..., description="The remote
 @router.get("/remote/{alias}/parameters", response_model=LLMTunableParameters, description="Get tunable parameters for a remote LLM")
 async def get_tunable_parameters(alias: str = Path(..., description="The remote LLM alias"), model: Optional[str] = Query(None, description="The remote LLM model"), db: Session = Depends(get_db)):
     try:
-        llm = get_remote_llm_client_by_alias(alias=alias, db=db)
+        llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=True)
         return llm.get_tunable_parameters(model)
     except Exception as e:
         print(e)
@@ -142,7 +142,7 @@ def delete_local_llm(alias: str, db: Session = Depends(get_db)):
 @router.get("/local/{alias}/models", response_model=list[str])
 async def get_available_local_models(alias: str = Path(..., description="The local LLM alias"), db: Session = Depends(get_db)):
     try:
-        llm = get_local_llm_client_by_alias(alias=alias, db=db)
+        llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=False)
         return {"models": llm.list_models()}
     except Exception as e:
         return {"error": f"Validation error: {str(e)}"}
@@ -151,7 +151,7 @@ async def get_available_local_models(alias: str = Path(..., description="The loc
 @router.get("/local/{alias}/embeddings_models", response_model=list[str])
 async def get_available_local_embeddings_models(alias: str = Path(..., description="The local LLM alias"), db: Session = Depends(get_db)):
     try:
-        llm = get_local_llm_client_by_alias(alias=alias, db=db)
+        llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=False)
         return {"embeddings_models": llm.list_embeddings_models()}
     except Exception as e:
         return {"error": f"Validation error: {str(e)}"}
@@ -160,7 +160,7 @@ async def get_available_local_embeddings_models(alias: str = Path(..., descripti
 @router.get("/local/{alias}/parameters", response_model=LLMTunableParameters, description="Get tunable parameters for a local LLM")
 async def get_tunable_parameters(alias: str = Path(..., description="The local LLM alias"), model: Optional[str] = Query(None, description="The local LLM model"), db: Session = Depends(get_db)):
     try:
-        llm = get_local_llm_client_by_alias(alias=alias, db=db)
+        llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=False)
         return llm.get_tunable_parameters(model)
     except Exception as e:
         print(e)
