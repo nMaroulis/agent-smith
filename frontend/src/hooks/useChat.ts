@@ -2,7 +2,28 @@ import { useState, useCallback, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendMessage as sendMessageAPI } from '../api/chatbot';
 
-interface Message {
+interface ChatResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: Array<{
+    index: number;
+    message: {
+      role: 'assistant';
+      content: string;
+    };
+    finish_reason: string;
+  }>;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
+// Message type for API requests
+interface APIMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
@@ -21,7 +42,8 @@ interface ChatMetrics {
 }
 
 interface ChatConfig {
-  provider: string;
+  llmType: string;
+  llmAlias: string;
   model: string;
   temperature: number;
   maxTokens: number;
@@ -34,67 +56,58 @@ interface ChatConfig {
 
 export const useChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [metrics, setMetrics] = useState<ChatMetrics[]>([]);
+  const [metrics, setMetrics] = useState<ChatMetrics>({ tokens: 0, latency: 0 });
   const [isStreaming, setIsStreaming] = useState(false);
   const [config, setConfig] = useState<ChatConfig>({
-    provider: '',
+    llmType: 'remote',
+    llmAlias: '',
     model: '',
     temperature: 0.7,
     maxTokens: 1000,
-    topP: 1.0,
-    frequencyPenalty: 0.0,
-    presencePenalty: 0.0,
+    topP: 1,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
     streaming: true,
-    systemPrompt: 'You are a helpful AI assistant.',
+    systemPrompt: 'You are a helpful AI assistant.'
   });
 
   const queryClient = useQueryClient();
 
-  // Helper function to update the assistant's message
-  const updateAssistantMessage = (content: string, exchangeId: number) => {
+  const updateAssistantMessage = (content: string, messageId: string) => {
     setMessages(prev => {
-      const assistantMsgIndex = prev.findIndex(m => m.id === `assistant-${exchangeId}`);
-      if (assistantMsgIndex === -1) return prev;
-      
       const newMessages = [...prev];
-      newMessages[assistantMsgIndex] = {
-        ...newMessages[assistantMsgIndex],
-        content,
-        isLoading: false
-      };
+      const messageIndex = newMessages.findIndex(m => m.id === messageId);
+      if (messageIndex !== -1) {
+        newMessages[messageIndex] = {
+          ...newMessages[messageIndex],
+          content,
+          isLoading: false
+        };
+      }
       return newMessages;
     });
   };
 
-  const sendMessage = async (message: string, files?: File[]) => {
-    if (!message.trim() && (!files || files.length === 0)) return;
-    
-    // Ensure we have a valid model selected
-    if (!config.model) {
-      console.error('No model selected');
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Error: Please select a model in the settings before sending a message.',
-        error: true
-      }]);
-      return;
-    }
+  const sendMessage = async (content: string) => {
+    if (!content.trim()) return;
 
-    // Create a unique ID for this message exchange
-    const exchangeId = Date.now();
-    
-    // Add user message with a temporary ID
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: content.trim()
+    };
+
+    // Add user message to chat
+    setMessages(prev => [...prev, userMessage]);
+
+    // Add empty assistant message for streaming
+    const assistantMessageId = `assistant-${Date.now()}`;
     setMessages(prev => [
-      ...prev, 
-      { 
-        role: 'user', 
-        content: message,
-        id: `user-${exchangeId}`
-      },
+      ...prev,
       {
+        id: assistantMessageId,
         role: 'assistant',
         content: '',
-        id: `assistant-${exchangeId}`,
         isLoading: true
       }
     ]);
@@ -103,111 +116,133 @@ export const useChat = () => {
       setIsStreaming(true);
       const startTime = Date.now();
 
-      // Create message array with system prompt and user message
-      // Only include the system message if it's not empty
-      const chatMessages: Message[] = [];
-      
-      if (config.systemPrompt) {
-        chatMessages.push({ role: 'system', content: config.systemPrompt });
-      }
-      
-      chatMessages.push({ role: 'user', content: message });
+      const apiMessages: APIMessage[] = [
+        { role: 'system', content: config.systemPrompt },
+        ...messages
+          .filter((m): m is ChatMessage & { role: 'user' | 'assistant' } => 
+            m.role === 'user' || m.role === 'assistant'
+          )
+          .map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+        { role: 'user', content: content.trim() }
+      ];
 
-      // Send message to API
-      const response = await sendMessageAPI(chatMessages, {
-        provider: config.provider,
-        model: config.model,
-        temperature: config.temperature,
-        maxTokens: config.maxTokens,
-        topP: config.topP,
-        frequencyPenalty: config.frequencyPenalty,
-        presencePenalty: config.presencePenalty,
-        streaming: config.streaming,
-        systemPrompt: config.systemPrompt
-      });
+      const response = await sendMessageAPI(
+        apiMessages,
+        {
+          llmType: config.llmType as 'remote' | 'local',
+          llmAlias: config.llmAlias,
+          model: config.model,
+          temperature: config.temperature,
+          maxTokens: config.maxTokens,
+          topP: config.topP,
+          frequencyPenalty: config.frequencyPenalty,
+          presencePenalty: config.presencePenalty
+        },
+        config.streaming
+      );
 
       if (config.streaming) {
-        // Handle streaming response
+        // For streaming responses, the response is a ReadableStream
         let assistantMessage = '';
-        const responseData = response.data;
-        
-        if (!responseData) {
-          throw new Error('No response data received');
-        }
-        
-        // Get the reader from the ReadableStream
-        const reader = responseData.getReader();
+        const reader = (response as ReadableStream<Uint8Array>).getReader();
         const decoder = new TextDecoder();
-        
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            // Decode the chunk of data
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n').filter(line => line.trim());
-            
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.substring(6).trim();
-                if (data === '[DONE]') break;
-                
-                try {
-                  const parsed = JSON.parse(data);
-                  if (parsed.choices?.[0]?.delta?.content) {
-                    assistantMessage += parsed.choices[0].delta.content;
-                    updateAssistantMessage(assistantMessage, exchangeId);
-                  }
-                } catch (error) {
-                  console.error('Error parsing chunk:', error, 'Chunk:', data);
+
+        // Process the stream
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          // Decode the chunk of data
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n').filter(line => line.trim());
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.substring(6).trim();
+              if (data === '[DONE]') break;
+
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices?.[0]?.delta?.content) {
+                  assistantMessage += parsed.choices[0].delta.content;
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastMessage = newMessages[newMessages.length - 1];
+                    if (lastMessage.role === 'assistant' && lastMessage.isLoading) {
+                      lastMessage.content = assistantMessage;
+                    } else {
+                      newMessages.push({
+                        id: `assistant-${Date.now()}`,
+                        role: 'assistant',
+                        content: assistantMessage,
+                        isLoading: true
+                      });
+                    }
+                    return newMessages;
+                  });
                 }
+              } catch (error) {
+                console.error('Error parsing chunk:', error, 'Chunk:', data);
               }
             }
           }
-        } finally {
-          reader.releaseLock();
         }
 
-        // Add metrics for the completed message
-        const endTime = Date.now();
-        const latency = endTime - startTime;
-        const tokenCount = assistantMessage.length / 4; // Rough estimate
-        setMetrics(prev => [...prev, { tokens: tokenCount, latency }]);
+        // Mark the message as done loading
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.role === 'assistant') {
+            lastMessage.isLoading = false;
+          }
+          return newMessages;
+        });
       } else {
-        // Handle non-streaming response
-        const endTime = Date.now();
-        const latency = endTime - startTime;
-        
-        // Safely extract the response content
-        const responseData = response.data || response;
-        const responseContent = responseData.choices?.[0]?.message?.content || 
-                              responseData.choices?.[0]?.text || 
-                              'No response content';
-        
-        // Calculate token count (rough estimate if not provided)
-        const tokenCount = responseData.usage?.completion_tokens || 
-                          Math.ceil(responseContent.length / 4);
-        
-        // Update the assistant's message with the response content
-        updateAssistantMessage(responseContent, exchangeId);
-        
-        // Update metrics
-        setMetrics(prev => [...prev, { tokens: tokenCount, latency }]);
+        // For non-streaming responses, the response is a ChatResponse object
+        const responseData = response as ChatResponse;
+
+        if (!responseData.choices || responseData.choices.length === 0) {
+          throw new Error('No response data received');
+        }
+
+        const assistantMessage = responseData.choices[0].message.content;
+
+        setMessages(prev => [
+          ...prev.filter(m => m.id !== assistantMessageId),
+          {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: assistantMessage,
+            isLoading: false
+          }
+        ]);
       }
+
+      // Update metrics
+      const endTime = Date.now();
+      const latency = endTime - startTime;
+      const totalTokens = (response as any).usage?.total_tokens || 0;
+
+      setMetrics(prev => ({
+        ...prev,
+        tokens: prev.tokens + totalTokens,
+        latency
+      }));
     } catch (error) {
-      console.error('Chat error:', error);
+      console.error('Error sending message:', error);
+      
+      // Update the assistant message with the error
       setMessages(prev => {
-        const assistantMsgIndex = prev.findIndex(m => m.id === `assistant-${exchangeId}`);
-        if (assistantMsgIndex === -1) return prev;
-        
         const newMessages = [...prev];
-        newMessages[assistantMsgIndex] = {
-          ...newMessages[assistantMsgIndex],
-          content: 'Sorry, an error occurred while processing your request.',
-          isLoading: false,
-          error: true
-        };
+        const lastMessage = newMessages[newMessages.length - 1];
+        if (lastMessage.role === 'assistant') {
+          lastMessage.content = 'Sorry, there was an error processing your message.';
+          lastMessage.error = true;
+          lastMessage.isLoading = false;
+        }
         return newMessages;
       });
     } finally {
@@ -215,8 +250,8 @@ export const useChat = () => {
     }
   };
 
-  // Use ref to track previous provider value to avoid unnecessary invalidations
-  const prevProviderRef = useRef(config.provider);
+  // Use ref to track previous LLM type to avoid unnecessary invalidations
+  const prevLLMTypeRef = useRef(config.llmType);
 
   const updateConfig = useCallback((newConfig: Partial<ChatConfig>) => {
     setConfig(prev => {
@@ -225,11 +260,15 @@ export const useChat = () => {
         ...newConfig
       };
       
-      // Only invalidate queries if provider actually changed
-      if (prev.provider !== newConfig.provider) {
-        queryClient.invalidateQueries(['remoteLLMs']);
-        queryClient.invalidateQueries(['localLLMs']);
-        prevProviderRef.current = newConfig.provider || prev.provider;
+      // Only invalidate queries if LLM type actually changed
+      if (prev.llmType !== newConfig.llmType) {
+        const llmType = newConfig.llmType || prev.llmType;
+        if (llmType) {
+          queryClient.invalidateQueries({ 
+            queryKey: [`${llmType}LLMs`] as const 
+          });
+        }
+        prevLLMTypeRef.current = llmType || 'remote';
       }
       
       return updatedConfig;
@@ -238,7 +277,7 @@ export const useChat = () => {
 
   const clearChat = useCallback(() => {
     setMessages([]);
-    setMetrics([]);
+    setMetrics({ tokens: 0, latency: 0 });
   }, []);
 
   return {

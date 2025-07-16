@@ -3,43 +3,58 @@ import axios from 'axios';
 // Base URL should match your backend server URL
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-interface Message {
+// Types
+export interface LLM {
+  alias: string;
+  provider: string;
+}
+
+export interface ModelParameter {
+  name: string;
+  type: string;
+  default: any;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: string[];
+  description?: string;
+}
+
+export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
-interface ChatRequest {
+export interface ChatRequest {
   messages: Message[];
-  model: string;
-  llm_alias?: string;
   llm_type: 'remote' | 'local';
-  temperature: number;
-  max_tokens: number;
-  top_p: number;
-  frequency_penalty: number;
-  presence_penalty: number;
-  stream: boolean;
+  llm_alias: string;
+  model: string;
+  temperature?: number;
+  max_tokens?: number;
+  top_p?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
 }
 
-interface ChatResponse {
+export interface ChatResponse {
   id: string;
   object: string;
   created: number;
   model: string;
-  usage: {
+  usage?: {
     prompt_tokens: number;
     completion_tokens: number;
     total_tokens: number;
   };
   choices: Array<{
-    message: {
-      role: string;
-      content: string;
-    };
+    index: number;
+    message: Message;
+    finish_reason: string | null;
   }>;
 }
 
-interface ChatCompletionChunk {
+export interface ChatCompletionChunk {
   id: string;
   object: string;
   created: number;
@@ -48,69 +63,141 @@ interface ChatCompletionChunk {
     delta: {
       content: string;
     };
+    index: number;
+    finish_reason: string | null;
   }>;
 }
 
-export const sendMessage = async (messages: Message[], config: any) => {
-  const { provider, model, temperature, maxTokens, topP, frequencyPenalty, presencePenalty, streaming, llmAlias, llmType } = config;
+// Fetch available remote LLMs
+export const fetchRemoteLLMs = async (): Promise<LLM[]> => {
+  try {
+    const response = await axios.get(`${BASE_URL}/llms/remote`);
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching remote LLMs:', error);
+    return [];
+  }
+};
 
-  // Ensure we have a valid model
+// Fetch available local LLMs
+export const fetchLocalLLMs = async (): Promise<LLM[]> => {
+  try {
+    const response = await axios.get(`${BASE_URL}/llms/local`);
+    return response.data || [];
+  } catch (error) {
+    console.error('Error fetching local LLMs:', error);
+    return [];
+  }
+};
+
+// Fetch available models for a specific LLM
+export const fetchRemoteModels = async (alias: string): Promise<string[]> => {
+  try {
+    const response = await axios.get(`${BASE_URL}/llms/remote/${alias}/models`);
+    // The backend returns { models: string[] }
+    return Array.isArray(response.data?.models) ? response.data.models : [];
+  } catch (error) {
+    console.error(`Error fetching models for remote LLM ${alias}:`, error);
+    return [];
+  }
+};
+
+export const fetchLocalModels = async (alias: string): Promise<string[]> => {
+  try {
+    const response = await axios.get(`${BASE_URL}/llms/local/${alias}/models`);
+    // The backend returns { models: string[] }
+    return Array.isArray(response.data?.models) ? response.data.models : [];
+  } catch (error) {
+    console.error(`Error fetching models for local LLM ${alias}:`, error);
+    return [];
+  }
+};
+
+// Fetch model parameters for a specific LLM and model
+export const fetchModelParameters = async (llmType: 'remote' | 'local', alias: string): Promise<Record<string, any>> => {
+  try {
+    const response = await axios.get(`${BASE_URL}/llms/${llmType}/${alias}/parameters`);
+    return response.data || {};
+  } catch (error) {
+    console.error(`Error fetching parameters for ${llmType} LLM ${alias}:`, error);
+    return {};
+  }
+};
+
+
+
+export const sendMessage = async (
+  messages: Message[], 
+  config: {
+    llmType: 'remote' | 'local';
+    llmAlias: string;
+    model: string;
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    frequencyPenalty?: number;
+    presencePenalty?: number;
+    streaming?: boolean;
+  },
+  streaming = false
+): Promise<ChatResponse | ReadableStream<Uint8Array>> => {
+  const { 
+    llmType, 
+    llmAlias, 
+    model, 
+    temperature = 0.7, 
+    maxTokens = 1000, 
+    topP = 1.0,
+    frequencyPenalty = 0.0,
+    presencePenalty = 0.0
+  } = config;
+
   if (!model) {
     throw new Error('No model selected');
   }
 
-  // Create the chat request with the provided messages
-  // The messages array should already include the system prompt if needed
   const chatRequest: ChatRequest = {
     messages,
-    model,
+    llm_type: llmType,
     llm_alias: llmAlias,
-    llm_type: llmType || 'remote', // Default to 'remote' if not specified
+    model,
     temperature,
     max_tokens: maxTokens,
     top_p: topP,
     frequency_penalty: frequencyPenalty,
-    presence_penalty: presencePenalty,
-    stream: streaming
+    presence_penalty: presencePenalty
   };
 
   const endpoint = streaming ? '/playground/chatbot/chat/stream' : '/playground/chatbot/chat';
-  const url = `${BASE_URL}${endpoint}`;
-
+  
   try {
-    if (streaming) {
-      // Use Fetch API for streaming responses
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream'
-        },
-        body: JSON.stringify(chatRequest)
-      });
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(chatRequest)
+    });
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Failed to fetch streaming response');
-      }
-
-      // Return the response body as a ReadableStream
-      if (response.body) {
-        return { data: response.body };
-      }
-      throw new Error('No response body received');
-    } else {
-      // For non-streaming, continue using axios
-      const response = await axios.post(
-        url,
-        chatRequest,
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.detail || 
+        errorData.message || 
+        `HTTP error! status: ${response.status}`
       );
-      return response.data as ChatResponse;
+    }
+
+    if (streaming) {
+      // Return the readable stream directly for streaming responses
+      if (!response.body) {
+        throw new Error('No response body for streaming request');
+      }
+      return response.body;
+    } else {
+      // For non-streaming, parse and return the JSON response
+      const data: ChatResponse = await response.json();
+      return data;
     }
   } catch (error) {
     console.error('Error sending message:', error);

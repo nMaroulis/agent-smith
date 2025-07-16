@@ -12,7 +12,7 @@ const ChatbotPage = () => {
   const { 
     messages, 
     config, 
-    sendMessage: sendMessage2, 
+    sendMessage, 
     isStreaming, 
     metrics, 
     clearChat,
@@ -39,16 +39,15 @@ const ChatbotPage = () => {
     return () => clearTimeout(timer);
   }, [messages, scrollToBottom]); // Added scrollToBottom to dependencies
 
-  const prevProviderRef = useRef(config.provider);
+  const prevLLMTypeRef = useRef(config.llmType);
 
   useEffect(() => {
-    // Only invalidate if provider actually changed
-    if (prevProviderRef.current !== config.provider) {
-      queryClient.invalidateQueries(['remoteLLMs']);
-      queryClient.invalidateQueries(['localLLMs']);
-      prevProviderRef.current = config.provider;
+    // Only invalidate if LLM type actually changed
+    if (prevLLMTypeRef.current !== config.llmType) {
+      queryClient.invalidateQueries({ queryKey: [`${config.llmType}LLMs`] });
+      prevLLMTypeRef.current = config.llmType;
     }
-  }, [config.provider, queryClient]);
+  }, [config.llmType, queryClient]);
 
   return (
     <Box sx={{ 
@@ -135,7 +134,22 @@ const ChatbotPage = () => {
               {/* Empty div to scroll to */}
               <div ref={messagesEndRef} style={{ height: '1px' }} />
             </Box>
-
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              p: 1,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper'
+            }}>
+              <Typography variant="caption" color="text.secondary">
+                Tokens: {metrics.tokens}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Latency: {metrics.latency}ms
+              </Typography>
+            </Box>
             {/* Chat Input */}
             <Box
               sx={{
@@ -149,9 +163,9 @@ const ChatbotPage = () => {
                 borderColor: 'divider'
               }}
             >
-              <ChatInput
-                onSendMessage={sendMessage2}
-                isSubmitting={isStreaming}
+              <ChatInput 
+                onSendMessage={sendMessage} 
+                isSubmitting={isStreaming} 
               />
             </Box>
           </Paper>

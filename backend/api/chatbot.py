@@ -30,9 +30,6 @@ async def chat(
     if not request.model:
         raise HTTPException(status_code=400, detail="Model must be specified")
     
-    if request.stream:
-        raise HTTPException(status_code=400, detail="Use /chat/stream for streaming")
-    
     # Get the response from the LLM service
     response = None
     async for chunk in llm_service.generate_chat_completion(
@@ -68,10 +65,7 @@ async def chat_stream(
     
     if not request.model:
         raise HTTPException(status_code=400, detail="Model must be specified")
-    
-    if not request.stream:
-        raise HTTPException(status_code=400, detail="Use /chat for non-streaming")
-    
+        
     async def event_generator():
         async for chunk in llm_service.generate_chat_completion(
             messages=request.messages,

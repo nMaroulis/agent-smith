@@ -1,50 +1,65 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import { 
+  fetchRemoteLLMs, 
+  fetchLocalLLMs, 
+  fetchRemoteModels, 
+  fetchLocalModels, 
+  fetchModelParameters
+} from '../../api/chatbot';
+
+import { 
+  Box, 
+  Button, 
   Card, 
   CardContent, 
   CardHeader, 
   Dialog,
-  DialogTitle,
-  DialogContent,
   DialogActions,
-  IconButton,
+  DialogContent,
+  DialogTitle,
   Divider, 
-  Typography, 
-  Box, 
-  Slider, 
-  Switch, 
+  FormControl, 
   FormControlLabel, 
-  TextField, 
-  Select, 
+  InputLabel, 
   MenuItem, 
-  Button, 
-  CircularProgress, 
-  ToggleButtonGroup, 
-  ToggleButton, 
-  Stack
+  Select, 
+  Slider, 
+  Stack,
+  Switch, 
+  TextField, 
+  Typography
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import SpeedIcon from '@mui/icons-material/Speed';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchRemoteLLMs, fetchLocalLLMs, fetchRemoteModels, fetchLocalModels, fetchModelParameters } from '../../api/llms';
 
 interface ConfigPanelProps {
-  onConfigChange: (config: any) => void;
+  config: ModelConfig;
+  onConfigChange: (config: Partial<ModelConfig>) => void;
   onClearChat: () => void;
 }
 
-interface ModelConfig {
+interface LLM {
+  alias: string;
   provider: string;
+}
+
+interface ModelConfig {
+  llmType: 'remote' | 'local';
+  llmAlias: string;
   model: string;
+  systemPrompt: string;
   temperature: number;
   maxTokens: number;
   topP: number;
   frequencyPenalty: number;
   presencePenalty: number;
   streaming: boolean;
-  systemPrompt: string;
+  aiAgent: boolean;
+  provider?: string; // For backward compatibility
 }
 
 interface ParameterConfig {
@@ -54,7 +69,7 @@ interface ParameterConfig {
   default: number;
 }
 
-export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) => {
+export const ConfigPanel = ({ config, onConfigChange, onClearChat }: ConfigPanelProps) => {
   const [promptModalOpen, setPromptModalOpen] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState('');
   
@@ -64,140 +79,164 @@ export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) =
   };
   
   const handleSavePrompt = () => {
-    setConfig(prev => ({ ...prev, systemPrompt: editedPrompt }));
+    setLocalConfig(prev => ({ ...prev, systemPrompt: editedPrompt }));
     setPromptModalOpen(false);
   };
-  const [config, setConfig] = useState<ModelConfig>({
-    provider: '',
-    remoteAlias: '',
-    localAlias: '',
-    model: '',
-    systemPrompt: 'You are a helpful AI assistant.',
-    temperature: 0.7,
-    maxTokens: 1000,
-    topP: 1.0,
-    frequencyPenalty: 0.0,
-    presencePenalty: 0.0,
-    streaming: true,
-    aiAgent: false
-  });
+
+  // Use the config from props
+  const [localConfig, setLocalConfig] = useState<ModelConfig>(config);
+  
+  // Update local config when prop changes
+  useEffect(() => {
+    setLocalConfig(config);
+  }, [config]);
 
   const [parameters, setParameters] = useState<Record<string, ParameterConfig | null>>({});
   const queryClient = useQueryClient();
 
-  const { data: remoteLLMs, isLoading: loadingRemoteLLMs } = useQuery({
+  // Fetch LLMs based on selected type (remote/local)
+  const { data: remoteLLMs = [], isLoading: isLoadingRemoteLLMs } = useQuery<LLM[]>({
     queryKey: ['remoteLLMs'],
     queryFn: fetchRemoteLLMs,
-    staleTime: 1000 * 60 * 5 // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: localConfig.llmType === 'remote',
   });
 
-  const { data: localLLMs, isLoading: loadingLocalLLMs } = useQuery({
+  const { data: localLLMs = [], isLoading: isLoadingLocalLLMs } = useQuery<LLM[]>({
     queryKey: ['localLLMs'],
     queryFn: fetchLocalLLMs,
-    staleTime: 1000 * 60 * 5 // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: localConfig.llmType === 'local',
   });
 
-  const selectedProvider = config.provider;
+  const isLoadingLLMs = localConfig.llmType === 'remote' ? isLoadingRemoteLLMs : isLoadingLocalLLMs;
 
-  const { data: remoteModels, isLoading: loadingRemoteModels } = useQuery({
-    queryKey: ['remoteModels', config.remoteAlias],
-    queryFn: () => config.remoteAlias ? fetchRemoteModels(config.remoteAlias) : [],
-    enabled: !!config.remoteAlias,
-    staleTime: 1000 * 60 * 5 // 5 minutes
-  });
-
-  const { data: localModels, isLoading: loadingLocalModels } = useQuery({
-    queryKey: ['localModels', config.localAlias],
-    queryFn: () => config.localAlias ? fetchLocalModels(config.localAlias) : [],
-    enabled: !!config.localAlias,
-    staleTime: 1000 * 60 * 5 // 5 minutes
+  // Fetch models based on selected LLM type and alias
+  const { data: models = [], isLoading: loadingModels } = useQuery<string[]>({
+    queryKey: ['models', localConfig.llmType, localConfig.llmAlias],
+    queryFn: async () => {
+      if (!localConfig.llmAlias) return [];
+      try {
+        const models = localConfig.llmType === 'remote' 
+          ? await fetchRemoteModels(localConfig.llmAlias)
+          : await fetchLocalModels(localConfig.llmAlias);
+        // Ensure we always return an array, even if the API returns something else
+        return Array.isArray(models) ? models : [];
+      } catch (error) {
+        console.error('Error fetching models:', error);
+        return [];
+      }
+    },
+    enabled: !!localConfig.llmAlias,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1
   });
 
   useEffect(() => {
-    if (config.model && (config.remoteAlias || config.localAlias)) {
-      const provider = config.provider === 'remote' ? 'remote' : 'local';
-      const alias = config.provider === 'remote' ? config.remoteAlias : config.localAlias;
-      fetchModelParameters(provider, alias)
+    if (localConfig.model && localConfig.llmAlias) {
+      fetchModelParameters(localConfig.llmType, localConfig.llmAlias)
         .then(setParameters)
         .catch(console.error);
     }
-  }, [config.model, config.provider, config.remoteAlias, config.localAlias]);
+  }, [localConfig.model, localConfig.llmType, localConfig.llmAlias]);
 
-  const handleProviderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newProvider = event.target.value as 'remote' | 'local';
-    setConfig(prev => ({
+  const handleLLMTypeChange = (event: SelectChangeEvent) => {
+    const newLLMType = event.target.value as 'remote' | 'local';
+    const llms = newLLMType === 'remote' ? remoteLLMs : localLLMs;
+    const newLLMAlias = llms.length > 0 ? llms[0].alias : '';
+    
+    setLocalConfig(prev => ({
       ...prev,
-      provider: newProvider,
-      remoteAlias: newProvider === 'remote' ? '' : prev.remoteAlias,
-      localAlias: newProvider === 'local' ? '' : prev.localAlias,
+      llmType: newLLMType,
+      llmAlias: newLLMAlias
+    }));
+    
+    onConfigChange({
+      llmType: newLLMType,
+      llmAlias: newLLMAlias,
+      model: '' // Reset model when LLM type changes
+    });
+  };
+
+  const handleLLMAliasChange = (event: SelectChangeEvent<string>) => {
+    const llmAlias = event.target.value;
+    setLocalConfig(prev => ({
+      ...prev,
+      llmAlias,
       model: ''
     }));
-  };
-
-  const handleRemoteAliasChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig(prev => ({
-      ...prev,
-      remoteAlias: event.target.value,
+    onConfigChange({
+      llmAlias,
       model: ''
-    }));
+    });
   };
 
-  const handleLocalAliasChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig(prev => ({
+  const handleModelChange = (event: SelectChangeEvent<string>) => {
+    const model = event.target.value;
+    setLocalConfig(prev => ({
       ...prev,
-      localAlias: event.target.value,
-      model: ''
+      model
     }));
+    onConfigChange({ model });
   };
 
-  const handleModelChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig(prev => ({
-      ...prev,
-      model: event.target.value
-    }));
+
+
+  // Type-safe parameter accessor
+  const getParameterValue = (paramName: string): number => {
+    const paramMap: Record<string, number> = {
+      'temperature': localConfig.temperature,
+      'topP': localConfig.topP,
+      'frequencyPenalty': localConfig.frequencyPenalty,
+      'presencePenalty': localConfig.presencePenalty,
+      'maxTokens': localConfig.maxTokens
+    };
+    return paramMap[paramName] ?? 0;
   };
 
-  const handleSystemPromptChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig(prev => ({
-      ...prev,
-      systemPrompt: event.target.value
-    }));
-  };
 
-  const handleParameterChange = (parameter: string) => (_: Event, newValue: number | number[]) => {
-    setConfig(prev => ({
-      ...prev,
-      [parameter]: newValue as number
-    }));
-  };
-
-  const handleStreamingChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig(prev => ({
-      ...prev,
-      streaming: event.target.checked
-    }));
-  };
 
   const handleAiAgentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setConfig(prev => ({
+    const aiAgent = event.target.checked;
+    const update = { aiAgent };
+    setLocalConfig(prev => ({
       ...prev,
-      aiAgent: event.target.checked
+      ...update
     }));
+    onConfigChange(update);
   };
 
+  // Only update when config properties change
   useEffect(() => {
+    const { 
+      provider, model, temperature, maxTokens, 
+      topP, frequencyPenalty, presencePenalty, 
+      streaming, systemPrompt 
+    } = config;
+    
     onConfigChange({
-      provider: config.provider,
-      model: config.model,
-      temperature: config.temperature,
-      maxTokens: config.maxTokens,
-      topP: config.topP,
-      frequencyPenalty: config.frequencyPenalty,
-      presencePenalty: config.presencePenalty,
-      streaming: config.streaming,
-      systemPrompt: config.systemPrompt
+      provider,
+      model,
+      temperature,
+      maxTokens,
+      topP,
+      frequencyPenalty,
+      presencePenalty,
+      streaming,
+      systemPrompt
     });
-  }, [config, onConfigChange]);
+  }, [
+    config.provider, 
+    config.model, 
+    config.temperature, 
+    config.maxTokens,
+    config.topP, 
+    config.frequencyPenalty, 
+    config.presencePenalty,
+    config.streaming, 
+    config.systemPrompt,
+    onConfigChange
+  ]);
 
   return (
     <Card sx={{ 
@@ -255,121 +294,69 @@ export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) =
       <CardHeader title="Chat Configuration" />
       <CardContent sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 2 }}>
-          <Box>
-            <Typography variant="subtitle2" gutterBottom>
-              LLM Type
-            </Typography>
-            <ToggleButtonGroup
-              value={config.provider}
-              exclusive
-              onChange={(_, value) => handleProviderChange({ target: { value } } as any)}
-              fullWidth
-              disabled={loadingRemoteLLMs || loadingLocalLLMs}
-              sx={{
-                '& .MuiToggleButton-root': {
-                  textTransform: 'none',
-                  borderRadius: 1,
-                  minWidth: '50%',
-                  color: '#9ca3af', // text-gray-400
-                  borderColor: '#374151', // border-gray-700
-                  backgroundColor: '#1f2937', // bg-gray-800
-                  '&.Mui-selected': {
-                    backgroundColor: '#1e40af', // bg-blue-900
-                    color: 'white',
-                    '&:hover': {
-                      backgroundColor: '#1e40af' // bg-blue-900
-                    }
-                  },
-                  '&:hover': {
-                    backgroundColor: '#1f2937', // bg-gray-800
-                    color: 'white'
-                  }
-                }
-              }}
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="llm-type-select-label">LLM Type</InputLabel>
+            <Select
+              labelId="llm-type-select-label"
+              id="llm-type-select"
+              value={config.llmType}
+              label="LLM Type"
+              onChange={handleLLMTypeChange}
             >
-              <ToggleButton value="remote" sx={{
-                '&.Mui-selected': {
-                  backgroundColor: 'action.selected',
-                  color: 'text.primary'
-                }
-              }}>
-                Remote LLM
-              </ToggleButton>
-              <ToggleButton value="local" sx={{
-                '&.Mui-selected': {
-                  backgroundColor: 'action.selected',
-                  color: 'text.primary'
-                }
-              }}>
-                Local LLM
-              </ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
+              <MenuItem value="remote">Remote</MenuItem>
+              <MenuItem value="local">Local</MenuItem>
+            </Select>
+          </FormControl>
 
-          {selectedProvider === 'remote' && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Remote LLM Alias
-              </Typography>
-              <Select
-                value={config.remoteAlias}
-                onChange={handleRemoteAliasChange}
-                fullWidth
-                disabled={loadingRemoteLLMs || !remoteLLMs}
-              >
-                {remoteLLMs?.map((llm) => (
-                  <MenuItem key={llm.alias} value={llm.alias}>
-                    {llm.alias} ({llm.provider})
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-          )}
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="llm-alias-select-label">LLM Alias</InputLabel>
+            <Select
+              labelId="llm-alias-select-label"
+              id="llm-alias-select"
+              value={config.llmAlias}
+              label="LLM Alias"
+              onChange={handleLLMAliasChange}
+              disabled={!config.llmType || isLoadingLLMs}
+            >
+              {(config.llmType === 'remote' ? remoteLLMs : localLLMs)?.map((llm: { alias: string; provider: string }) => (
+                <MenuItem key={llm.alias} value={llm.alias}>
+                  {llm.alias} ({llm.provider})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-          {selectedProvider === 'local' && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Local LLM Alias
-              </Typography>
+          {config.llmAlias && (
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="model-select-label">Model</InputLabel>
               <Select
-                value={config.localAlias}
-                onChange={handleLocalAliasChange}
-                fullWidth
-                disabled={loadingLocalLLMs || !localLLMs}
-              >
-                {localLLMs?.map((llm) => (
-                  <MenuItem key={llm.alias} value={llm.alias}>
-                    {llm.alias} ({llm.provider})
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-          )}
-
-          {(config.remoteAlias || config.localAlias) && (
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Model
-              </Typography>
-              <Select
+                labelId="model-select-label"
+                id="model-select"
                 value={config.model}
+                label="Model"
                 onChange={handleModelChange}
-                fullWidth
-                disabled={loadingRemoteModels || loadingLocalModels}
+                disabled={!config.llmAlias || loadingModels}
+                displayEmpty
+                renderValue={(selected) => {
+                  if (!selected) {
+                    return <em>Select a model</em>;
+                  }
+                  return selected;
+                }}
               >
-                {selectedProvider === 'remote' ? (
-                  remoteModels?.map((model) => (
+                {loadingModels ? (
+                  <MenuItem disabled>Loading models...</MenuItem>
+                ) : models.length === 0 ? (
+                  <MenuItem disabled>No models available</MenuItem>
+                ) : (
+                  models.map((model: string) => (
                     <MenuItem key={model} value={model}>
                       {model}
                     </MenuItem>
                   ))
-                ) : localModels?.map((model) => (
-                  <MenuItem key={model} value={model}>
-                    {model}
-                  </MenuItem>
-                ))}
+                )}
               </Select>
-            </Box>
+            </FormControl>
           )}
 
           <Divider sx={{ my: 0, borderColor: '#374151' /* gray-700 */ }} />
@@ -487,11 +474,9 @@ export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) =
                 <Switch
                   checked={config.streaming}
                   onChange={(e) => {
-                    setConfig(prev => ({ ...prev, streaming: e.target.checked }));
-                    onConfigChange({
-                      ...config,
-                      streaming: e.target.checked
-                    });
+                    const streaming = e.target.checked;
+                    setLocalConfig(prev => ({ ...prev, streaming }));
+                    onConfigChange({ streaming });
                   }}
                 />
               }
@@ -533,20 +518,22 @@ export const ConfigPanel = ({ onConfigChange, onClearChat }: ConfigPanelProps) =
                     <Box key={paramName}>
                       <Typography variant="body2" sx={{ mb: 1 }}>{paramName}</Typography>
                       <Slider
-                        value={config[paramName]}
+                        value={getParameterValue(paramName)}
                         min={param.min}
                         max={param.max}
                         step={0.1}
                         onChange={(_, value) => {
-                          setConfig(prev => ({ ...prev, [paramName]: value }));
-                          onConfigChange({
-                            ...config,
-                            [paramName]: value
-                          });
+                          const numValue = Array.isArray(value) ? value[0] : value;
+                          const update = { [paramName]: numValue } as Partial<ModelConfig>;
+                          setLocalConfig(prev => ({
+                            ...prev,
+                            ...update
+                          }));
+                          onConfigChange(update);
                         }}
                       />
                       <Typography variant="caption" sx={{ mt: 1 }}>
-                        {config[paramName]} ({param.min} - {param.max})
+                        {getParameterValue(paramName)} ({param.min} - {param.max})
                       </Typography>
                     </Box>
                   );
