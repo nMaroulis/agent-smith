@@ -29,6 +29,8 @@ import {
   Stack,
   Switch, 
   TextField, 
+  ToggleButton,
+  ToggleButtonGroup,
   Typography
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -79,7 +81,9 @@ export const ConfigPanel = ({ config, onConfigChange, onClearChat }: ConfigPanel
   };
   
   const handleSavePrompt = () => {
-    setLocalConfig(prev => ({ ...prev, systemPrompt: editedPrompt }));
+    const updatedConfig = { ...localConfig, systemPrompt: editedPrompt };
+    setLocalConfig(updatedConfig);
+    onConfigChange({ systemPrompt: editedPrompt });
     setPromptModalOpen(false);
   };
 
@@ -294,19 +298,63 @@ export const ConfigPanel = ({ config, onConfigChange, onClearChat }: ConfigPanel
       <CardHeader title="Chat Configuration" />
       <CardContent sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 2 }}>
-          <FormControl fullWidth margin="normal">
-            <InputLabel id="llm-type-select-label">LLM Type</InputLabel>
-            <Select
-              labelId="llm-type-select-label"
-              id="llm-type-select"
+          <Box sx={{ mt: 2, mb: 1 }}>
+            <Typography variant="subtitle2" gutterBottom>LLM Type</Typography>
+            <ToggleButtonGroup
+              color="primary"
               value={config.llmType}
-              label="LLM Type"
-              onChange={handleLLMTypeChange}
+              exclusive
+              onChange={(_, newType) => {
+                if (newType) {
+                  handleLLMTypeChange({ target: { value: newType } } as SelectChangeEvent<string>);
+                }
+              }}
+              fullWidth
+              sx={{
+                '& .MuiToggleButtonGroup-grouped': {
+                  border: '1px solid #374151',
+                  color: '#9ca3af',
+                  '&.Mui-selected': {
+                    backgroundColor: '#1e40af',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: '#1e40af',
+                    }
+                  },
+                  '&:not(:first-of-type)': {
+                    borderLeft: '1px solid #374151',
+                    marginLeft: 0,
+                    borderTopLeftRadius: 0,
+                    borderBottomLeftRadius: 0,
+                  },
+                  '&:first-of-type': {
+                    borderTopRightRadius: 0,
+                    borderBottomRightRadius: 0,
+                  },
+                  '&:hover': {
+                    backgroundColor: '#1f2937',
+                  },
+                }
+              }}
             >
-              <MenuItem value="remote">Remote</MenuItem>
-              <MenuItem value="local">Local</MenuItem>
-            </Select>
-          </FormControl>
+              <ToggleButton value="remote" aria-label="remote">
+                <Box display="flex" alignItems="center" gap={1}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                  </svg>
+                  Remote
+                </Box>
+              </ToggleButton>
+              <ToggleButton value="local" aria-label="local">
+                <Box display="flex" alignItems="center" gap={1}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/>
+                  </svg>
+                  Local
+                </Box>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
 
           <FormControl fullWidth margin="normal">
             <InputLabel id="llm-alias-select-label">LLM Alias</InputLabel>

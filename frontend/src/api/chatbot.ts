@@ -156,16 +156,17 @@ export const sendMessage = async (
     throw new Error('No model selected');
   }
 
+  // Only include parameters that have values
   const chatRequest: ChatRequest = {
     messages,
     llm_type: llmType,
     llm_alias: llmAlias,
     model,
-    temperature,
-    max_tokens: maxTokens,
-    top_p: topP,
-    frequency_penalty: frequencyPenalty,
-    presence_penalty: presencePenalty
+    ...(temperature !== undefined && { temperature }),
+    ...(maxTokens !== undefined && { max_tokens: maxTokens }),
+    ...(topP !== undefined && { top_p: topP }),
+    ...(frequencyPenalty !== undefined && { frequency_penalty: frequencyPenalty }),
+    ...(presencePenalty !== undefined && { presence_penalty: presencePenalty })
   };
 
   const endpoint = streaming ? '/playground/chatbot/chat/stream' : '/playground/chatbot/chat';
