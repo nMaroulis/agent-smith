@@ -13,8 +13,8 @@ REMOTE_PROVIDERS: Dict[str, Callable[[str], object]] = {
     "huggingface": lambda key: HuggingFaceAPILLM(api_key=key),
 }
 
-LOCAL_PROVIDERS: Dict[str, Callable[[], object]] = {
-    "llama_cpp": lambda: LlamaCppLLM(),
+LOCAL_PROVIDERS: Dict[str, Callable[[str], object]] = {
+    "llama_cpp": lambda path: LlamaCppLLM(path),
 }
 
 
@@ -35,7 +35,7 @@ def get_llm_client_by_alias(alias: str, db: Session, is_remote: bool):
             if llm.provider not in LOCAL_PROVIDERS:
                 raise ValueError(f"Unknown Local LLM provider: {llm.provider}")
 
-            return LOCAL_PROVIDERS[llm.provider]()
+            return LOCAL_PROVIDERS[llm.provider](llm.path)
     except Exception as e:
         print(f"LLM client instantiation error: {e}")
         raise

@@ -55,7 +55,6 @@ def delete_api_key(alias: str, db: Session = Depends(get_db)):
 async def get_available_remote_models(alias: str = Path(..., description="The remote LLM alias"), db: Session = Depends(get_db)):
     try:
         llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=True)
-        print(llm.list_models())
         return {"models": llm.list_models()}
     except Exception as e:
         print(e)
@@ -116,7 +115,7 @@ def list_local_llms(limit: Optional[int] = None, db: Session = Depends(get_db)):
 
 @router.post("/local")
 def new_local_llm(llm: LocalLLM, db: Session = Depends(get_db)):
-    return create_local_llm(db, llm.provider, llm.name, llm.path)
+    return create_local_llm(db, llm.alias, llm.provider, llm.path)
 
 
 @router.get("/local/{alias}", description="Get a local LLM by alias", response_model=LocalLLMOut)

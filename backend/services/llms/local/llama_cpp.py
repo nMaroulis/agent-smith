@@ -1,5 +1,9 @@
 from services.llms.base import BaseLocalLLM
-from typing import Generator
+from typing import AsyncGenerator
+import os
+
+MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../models/llama_cpp"))
+
 
 class LlamaCppLLM(BaseLocalLLM):
     """LLaMA-CPP LLM."""
@@ -12,19 +16,21 @@ class LlamaCppLLM(BaseLocalLLM):
         ...
 
 
-    def stream_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> Generator[str, None, None]:
+    def stream_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> AsyncGenerator[str, None]:
         """Stream a completion from the LLM."""
         ...
 
 
     def list_models(self) -> list[str]:
         """List available models."""
-        ...
+        model_files = os.listdir(MODEL_PATH)
+        return model_files
+
 
 
     def list_embeddings_models(self) -> list[str]:
         """List available embeddings models."""
-        ...
+        return []
 
 
     def to_code(self) -> str:
@@ -44,4 +50,4 @@ class LlamaCppLLM(BaseLocalLLM):
         Returns:
             dict: A dictionary of tunable parameters.
         """
-        ...
+        return {}

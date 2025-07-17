@@ -73,8 +73,7 @@ class LocalLLM(BaseLLM):
     provider: LocalProvider
     path: str = Field(
         ...,
-        description="Filesystem path to the model file",
-        # alias="model"  # Keep alias for backward compatibility with frontend
+        description="Filesystem path to the model file"
     )
 
     class Config:

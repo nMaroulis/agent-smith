@@ -1,4 +1,4 @@
-/models/api/*
-/models/local/*
+/models/llama_cpp/*
+/models/ollama/*
 /secrets/keys/*
 # /storage/*.db
