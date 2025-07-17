@@ -15,6 +15,7 @@ def get_remote_llms(db: Session, limit: Optional[int] = None):
 
 
 def get_remote_llm_by_alias(db: Session, alias: str):
+    print(alias)
     return db.query(LLMRemote).filter(LLMRemote.alias == alias).first()
 
 

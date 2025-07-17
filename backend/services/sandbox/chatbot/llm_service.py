@@ -5,11 +5,12 @@ import asyncio
 from schemas.sandbox.chatbot import Message
 from services.llms.factory import get_llm_client_by_alias
 from db.session import get_db
+from sqlalchemy.orm import Session
 
 class LLMService:
     def __init__(self):
         self.llm_factory = get_llm_client_by_alias
-        self.db = get_db()
+        self.db: Session = next(get_db())
 
     async def generate_chat_completion(
         self,
@@ -29,7 +30,7 @@ class LLMService:
         """
         # Use llm_alias if provided, otherwise fall back to model-based selection
         is_remote = llm_type.lower() == 'remote'
-        llm = self.llm_factory(alias=llm_alias, db=self.db, is_remote=is_remote) if llm_alias else None
+        llm = self.llm_factory(alias=llm_alias, db=self.db, is_remote=is_remote) # if llm_alias else None
         if not llm:
             raise ValueError(f"Could not initialize LLM with alias: {llm_alias}")
             
@@ -40,7 +41,7 @@ class LLMService:
         user_prompt = "\n".join([f"{m.role}: {m.content}" for m in messages])
 
         if stream:
-            for token in llm.stream_completion(
+            async for token in llm.stream_completion(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 model=model,
@@ -61,8 +62,6 @@ class LLMService:
                         }
                     ],
                 }
-                # await asyncio.sleep(0.01)
-
             yield {
                 "id": completion_id,
                 "object": "chat.completion.chunk",

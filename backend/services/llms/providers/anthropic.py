@@ -2,7 +2,7 @@ from services.llms.base import BaseAPILLM
 from anthropic import AuthenticationError as AnthropicAuthError
 from anthropic import Anthropic, APIError
 from anthropic.types import Message
-from typing import Optional, Generator
+from typing import Optional, Generator, AsyncGenerator
 
 
 class AnthropicAPILLM(BaseAPILLM):
@@ -47,14 +47,14 @@ class AnthropicAPILLM(BaseAPILLM):
             raise RuntimeError(f"Anthropic API error: {e}")
 
 
-    def stream_completion(
+    async def stream_completion(
         self,
         system_prompt: str,
         user_prompt: str,
         model: str = "claude-3-5-sonnet-20240620",
         temperature: float = 0.7,
         max_tokens: int = 8000,
-    ) -> Generator[str, None, None]:
+    ) -> AsyncGenerator[str, None]:
         """
         Stream completion from the Anthropic model, yielding tokens as they arrive.
 
@@ -69,16 +69,18 @@ class AnthropicAPILLM(BaseAPILLM):
             str: Partial response tokens as they arrive.
         """
         try:
-            stream = self.client.messages.stream(
+            
+            with self.client.messages.stream(
                 model=model,
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_prompt}],
                 max_tokens=max_tokens,
                 temperature=temperature,
-            )
-            for event in stream:
-                if event.type == "content_block_delta":
-                    yield event.delta.text
+            ) as stream:
+                for event in stream:
+                    if event.type == "content_block_delta":
+                        yield event.delta.text
+
         except APIError as e:
             raise RuntimeError(f"Anthropic streaming API error: {e}")
 

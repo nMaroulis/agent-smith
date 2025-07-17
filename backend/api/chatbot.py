@@ -7,12 +7,12 @@ import time
 from db.session import get_db
 import asyncio
 from schemas.sandbox.chatbot import ChatRequest, ChatResponse
-from services.sandbox.chatbot.llm_service import MockLLMService
+from services.sandbox.chatbot.llm_service import MockLLMService, LLMService
 
 router = APIRouter(prefix="/playground/chatbot", tags=["Chatbot"])
 
 
-llm_service = MockLLMService()
+llm_service = LLMService()
 
 @router.post("/chat", response_model=ChatResponse, response_model_exclude_unset=True)
 async def chat(
