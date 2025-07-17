@@ -1,6 +1,7 @@
 from services.llms.base import BaseAPILLM
 from huggingface_hub import InferenceClient
-from typing import Optional, Generator
+from typing import Optional, AsyncGenerator
+import requests
 
 
 class HuggingFaceAPILLM(BaseAPILLM):
@@ -11,29 +12,86 @@ class HuggingFaceAPILLM(BaseAPILLM):
             self.client = InferenceClient(api_key=self.api_key)
 
 
-    def get_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
-        """Get a non-streaming completion from the LLM."""
-        ...
+    def get_completion(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        model: str = "mistralai/Mistral-7B-Instruct-v0.3",
+        temperature: float = 0.7,
+        max_tokens: int = 2048,) -> str:
+        """
+        Get a non-streaming completion from Hugging Face Inference API.
+        """
+
+        response = self.client.chat_completion(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=1.0,
+            stream=False,
+        )
+
+        return response.choices[0].message.content
 
 
-    def stream_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> Generator[str, None, None]:
-        """Stream a completion from the LLM."""
-        ...
+    async def stream_completion(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        model: str = "mistralai/Mistral-7B-Instruct-v0.3",
+        temperature: float = 0.7,
+        max_tokens: int = 2048,
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream chat completions from Hugging Face API as an async generator.
+        """
+        stream = self.client.chat_completion(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=1.0,
+            stream=True,
+        )
 
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta:
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    yield delta.content
     
     @staticmethod
     def validate_key(api_key: str) -> bool:
         """
-        Validate the API key by attempting to list models from the Hugging Face API.
+        Test if the provided Hugging Face API key is valid.
+
+        Args:
+            api_key (str): The Hugging Face API key.
 
         Returns:
-            bool: True if the API key is valid, False if it is invalid.
+            bool: True if the key is valid, False otherwise.
         """
+
+        url = "https://huggingface.co/api/whoami-v2"
+        headers = {
+            "Authorization": f"Bearer {api_key}"
+        }
+
         try:
-            InferenceClient(api_key=api_key).models.list()
-            return True
+            response = requests.get(url, headers=headers, timeout=5)
+            return response.status_code == 200
+        except requests.RequestException as e:
+            print(f"Connection error: {e}")
+            return False
         except Exception as e:
-            print(e)
+            print(f"Connection error: {e}")
             return False
 
 
@@ -45,6 +103,7 @@ class HuggingFaceAPILLM(BaseAPILLM):
 
         return [
             # 🔷 Open-source Chat Models
+            "mistralai/Mistral-7B-Instruct-v0.3",        # Top open-source model for chat
             "mistralai/Mistral-7B-Instruct-v0.2",        # Top open-source model for chat
             "mistralai/Mixtral-8x7B-Instruct-v0.1",      # Mixture of Experts, strong multitasker
             "meta-llama/Meta-Llama-3-8B-Instruct",       # Small LLaMA 3 for fast chat

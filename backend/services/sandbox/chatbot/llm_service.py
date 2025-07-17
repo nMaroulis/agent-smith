@@ -78,7 +78,7 @@ class LLMService:
             }
 
         else:
-            text = llm.get_completion(
+            text: str = llm.get_completion(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 model=model,
