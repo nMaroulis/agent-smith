@@ -16,6 +16,7 @@ dependencies = [
     "langchain-ollama>=0.3.3",
     "langchain-openai>=0.3.25",
     "langgraph>=0.4.8",
+    "llama-cpp-python>=0.3.13",
     "numpy>=2.3.1",
     "pandas>=2.3.0",
     "python-dotenv>=1.1.0",
