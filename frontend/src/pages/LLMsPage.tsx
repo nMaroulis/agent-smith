@@ -287,7 +287,6 @@ const LLMsPage = () => {
       }
     }
 
-
   };
 
   const renderLLMDetails = () => {
@@ -340,6 +339,36 @@ const LLMsPage = () => {
             </div>
           </div>
 
+          {selectedLLM && selectedLLM.type === 'local' && selectedLLM.path && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-gray-300">Model Path</h3>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedLLM.path || '');
+                    // Optional: Add a toast notification here
+                  }}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  title="Copy to clipboard"
+                >
+                  Copy
+                </button>
+              </div>
+              <div className="relative group">
+                <code className="block bg-gray-800/50 border border-gray-700 text-gray-200 px-4 py-2.5 rounded-lg text-sm break-all font-mono transition-all hover:border-blue-500/50">
+                  {selectedLLM.path}
+                </code>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 bg-gradient-to-l from-gray-800/80 to-transparent w-16 pointer-events-none">
+                  <div className="w-4 h-4 text-gray-500 group-hover:text-blue-400 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {selectedLLM && selectedLLM.type === 'api' && (
             <div className="mt-6">
               <h3 className="text-sm font-medium text-gray-300 mb-2">API Key Status</h3>
@@ -360,11 +389,7 @@ const LLMsPage = () => {
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-sm font-medium text-gray-300 mb-2">Available Models</h3>
-              {selectedLLM && selectedLLM.type === 'local' ? (
-                <div className="text-sm text-gray-400">
-                  Local model support coming soon
-                </div>
-              ) : availableModels.length > 0 ? (
+              {availableModels.length > 0 ? (
                 <div className="bg-gray-800 rounded-lg p-3 max-h-60 overflow-y-auto">
                   {availableModels.map((model, index) => (
                     <div key={index} className="py-1 text-sm text-gray-300">
@@ -383,11 +408,7 @@ const LLMsPage = () => {
 
             <div>
               <h3 className="text-sm font-medium text-gray-300 mb-2">Available Embeddings</h3>
-              {selectedLLM && selectedLLM.type === 'local' ? (
-                <div className="text-sm text-gray-400">
-                  Local embeddings support coming soon
-                </div>
-              ) : availableEmbeddings.length > 0 ? (
+              {availableEmbeddings.length > 0 ? (
                 <div className="bg-gray-800 rounded-lg p-3 max-h-60 overflow-y-auto">
                   {availableEmbeddings.map((model, index) => (
                     <div key={index} className="py-1 text-sm text-gray-300">
