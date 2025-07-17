@@ -19,7 +19,6 @@ async def chat(
     request: ChatRequest,
     db: Session = Depends(get_db)
 ):
-    print(request)
     """
     Chat with the selected LLM model.
     """
@@ -48,7 +47,6 @@ async def chat(
     
     if not response:
         raise HTTPException(status_code=500, detail="Failed to generate response")
-    print(response)
     return response
 
 

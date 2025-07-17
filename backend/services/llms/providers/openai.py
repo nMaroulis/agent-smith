@@ -1,6 +1,6 @@
 from services.llms.base import BaseAPILLM
 from openai import OpenAI, OpenAIError, APIError, ChatCompletion
-from typing import Optional, Generator
+from typing import Optional, AsyncGenerator
 
 
 class OpenAIAPILLM(BaseAPILLM):
@@ -48,14 +48,14 @@ class OpenAIAPILLM(BaseAPILLM):
             raise RuntimeError(f"OpenAI API error: {e}")
 
 
-    def stream_completion(
+    async def stream_completion(
         self,
         system_prompt: str,
         user_prompt: str,
         model: str = "gpt-4o",
         temperature: float = 0.7,
         max_tokens: int = 2048,
-    ) -> Generator[str, None, None]:
+    ) -> AsyncGenerator[str, None]:
         """
         Stream a completion from OpenAI, yielding parts of the message as they arrive.
 
@@ -81,7 +81,7 @@ class OpenAIAPILLM(BaseAPILLM):
                 stream=True,
             )
 
-            for chunk in stream:
+            async for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
         except APIError as e:
