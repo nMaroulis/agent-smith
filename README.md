@@ -76,9 +76,9 @@ AgentSmith is built for developers and advanced users who want:
 
 ## 🏗️ Architecture
 
-<!-- [//]: # (  <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">)
+[//]: # (  <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">)
   <img src="https://raw.githubusercontent.com/nMaroulis/sibyl/refs/heads/main/assets/architecture.png">
-</div> -->
+</div>
 
 ---
 
