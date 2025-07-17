@@ -2,7 +2,7 @@ from services.llms.base import BaseAPILLM
 from anthropic import AuthenticationError as AnthropicAuthError
 from anthropic import Anthropic, APIError
 from anthropic.types import Message
-from typing import Optional, Generator, AsyncGenerator
+from typing import Optional, AsyncGenerator
 
 
 class AnthropicAPILLM(BaseAPILLM):

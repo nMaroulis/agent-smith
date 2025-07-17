@@ -1,14 +1,14 @@
 from services.llms.base import BaseLocalLLM
-from typing import AsyncGenerator
+from typing import Optional, AsyncGenerator
 import os
 
-MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../../models/llama_cpp"))
+MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../models/llama_cpp"))
 
 
 class LlamaCppLLM(BaseLocalLLM):
     """LLaMA-CPP LLM."""
-    def __init__(self, model_path: str):
-        super().__init__(model_path)
+    def __init__(self, path: Optional[str] = None):
+        super().__init__("llama-cpp", path)
 
 
     def get_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
@@ -25,7 +25,6 @@ class LlamaCppLLM(BaseLocalLLM):
         """List available models."""
         model_files = os.listdir(MODEL_PATH)
         return model_files
-
 
 
     def list_embeddings_models(self) -> list[str]:
@@ -51,3 +50,8 @@ class LlamaCppLLM(BaseLocalLLM):
             dict: A dictionary of tunable parameters.
         """
         return {}
+    
+
+    def get_recommended_path(self) -> str:
+        """Get the recommended path for the LLM."""
+        return MODEL_PATH

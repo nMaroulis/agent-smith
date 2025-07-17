@@ -139,7 +139,7 @@ def delete_local_llm(alias: str, db: Session = Depends(get_db)):
     return deleted
 
 
-@router.get("/local/{alias}/models", response_model=list[str])
+@router.get("/local/{alias}/models", response_model=ListModels)
 async def get_available_local_models(alias: str = Path(..., description="The local LLM alias"), db: Session = Depends(get_db)):
     try:
         llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=False)
@@ -148,7 +148,7 @@ async def get_available_local_models(alias: str = Path(..., description="The loc
         return {"error": f"Validation error: {str(e)}"}
 
 
-@router.get("/local/{alias}/embeddings_models", response_model=list[str])
+@router.get("/local/{alias}/embeddings_models", response_model=ListEmbeddingsModels)
 async def get_available_local_embeddings_models(alias: str = Path(..., description="The local LLM alias"), db: Session = Depends(get_db)):
     try:
         llm = get_llm_client_by_alias(alias=alias, db=db, is_remote=False)
@@ -165,3 +165,10 @@ async def get_tunable_parameters(alias: str = Path(..., description="The local L
     except Exception as e:
         print(e)
         return {"error": f"Validation error: {str(e)}"}
+
+
+@router.get("/local/{provider}/recommended-path", response_model=dict[str, str])
+def get_recommended_path(provider: str = Path(..., description="The local LLM provider")):
+    llm = get_llm_client_by_provider(provider.lower().replace(" ", "_").replace(".", "_"))
+    recommended_path: str = llm.get_recommended_path()
+    return {"path": recommended_path}

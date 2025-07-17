@@ -4,12 +4,6 @@ import { llmService, type LLM, type APIProvider } from '../services/llmService';
 
 type LLMType = 'api' | 'local';
 
-// List of downloaded GGUF models (this would ideally be fetched from the backend)
-const DOWNLOADED_MODELS = [
-  'llama-3-8b.Q4_K_M.gguf',
-  'llama-3-70b.Q4_K_M.gguf',
-  'mistral-7b-instruct-v0.1.Q4_K_M.gguf'
-];
 
 const LLMsPage = () => {
   const [activeTab, setActiveTab] = useState<'active' | 'add'>('active');
@@ -276,6 +270,24 @@ const LLMsPage = () => {
         });
       }
     }
+
+    if (llm.type === 'local') {
+      try {
+        // Fetch available models
+        const modelsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/local/${encodeURIComponent(llm.alias)}/models`);
+        const modelsData = await modelsResponse.json();
+        setAvailableModels(modelsData.models || []);
+        
+        // Fetch available embeddings models
+        const embeddingsResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/local/${encodeURIComponent(llm.alias)}/embeddings_models`);
+        const embeddingsData = await embeddingsResponse.json();
+        setAvailableEmbeddings(embeddingsData.embeddings_models || []);
+      } catch (err) {
+        console.error('Error fetching models:', err);
+      }
+    }
+
+
   };
 
   const renderLLMDetails = () => {
@@ -728,23 +740,41 @@ const LLMsPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Choose Model
+                        Model Path
                       </label>
-                      <select
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
-                      >
-                        <option value="">Select a model</option>
-                        {DOWNLOADED_MODELS.map((model) => (
-                          <option key={model} value={`/models/llama/${model}`}>
-                            {model}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={selectedModel}
+                          onChange={(e) => setSelectedModel(e.target.value)}
+                          placeholder="Enter path to model directory"
+                          className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(
+                                `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/local/llama-cpp/recommended-path`
+                              );
+                              const data = await response.json();
+                              if (data.path) {
+                                setSelectedModel(data.path);
+                              }
+                            } catch (err) {
+                              console.error('Failed to get recommended path:', err);
+                              setError('Failed to get recommended path');
+                            }
+                          }}
+                          className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm whitespace-nowrap"
+                        >
+                          Use Recommended
+                        </button>
+                      </div>
                       <p className="mt-2 text-xs text-gray-400">
-                        Place GGUF model files in <code className="bg-gray-700 px-1 py-0.5 rounded">agent-smith/models/llama/</code>
+                        Enter the absolute path to the directory containing your GGUF model files.
+                        This LLM alias will be associated with all .gguf files in the specified directory.
                       </p>
                     </div>
                   </div>

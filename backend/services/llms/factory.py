@@ -14,7 +14,7 @@ REMOTE_PROVIDERS: Dict[str, Callable[[str], object]] = {
 }
 
 LOCAL_PROVIDERS: Dict[str, Callable[[str], object]] = {
-    "llama_cpp": lambda path: LlamaCppLLM(path),
+    "llama-cpp": lambda path: LlamaCppLLM(path),
 }
 
 
@@ -50,7 +50,7 @@ def get_llm_client_by_provider(provider: str, **kwargs):
         return OpenAIAPILLM()
     elif provider == "huggingface":
         return HuggingFaceAPILLM()
-    elif provider == "llama_cpp":
+    elif provider == "llama-cpp":
         return LlamaCppLLM()
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")

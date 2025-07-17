@@ -107,5 +107,6 @@ class BaseAPILLM(BaseLLM):
 class BaseLocalLLM(BaseLLM):
     """Base class for local LLMs."""
 
-    def __init__(self):
-        super().__init__("BaseLocalLLM")
+    def __init__(self, name: str, path: Optional[str] = None):
+        super().__init__(name)
+        self.path = path
