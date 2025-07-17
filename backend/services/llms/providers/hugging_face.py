@@ -106,30 +106,8 @@ class HuggingFaceAPILLM(BaseAPILLM):
             "mistralai/Mistral-7B-Instruct-v0.3",        # Top open-source model for chat
             "mistralai/Mistral-7B-Instruct-v0.2",        # Top open-source model for chat
             "mistralai/Mixtral-8x7B-Instruct-v0.1",      # Mixture of Experts, strong multitasker
-            "meta-llama/Meta-Llama-3-8B-Instruct",       # Small LLaMA 3 for fast chat
-            "meta-llama/Meta-Llama-3-70B-Instruct",      # SOTA open-weight, large scale
-
-            # 🔷 Falcon
-            "tiiuae/falcon-7b-instruct",                 # Lightweight, instruction-tuned
-            "tiiuae/falcon-40b-instruct",                # Large model (RAM-heavy)
-
-            # 🔷 OpenChat / OpenHermes (fine-tuned Mistral)
-            "openchat/openchat-3.5-1210",                # OpenChat fine-tuned Mistral
-            "teknium/OpenHermes-2.5-Mistral-7B",         # Good coding/chat performance
-
-            # 🔷 Nous Research
-            "NousResearch/Nous-Hermes-2-Mistral-7B-DPO", # DPO-tuned Hermes (Mistral base)
-            "NousResearch/Nous-Capybara-7B-V1p9",        # RLHF-tuned Mistral variant
-
-            # 🔷 Zephyr (chat-tuned Mistral)
-            "HuggingFaceH4/zephyr-7b-alpha",             # Hugging Face's own tuned chat model
-
-            # 🔷 Code + Multimodal capable
-            "codellama/CodeLlama-13b-Instruct-hf",       # Code-focused LLaMA
-            "deepseek-ai/deepseek-coder-6.7b-instruct",  # Strong code + reasoning model
-
-            # 🔷 Yi (Chinese + multilingual support)
-            "01-ai/Yi-34B-Chat",                         # High-quality multilingual chat model
+            "deepseek-ai/DeepSeek-V3-0324",                 # SOTA open-weight, large scale
+            "NousResearch/Hermes-3-Llama-3.1-8B",          # SOTA open-weight, large scale
         ]
 
     def list_embeddings_models(self) -> list[str]:

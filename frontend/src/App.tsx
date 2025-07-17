@@ -4,10 +4,11 @@ import { Toaster } from 'react-hot-toast';
 import { ServerProvider, useServer } from './contexts/ServerContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter as Router, Link, useLocation, Routes, Route } from 'react-router-dom';
-import { FiCpu, FiSettings, FiLayers, FiCode, FiInfo, FiChevronDown, FiTool } from 'react-icons/fi';
+import { FiCpu, FiSettings, FiLayers, FiCode, FiInfo, FiChevronDown, FiTool, FiMessageSquare } from 'react-icons/fi';
 import ChatbotPage from './pages/ChatbotPage';
 import ToolTesterPage from './pages/ToolTesterPage';
 import RAGLabPage from './pages/RAGLabPage';
+import LLMFinetuningPage from './pages/LLMFinetuningPage';
 import { FlowCanvas } from './components/FlowCanvas';
 import CodeSidebar from './components/canvas/CodeSidebar';
 import NodeSidebar from './components/canvas/NodeSidebar';
@@ -114,9 +115,10 @@ const Navigation = () => {
       gradient: 'from-pink-400 to-pink-500',
       isDropdown: true,
       dropdownItems: [
-        { id: 'chatbot', path: '/sandbox/chatbot', label: 'Chatbot' },
-        { id: 'tool-tester', path: '/sandbox/tool-tester', label: 'Tool Tester' },
-        { id: 'rag-lab', path: '/sandbox/rag-lab', label: 'RAG Lab' },
+        { id: 'chatbot', path: '/sandbox/chatbot', label: 'Chatbot', icon: <FiMessageSquare className="w-4 h-4 mr-2" /> },
+        { id: 'tool-tester', path: '/sandbox/tool-tester', label: 'Tool Tester', icon: <FiTool className="w-4 h-4 mr-2" /> },
+        { id: 'rag-lab', path: '/sandbox/rag-lab', label: 'RAG Lab', icon: <FiLayers className="w-4 h-4 mr-2" /> },
+        { id: 'llm-finetuning', path: '/sandbox/llm-finetuning', label: 'LLM Finetuning', icon: <FiCpu className="w-4 h-4 mr-2" /> },
       ]
     },
     { 
@@ -196,12 +198,13 @@ const Navigation = () => {
                         <Link
                           to={subItem.path}
                           onClick={() => setIsSandboxOpen(false)}
-                          className={`block w-full px-4 py-3 text-sm text-left ${
+                          className={`flex items-center px-4 py-3 text-sm ${
                             isSubItemActive 
                               ? 'bg-gray-700 text-white' 
                               : 'text-gray-300 hover:bg-gray-700/50'
                           } transition-colors duration-200`}
                         >
+                          {subItem.icon}
                           {subItem.label}
                         </Link>
                       </div>
@@ -412,6 +415,7 @@ const App = () => {
               <Route path="/sandbox/chatbot" element={<ChatbotPage />} />
               <Route path="/sandbox/tool-tester" element={<ToolTesterPage />} />
               <Route path="/sandbox/rag-lab" element={<RAGLabPage />} />
+              <Route path="/sandbox/llm-finetuning" element={<LLMFinetuningPage />} />
               <Route path="/sandbox" element={<ChatbotPage />} />
               <Route path="*" element={<MainLayout />} />
             </Routes>
