@@ -35,8 +35,11 @@ Design intelligent workflows using a drag-and-drop interface, describe flows in 
 - 🛠️ **Custom Tool Creation**  
   Define and reuse tools via code or natural language.
 
-- 🗣️ **Natural Language to Flow** - TBD  
-  Type “create a RAG agent using OpenAI and a search tool” → get a runnable agent.
+- 🤖 **Chatbot**  
+  Test your LLMs in a built-in chat interface with debig options and parameter tuning.
+
+- 🧬 **LLM Fine-Tuning**  
+  Fine-tune your LLMs on your own datasets using a built-in interface.
 
 ---
 
@@ -110,7 +113,7 @@ $ npm run dev
 ```
 
 ## 🤝 Contributing
-We welcome contributions, ideas, and extensions. AgentSmith is modular by design — whether you’re adding a new LLM provider or a UI feature, we’d love your input.
+I welcome contributions, ideas, and extensions. AgentSmith is modular by design — whether you’re adding a new LLM provider or a UI feature, I’d love your input.
 
 
 ## 📄 License

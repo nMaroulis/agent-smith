@@ -1,8 +1,7 @@
 cryptography
 fastapi
-uvicorn
-python-multipart
-python-dotenv
+huggingface-hub
+jinja2
 langchain
 langchain-community
 langchain-openai
@@ -10,6 +9,11 @@ langchain-anthropic
 langchain-huggingface
 langchain-ollama
 langgraph
+llama-cpp-python
 numpy
 pandas
-jinja2
+python-multipart
+python-dotenv
+sqlalchemy
+transformers
+uvicorn
