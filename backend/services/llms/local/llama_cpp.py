@@ -87,7 +87,36 @@ class LlamaCppLLM(BaseLocalLLM):
         Returns:
             dict: A dictionary of tunable parameters.
         """
-        return {}
+        return {
+            "temperature": {
+                "type": "float",
+                "default": 0.1,
+                "min": 0.0,
+                "max": 1.0,
+            },
+            "max_tokens": {
+                "type": "int",
+                "default": 1024,
+                "min": 1,
+                "max": 8192,
+            },
+            "n_ctx": {
+                "type": "int",
+                "default": 1024,
+                "min": 1,
+                "max": 8192,
+            },
+            "n_threads": {
+                "type": "int",
+                "default": 4,
+                "min": 1,
+                "max": 32,
+            },
+            "verbose": {
+                "type": "bool",
+                "default": False,
+            },
+        }
     
 
     def get_recommended_path(self) -> str:
