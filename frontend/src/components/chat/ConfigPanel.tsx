@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { SelectChangeEvent } from '@mui/material/Select';
 import { 
   fetchRemoteLLMs, 
@@ -96,7 +96,6 @@ export const ConfigPanel = ({ config, onConfigChange, onClearChat }: ConfigPanel
   }, [config]);
 
   const [parameters, setParameters] = useState<Record<string, ParameterConfig | null>>({});
-  const queryClient = useQueryClient();
 
   // Fetch LLMs based on selected type (remote/local)
   const { data: remoteLLMs = [], isLoading: isLoadingRemoteLLMs } = useQuery<LLM[]>({
@@ -356,8 +355,26 @@ export const ConfigPanel = ({ config, onConfigChange, onClearChat }: ConfigPanel
             </ToggleButtonGroup>
           </Box>
 
-          <FormControl fullWidth margin="normal">
-            <InputLabel id="llm-alias-select-label">LLM Alias</InputLabel>
+          <FormControl fullWidth size="small" sx={{ mt: 1, mb: 1, position: 'relative' }}>
+            <InputLabel 
+              id="llm-alias-select-label"
+              sx={{
+                color: '#9ca3af',
+                '&.Mui-focused': {
+                  color: '#3b82f6',
+                },
+                '&.MuiInputLabel-shrink': {
+                  transform: 'translate(14px, -9px) scale(0.875)',
+                  backgroundColor: '#111827',
+                  px: 1,
+                  ml: -1,
+                  zIndex: 1,
+                },
+                fontSize: '0.875rem',
+              }}
+            >
+              LLM Alias
+            </InputLabel>
             <Select
               labelId="llm-alias-select-label"
               id="llm-alias-select"
@@ -365,18 +382,87 @@ export const ConfigPanel = ({ config, onConfigChange, onClearChat }: ConfigPanel
               label="LLM Alias"
               onChange={handleLLMAliasChange}
               disabled={!config.llmType || isLoadingLLMs}
+              sx={{
+                '& .MuiSelect-select': {
+                  py: 0.75,
+                  fontSize: '0.875rem',
+                  color: '#f3f4f6',
+                  backgroundColor: '#1f2937',
+                  borderRadius: '0.375rem',
+                  '&:focus': {
+                    backgroundColor: '#1f2937',
+                  },
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#374151',
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#4b5563',
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#3b82f6',
+                  borderWidth: '1px',
+                },
+                '& .MuiSvgIcon-root': {
+                  color: '#9ca3af',
+                },
+              }}
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    backgroundColor: '#1f2937',
+                    color: '#f3f4f6',
+                    marginTop: '4px',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                    '& .MuiMenuItem-root': {
+                      fontSize: '0.875rem',
+                      padding: '6px 16px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      },
+                      '&.Mui-selected': {
+                        backgroundColor: 'rgba(59, 130, 246, 0.16)',
+                        '&:hover': {
+                          backgroundColor: 'rgba(59, 130, 246, 0.24)',
+                        },
+                      },
+                    },
+                  },
+                },
+              }}
             >
               {(config.llmType === 'remote' ? remoteLLMs : localLLMs)?.map((llm: { alias: string; provider: string }) => (
                 <MenuItem key={llm.alias} value={llm.alias}>
-                  {llm.alias} ({llm.provider})
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span className="truncate">{llm.alias}</span>
+                    <span className="text-gray-400 text-xs">({llm.provider})</span>
+                  </Box>
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
           {config.llmAlias && (
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="model-select-label">Model</InputLabel>
+            <FormControl fullWidth size="small" sx={{ mt: 1, mb: 1, position: 'relative' }}>
+              <InputLabel 
+                id="model-select-label"
+                sx={{
+                  color: '#9ca3af',
+                  '&.Mui-focused': {
+                    color: '#3b82f6',
+                  },
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(14px, -9px) scale(0.875)',
+                    backgroundColor: '#111827',
+                    px: 1,
+                    ml: -1,
+                    zIndex: 1,
+                  },
+                  fontSize: '0.875rem',
+                }}
+              >
+                Model
+              </InputLabel>
               <Select
                 labelId="model-select-label"
                 id="model-select"
@@ -384,22 +470,71 @@ export const ConfigPanel = ({ config, onConfigChange, onClearChat }: ConfigPanel
                 label="Model"
                 onChange={handleModelChange}
                 disabled={!config.llmAlias || loadingModels}
-                displayEmpty
-                renderValue={(selected) => {
-                  if (!selected) {
-                    return <em>Select a model</em>;
-                  }
-                  return selected;
+                sx={{
+                  '& .MuiSelect-select': {
+                    py: 0.75,
+                    fontSize: '0.875rem',
+                    color: '#f3f4f6',
+                    backgroundColor: '#1f2937',
+                    borderRadius: '0.375rem',
+                    '&:focus': {
+                      backgroundColor: '#1f2937',
+                    },
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#374151',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#4b5563',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#3b82f6',
+                    borderWidth: '1px',
+                  },
+                  '& .MuiSvgIcon-root': {
+                    color: '#9ca3af',
+                  },
                 }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: '#1f2937',
+                      color: '#f3f4f6',
+                      marginTop: '4px',
+                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                      '& .MuiMenuItem-root': {
+                        fontSize: '0.875rem',
+                        padding: '6px 16px',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                        },
+                        '&.Mui-selected': {
+                          backgroundColor: 'rgba(59, 130, 246, 0.16)',
+                          '&:hover': {
+                            backgroundColor: 'rgba(59, 130, 246, 0.24)',
+                          },
+                        },
+                      },
+                    },
+                  },
+                }}
+
               >
                 {loadingModels ? (
-                  <MenuItem disabled>Loading models...</MenuItem>
+                  <MenuItem disabled>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      <span>Loading models...</span>
+                    </Box>
+                  </MenuItem>
                 ) : models.length === 0 ? (
-                  <MenuItem disabled>No models available</MenuItem>
+                  <MenuItem disabled className="text-gray-400">
+                    No models available
+                  </MenuItem>
                 ) : (
                   models.map((model: string) => (
                     <MenuItem key={model} value={model}>
-                      {model}
+                      <span className="truncate">{model}</span>
                     </MenuItem>
                   ))
                 )}
