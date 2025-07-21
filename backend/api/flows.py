@@ -53,6 +53,7 @@ def delete_flow(id: int, db: Session = Depends(get_db)):
 
 @router.post("/generate/code", description="Generate flow code by submitting the canvas graph")
 def generate_flow_code(flow: FlowPayload):
+    print(flow)
     codegen = CodeGenerator()
     code = codegen.generate(flow)
     return {"code": code}

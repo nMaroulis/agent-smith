@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiCpu, FiPlus, FiChevronDown, FiTool } from 'react-icons/fi';
 import type { CustomNode } from '../../types';
+import { Divider } from '@mui/material';
 
 interface RemoteLLM {
   alias: string;        // Unique identifier for the LLM
@@ -371,7 +372,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                 placeholder="Enter node label"
               />
             </div>
-
+            <Divider sx={{ my: 0, borderColor: '#374151' }} />
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Type</label>
@@ -468,7 +469,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                 </div>
               </div>
             </div>
-
+            <Divider sx={{ my: 0, borderColor: '#374151' }} />
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-sm font-medium text-gray-300">Tool</label>
@@ -531,7 +532,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                 )}
               </div>
             </div>
-
+            <Divider sx={{ my: 0, borderColor: '#374151' }} />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Description</label>
               <textarea

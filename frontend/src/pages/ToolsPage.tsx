@@ -325,7 +325,7 @@ Please provide a comprehensive summary of the search results, focusing on the mo
         ...prev,
         config: {
           ...prev.config,
-          [configKey]: type === 'checkbox' ? checked : value
+          [configKey]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value
         }
       }));
     } 
@@ -584,22 +584,8 @@ Please provide a comprehensive summary of the search results, focusing on the mo
               </div>
               <div className="overflow-y-auto flex-1">
                 <form onSubmit={handleSubmit} className="space-y-6 p-8">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
-                      Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      id="name"
-                      required
-                      className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-600 rounded-md bg-gray-800 text-white p-2"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                    />
-                  </div>
 
-                  <div>
+                <div>
                     <label htmlFor="type" className="block text-sm font-medium text-gray-300 mb-1">
                       Tool Type
                     </label>
@@ -629,6 +615,21 @@ Please provide a comprehensive summary of the search results, focusing on the mo
                   </div>
 
                   <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      id="name"
+                      required
+                      className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-600 rounded-md bg-gray-800 text-white p-2"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
                     <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-1">
                       Description
                     </label>
@@ -650,18 +651,18 @@ Please provide a comprehensive summary of the search results, focusing on the mo
                       <h3 className="text-lg font-medium text-white">Web Search Configuration</h3>
                       
                       <div>
-                        <label htmlFor="search_provider" className="block text-sm font-medium text-gray-300 mb-1">
-                          Search Provider *
+                        <label htmlFor="library" className="block text-sm font-medium text-gray-300 mb-1">
+                          Library *
                         </label>
                         <select
-                          id="search_provider"
-                          name="config.search_provider"
+                          id="library"
+                          name="config.library"
                           required
                           className="mt-1 block w-full border border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-800 text-white"
-                          value={formData.config?.search_provider || ''}
+                          value={formData.config?.library || ''}
                           onChange={handleInputChange}
                         >
-                          <option value="">Select search provider</option>
+                          <option value="">Select search provider library</option>
                           <option value="DuckDuckGo">DuckDuckGo</option>
                           <option value="SerpAPI">SerpAPI</option>
                           <option value="Google CSE">Google CSE</option>
@@ -670,10 +671,10 @@ Please provide a comprehensive summary of the search results, focusing on the mo
                         </select>
                       </div>
 
-                      {(formData.config?.search_provider === 'SerpAPI' || 
-                        formData.config?.search_provider === 'Google CSE' || 
-                        formData.config?.search_provider === 'Bing' ||
-                        formData.config?.search_provider === 'Custom') && (
+                      {(formData.config?.library === 'SerpAPI' || 
+                        formData.config?.library === 'Google CSE' || 
+                        formData.config?.library === 'Bing' ||
+                        formData.config?.library === 'Custom') && (
                         <div>
                           <label htmlFor="api_key" className="block text-sm font-medium text-gray-300 mb-1">
                             API Key *
@@ -691,17 +692,17 @@ Please provide a comprehensive summary of the search results, focusing on the mo
                       )}
 
                       <div>
-                        <label htmlFor="num_results" className="block text-sm font-medium text-gray-300 mb-1">
+                        <label htmlFor="max_results" className="block text-sm font-medium text-gray-300 mb-1">
                           Number of Results
                         </label>
                         <input
                           type="number"
-                          id="num_results"
-                          name="config.num_results"
+                          id="max_results"
+                          name="config.max_results"
                           min="1"
                           max="50"
                           className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-600 rounded-md bg-gray-800 text-white p-2"
-                          value={formData.config?.num_results || 10}
+                          value={formData.config?.max_results || 5}
                           onChange={handleInputChange}
                         />
                       </div>
