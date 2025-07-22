@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useMemo, useEffect, Suspense, lazy } from 'react';
 import { useServer } from '../contexts/ServerContext';
-import { FiCode, FiPlus, FiX, FiSearch, FiMaximize2, FiMinimize2, FiHelpCircle } from 'react-icons/fi';
+import { FiCode, FiPlus, FiX, FiSearch, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { WebSearchConfig } from '../components/tools/WebSearchConfig';
 import { RAGConfig } from '../components/tools/RAGConfig';
 import { CodeEditorConfig } from '../components/tools/CodeEditorConfig';
+import { APICallConfig } from '../components/tools/APICallConfig';
 
 // Lazy load the Monaco Editor
 const MonacoEditor = lazy(() => import('@monaco-editor/react'));
@@ -22,7 +23,7 @@ interface IStandaloneCodeEditor {
   focus: () => void;
 }
 
-type ToolType = 'rag' | 'web_search' | 'custom_code' | 'agent' | 'api_call' | 'llm_tool' | 'other';
+type ToolType = 'rag' | 'web_search' | 'custom_code' | 'agent' | 'api_call' | 'llm_tool' | 'mcp_server';
 
 interface LLMConfig {
   provider: string;
@@ -96,13 +97,13 @@ const ToolsPage = () => {
 
   // Memoize the tool type options to prevent unnecessary re-renders
   const toolTypeOptions = useMemo(() => [
+    { value: 'api_call', label: 'API Call' },
+    { value: 'custom_code', label: 'Custom Code' },
     { value: 'rag', label: 'RAG' },
     { value: 'web_search', label: 'Web Search' },
-    { value: 'custom_code', label: 'Custom Code' },
     { value: 'agent', label: 'Agent' },
-    { value: 'api_call', label: 'API Call' },
     { value: 'llm_tool', label: 'LLM Tool' },
-    { value: 'other', label: 'Other' },
+    { value: 'mcp_server', label: 'MCP Server' },
   ], []);
 
   // Fetch tools from the server
@@ -389,7 +390,16 @@ Please provide a comprehensive summary of the search results, focusing on the mo
           temperature: formData.config.llm_config.temperature || 0.7,
           max_tokens: formData.config.llm_config.max_tokens || 1000
         };
-      } else {
+      } 
+      else if (formData.type === 'web_search' && !formData.config?.library) {
+        alert('Please select a search provider library');
+        return;
+      }
+      else if (formData.type === 'rag' && !formData.config?.library) {
+        alert('Please select a RAG provider library');
+        return;
+      }
+      else {
         // For non-LLM tools, set llm_config to null
         newConfig.llm_config = null;
       }
@@ -665,6 +675,7 @@ Please provide a comprehensive summary of the search results, focusing on the mo
                     />
                   )}
 
+                  {/* Custom Code Configuration */}
                   {formData.type === 'custom_code' && (
                     <CodeEditorConfig 
                       code={formData.code || ''}
@@ -676,6 +687,39 @@ Please provide a comprehensive summary of the search results, focusing on the mo
                       isPreview={isPreview}
                       language="python"
                     />                  
+                  )}
+
+                  {/* API Call Configuration */}
+                  {formData.type === 'api_call' && (
+                    <APICallConfig 
+                      formData={formData}
+                      onInputChange={handleInputChange}
+                      setFormData={setFormData}
+                    />
+                  )}
+
+                  {/* MCP Server Configuration */}
+                  {formData.type === 'mcp_server' && (
+                    <div className="p-4 bg-yellow-900/20 text-yellow-400 rounded-lg border border-yellow-800">
+                      <p className="font-medium">MCP Server Integration Tool</p>
+                      <p className="text-sm mt-1">This feature is not yet supported. Check back in a future update!</p>
+                    </div>                  
+                  )}
+
+                  {/* LLM Tool Configuration */}
+                  {formData.type === 'llm_tool' && (
+                    <div className="p-4 bg-yellow-900/20 text-yellow-400 rounded-lg border border-yellow-800">
+                      <p className="font-medium">LLM Tool Integration Tool</p>
+                      <p className="text-sm mt-1">This feature is not yet supported. Check back in a future update!</p>
+                    </div>                  
+                  )}
+
+                  {/* Agent Configuration */}
+                  {formData.type === 'agent' && (
+                    <div className="p-4 bg-yellow-900/20 text-yellow-400 rounded-lg border border-yellow-800">
+                      <p className="font-medium">AI Agent Tool</p>
+                      <p className="text-sm mt-1">This feature is not yet supported. Check back in a future update!</p>
+                    </div>                  
                   )}
 
                   {isPreview && formData.type !== 'custom_code' && (

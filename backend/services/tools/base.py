@@ -44,3 +44,8 @@ class BaseRAGTool(BaseTool):
 class BaseWebSearchTool(BaseTool):
     def __init__(self, tool: ToolCreate):
         super().__init__(tool)
+
+
+class BaseAPICallTool(BaseTool):
+    def __init__(self, tool: ToolCreate):
+        super().__init__(tool)

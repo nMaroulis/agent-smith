@@ -1,0 +1,19 @@
+import requests
+from typing import Any, List, Dict
+
+def api_call(query: str, base_url: str = "{{ base_url }}", endpoint: str = "{{ endpoint }}", headers: List[Dict[str, str]] = {{ headers }}, body: Dict[str, Any] = {{ request_body }}, auth_type: str = "{{ auth_type }}", auth_token: str = "{{ auth_token }}") -> Any:
+    """
+    Calls and API endpoint and returns the response
+    """
+
+    if auth_type == "Bearer":
+        headers["Authorization"] = f"Bearer {auth_token}"
+
+    url = f"{base_url}{endpoint}"
+
+    response = requests.{{ http_method }}(url, headers=headers, json=body)
+
+    if response.status_code != 200:
+        return None
+
+    return response.json()
