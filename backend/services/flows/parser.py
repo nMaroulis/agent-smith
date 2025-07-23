@@ -29,6 +29,6 @@ def parse_flow(flow: FlowPayload):
         print()
 
     print("=== State ===")
-    print(flow.state.dict())
+    print(flow.state.model_dump())
 
     return None

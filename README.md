@@ -1,10 +1,10 @@
 # AgentSmith
 
 [![Python](https://img.shields.io/badge/python-v3.13-yellow)]()
-[![FastAPI](https://img.shields.io/badge/fastapi-v0.115.12-purple)]()
-[![langgraph](https://img.shields.io/badge/langgraph-v0.4.8-lightgrey)]()
+[![FastAPI](https://img.shields.io/badge/fastapi-v0.116.1-purple)]()
+[![langgraph](https://img.shields.io/badge/langgraph-v0.5.4-lightgrey)]()
 [![langchain](https://img.shields.io/badge/langchain-v0.3.26-green)]()
-[![Llama-CPP](https://img.shields.io/badge/llama_cpp-v0.3.8-black)]()
+[![Llama-CPP](https://img.shields.io/badge/llama_cpp-v0.3.14-black)]()
 [![React](https://img.shields.io/badge/react-v19.1-blue)]()
 
 **AgentSmith** is a developer-first, visual framework for building, testing, and exporting **LangGraph-based AI agents**.
