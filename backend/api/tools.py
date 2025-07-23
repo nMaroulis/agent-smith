@@ -18,7 +18,6 @@ def list_tools(limit: Optional[int] = None, db: Session = Depends(get_db)):
 
 @router.post("/")
 def new_tool(tool: ToolCreate, db: Session = Depends(get_db)):
-    print(tool)
     # Generate code if not provided
     if not tool.code:
         tool = get_tool_object(tool)
@@ -50,6 +49,5 @@ def delete_tool(id: int, db: Session = Depends(get_db)):
 
 @router.post("/preview_code")
 def preview_tool_code(tool: ToolCreate):
-    print(tool)
     tool = get_tool_object(tool)
     return {"code": tool.to_code()}
