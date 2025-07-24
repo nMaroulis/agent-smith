@@ -140,7 +140,11 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
     };
   }, []);
 
-  const codePreview = `class State(TypedDict):
+  const codePreview = `
+  from langgraph.graph.message import add_messages
+  from typing import TypedDict, Annotated
+  
+  class State(TypedDict):
     messages: Annotated[list, add_messages]
     message_type: str | None
     next: str | None`;
@@ -153,7 +157,7 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-4xl max-h-[90vh] bg-gray-900 rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-700"
+        className="w-full max-w-5xl max-h-[90vh] bg-gray-900 rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-700"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -175,7 +179,7 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
         <div className="flex-1 overflow-y-auto">
           {/* Add New Field */}
           <div className="bg-gray-800/50 px-6 py-4 border-b border-gray-700">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-5xl mx-auto">
               <h3 className="text-base font-medium text-gray-300 flex items-center mb-3">
                 <PlusIcon className="w-4 h-4 mr-2 text-blue-400" />
                 Add New Field
@@ -375,7 +379,7 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
                   <div className="absolute bottom-full right-0 mb-2 w-96 z-50">
                     <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl overflow-hidden">
                       <div className="px-4 py-3 bg-gray-800/90 border-b border-gray-700 flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-300">State Definition</span>
+                        <span className="text-sm font-medium text-gray-300">State Object</span>
                         <button
                           onClick={() => setShowCodePreview(false)}
                           className="text-gray-400 hover:text-white"

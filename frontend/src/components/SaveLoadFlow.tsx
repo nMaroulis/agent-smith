@@ -93,39 +93,25 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
     try {
       setIsLoading(true);
       
-      // Create a clean copy of the graph without the state
-      const { state: graphState, ...graphWithoutState } = serializedGraph || {};
-      
-      // Convert array state to object format for the backend
-      const flowState = Array.isArray(graphState) 
-        ? { fields: graphState } 
-        : { fields: [] };
-      
+      // Create a clean copy of the graph with the state
       const flowData = {
+        ...serializedGraph,
         name: flowName.trim(),
-        description: flowDescription.trim() || undefined,
-        graph: graphWithoutState, // Graph without the state
-        state: flowState, // State as an object with a fields array
+        description: flowDescription.trim()
       };
 
-      console.log('Sending flow data to API:', JSON.stringify(flowData, null, 2));
-
       if (selectedFlow) {
-        // Update existing flow
-        console.log('Updating flow with ID:', selectedFlow.id);
         await updateFlow(selectedFlow.id, flowData);
         setSnackbar({
           open: true,
-          message: 'Flow updated successfully!',
+          message: 'Flow updated successfully',
           severity: 'success',
         });
       } else {
-        // Create new flow
-        console.log('Creating new flow');
         await createFlow(flowData);
         setSnackbar({
           open: true,
-          message: 'Flow created successfully!',
+          message: 'Flow saved successfully',
           severity: 'success',
         });
       }
@@ -134,27 +120,42 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
       handleClose();
     } catch (error) {
       console.error('Failed to save flow:', error);
-      alert('Failed to save flow. Please try again.');
+      setSnackbar({
+        open: true,
+        message: `Failed to save flow: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'error',
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLoad = () => {
+  const handleLoad = async () => {
     if (selectedFlow) {
-      // Convert the state back to array format for the frontend
-      const stateArray = selectedFlow.state && selectedFlow.state.fields 
-        ? selectedFlow.state.fields 
-        : [];
-      
-      // Merge the graph and state when loading
-      const graphWithState = {
-        ...selectedFlow.graph,
-        state: stateArray
-      };
-      
-      onLoad(graphWithState);
-      handleClose();
+      try {
+        setIsLoading(true);
+        // Pass the entire flow data to the onLoad callback
+        onLoad({
+          nodes: selectedFlow.graph?.nodes || [],
+          edges: selectedFlow.graph?.edges || [],
+          state: selectedFlow.state || []
+        });
+        setSnackbar({
+          open: true,
+          message: 'Flow loaded successfully',
+          severity: 'success',
+        });
+        handleClose();
+      } catch (error) {
+        console.error('Failed to load flow:', error);
+        setSnackbar({
+          open: true,
+          message: 'Failed to load flow',
+          severity: 'error',
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 

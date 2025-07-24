@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Node, Edge, Connection, NodeChange, EdgeChange } from 'reactflow';
+import { type StateField } from '../components/StateModal';
 
 export type NodeType = 'node' | 'router' | 'trigger' | 'start' | 'end';
 
@@ -25,14 +26,20 @@ export interface NodeData {
   tool?: ToolData | null;
 }
 
+export interface StateField {
+  // Add properties for StateField interface
+}
+
 export interface FlowState {
   // State
   nodes: Node<NodeData>[];
   edges: Edge[];
+  state: StateField[];
   
   // Actions
   setNodes: (nodes: Node<NodeData>[]) => void;
   setEdges: (edges: Edge[]) => void;
+  setState: (state: StateField[]) => void;
   
   // Node Actions
   addNode: (node: Node<NodeData>) => void;
@@ -104,10 +111,12 @@ const useFlowStore = create<FlowState>((set, get) => ({
   // Initial state
   nodes: [],
   edges: [],
+  state: [],
   
   // Update state
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
+  setState: (state) => set({ state }),
   
   // Node actions
   addNode: (node) => set((state) => ({ nodes: [...state.nodes, node] })),

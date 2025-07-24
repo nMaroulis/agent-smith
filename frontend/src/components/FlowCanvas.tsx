@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useMemo, useState, memo } from 'react';
+import React, { useRef, useCallback, useMemo, useState, memo, useEffect } from 'react';
 import StateModal, { type StateField } from './StateModal';
 import MemoryModal from './MemoryModal';
 import SaveLoadFlow from './SaveLoadFlow';
@@ -52,30 +52,66 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   const { 
     nodes, 
     edges, 
+    state: flowState,
     onNodesChange, 
     onEdgesChange, 
     addEdge,
     addNode,
     setNodes,
-    setEdges
+    setEdges,
+    setState
   } = useFlowStore();
   
   // State for the modals
   const [isStateModalOpen, setIsStateModalOpen] = useState(false);
   const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
-  const [stateFields, setStateFields] = useState<StateField[]>([]);
-  const [memorySettings, setMemorySettings] = useState({
-    enabled: true,
-    backend: 'memory',
-    autoSaveFields: [],
-    langSmithEnabled: false,
-    langSmithToken: '',
-    langSmithProjectId: '',
-  });
+  const [stateFields, setStateFields] = useState<StateField[]>(flowState || []);
   
+  // Initialize state fields when component mounts
+  useEffect(() => {
+    if (flowState && flowState.length > 0) {
+      setStateFields(flowState);
+    } else {
+      // Initialize with default fields if no state exists
+      const defaultFields: StateField[] = [
+        {
+          id: '1',
+          name: 'messages',
+          type: 'List[str]',
+          isOptional: false,
+          initialValue: '[]',
+          isInternal: false
+        },
+        {
+          id: '2',
+          name: 'message_type',
+          type: 'str',
+          isOptional: true,
+          initialValue: 'None',
+          isInternal: false
+        },
+        {
+          id: '3',
+          name: 'next',
+          type: 'str',
+          isOptional: true,
+          initialValue: 'None',
+          isInternal: false
+        }
+      ];
+      setStateFields(defaultFields);
+      setState(defaultFields);
+    }
+  }, [setState]);
+  
+  // Log state changes
+  useEffect(() => {
+    console.log('State fields updated:', stateFields);
+  }, [stateFields]);
+
   const handleStateButtonClick = useCallback(() => {
     setIsStateModalOpen(true);
-  }, []);
+  }, [stateFields]);
 
   const handleMemoryButtonClick = useCallback(() => {
     setIsMemoryModalOpen(true);
@@ -90,14 +126,13 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   }, []);
 
   const handleStateSave = useCallback((fields: StateField[]) => {
+    console.log('Saving state fields:', fields);
+    setState(fields); 
     setStateFields(fields);
     setIsStateModalOpen(false);
-    console.log('State fields saved:', fields);
-  }, []);
+  }, [setState]);
 
   const handleMemorySave = useCallback((settings: any) => {
-    setMemorySettings(settings);
-    setIsMemoryModalOpen(false);
     console.log('Memory settings saved:', settings);
   }, []);
 
@@ -118,12 +153,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   }, [addEdge]);
 
   const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    console.log('Node clicked:', node);
     onNodeSelect?.(node as CustomNode);
   }, [onNodeSelect]);
 
   const handlePaneClick = useCallback((_event: React.MouseEvent) => {
-    console.log('Pane clicked');
     onNodeSelect?.(null);
   }, [onNodeSelect]);
 
@@ -185,9 +218,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
   // Get the current flow state as a serialized graph
   const getSerializedGraph = useCallback(() => {
     return {
-      nodes: [...nodes],
-      edges: [...edges],
-      state: stateFields
+      nodes,
+      edges,
+      state: stateFields,
     };
   }, [nodes, edges, stateFields]);
 
@@ -208,8 +241,6 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           initialValue: field.initialValue !== undefined ? String(field.initialValue) : '',
           isInternal: field.isInternal || false
         }));
-        
-        console.log('Loading state fields:', stateFields);
         setStateFields(stateFields);
       }
     }
@@ -303,7 +334,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
         isOpen={isMemoryModalOpen}
         onClose={handleMemoryModalClose}
         onSave={handleMemorySave}
-        initialSettings={memorySettings}
+        initialSettings={{}}
       />
 
       {/* Save/Load Flow Buttons */}
@@ -324,7 +355,6 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
     handleStateSave,
     handleMemorySave,
     stateFields,
-    memorySettings,
     getSerializedGraph,
     loadFlow
   ]);

@@ -327,7 +327,6 @@ const FlowCanvasWithSidebar = ({ flowId }: FlowCanvasWithSidebarProps) => {
   }, [nodes, selectedNode]);
 
   const handleNodeUpdate = (updatedNode: CustomNode) => {
-    console.log('Updating node:', updatedNode);
     updateNode(updatedNode.id, {
       ...updatedNode,
       data: {

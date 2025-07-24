@@ -183,8 +183,6 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
 
   const handleProviderSelect = (provider: RemoteLLM) => {
     if (!node) return;
-    
-    console.log('Selected provider:', provider);
     setSelectedProvider(provider);
     
     // Create a completely new object to ensure React detects the change
@@ -201,9 +199,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
     updatedNode.data.llm.model = '';
     updatedNode.data.llm.modelName = 'Select a model';
     updatedNode.data.llm.type = provider.type;
-    
-    console.log('Updated node with provider:', updatedNode);
-    
+      
     // Force a new object reference
     const nodeToUpdate = {
       ...updatedNode,
@@ -213,7 +209,6 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
       }
     };
     
-    console.log('Node to update:', nodeToUpdate);
     onUpdate(nodeToUpdate);
     
     setIsProviderOpen(false);
@@ -222,8 +217,6 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
 
   const handleModelSelect = async (model: { id: string; name: string } | null) => {
     if (!node || !selectedProvider) return;
-    
-    console.log('Selected model:', model);
     
     // Create a completely new object to ensure React detects the change
     const updatedNode = JSON.parse(JSON.stringify(node));
@@ -246,8 +239,6 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
         type: selectedProvider.type || 'api'
       };
     }
-    
-    console.log('Updated node with model:', updatedNode);
     
     // Update the node
     onUpdate(updatedNode);

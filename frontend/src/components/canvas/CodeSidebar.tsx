@@ -30,8 +30,8 @@ const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
     setIsCollapsed(!isCollapsed);
   };
   
-  // Get nodes and edges from the flow store
-  const { nodes, edges } = useFlowStore();
+  // Get nodes, edges, and state from the flow store
+  const { nodes, edges, state: flowState } = useFlowStore();
 
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -65,6 +65,9 @@ const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
     setError(null);
     
     try {
+      // Get the current state from the flow store
+      const { nodes, edges, state: flowState } = useFlowStore.getState();
+      
       // Prepare the flow data in the same format as SaveLoadFlow
       const flowData = {
         name: flowId ? `Flow ${flowId}` : 'Untitled Flow',
@@ -73,8 +76,10 @@ const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
           nodes,
           edges
         },
-        state: { fields: [] } // Empty state as in SaveLoadFlow
+        state: { fields: flowState || [] } // Use state from the flow store
       };
+      
+      console.log('Sending flow data to backend:', JSON.stringify(flowData, null, 2));
       
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/flows/generate/code`, {
         method: 'POST',
