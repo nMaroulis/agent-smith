@@ -128,10 +128,10 @@ class AnthropicAPILLM(BaseAPILLM):
         return []
 
 
-    def to_code(self) -> str:
+    def to_code(self, model: str = "claude-3-5-sonnet-latest") -> str:
         """Generate a Python code snippet for the LLM."""
         return self.render_template("llms/api/anthropic.jinja",
-            model_name="claude-3-5-sonnet-20240620",
+            model_name=model,
         )
 
 

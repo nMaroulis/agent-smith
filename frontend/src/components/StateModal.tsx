@@ -3,6 +3,12 @@ import { XMarkIcon, PlusIcon, TrashIcon, CheckIcon, CodeBracketIcon } from '@her
 
 export type FieldType = 'str' | 'int' | 'float' | 'bool' | 'List[str]' | 'Dict[str, Any]';
 
+export interface FieldMetadata {
+  [key: string]: any;
+  langgraph_annotation?: string;
+  field_default?: string;
+}
+
 export interface StateField {
   id: string;
   name: string;
@@ -10,6 +16,7 @@ export interface StateField {
   isOptional: boolean;
   initialValue: string;
   isInternal: boolean;
+  fieldMetadata?: FieldMetadata;
 }
 
 interface StateModalProps {
@@ -28,6 +35,10 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
       type: 'List[str]',
       isOptional: false,
       initialValue: '[]',
+      fieldMetadata: {
+        langgraph_annotation: 'add_messages',
+        field_default: 'Field(default_factory=list)'
+      },
       isInternal: false
     },
     {
@@ -36,6 +47,7 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
       type: 'str',
       isOptional: true,
       initialValue: 'None',
+      fieldMetadata: {},
       isInternal: false
     },
     {
@@ -44,6 +56,7 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
       type: 'str',
       isOptional: true,
       initialValue: 'None',
+      fieldMetadata: {},
       isInternal: false
     }
   ];
@@ -61,8 +74,11 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
     type: 'str',
     isOptional: false,
     initialValue: '',
+    fieldMetadata: {},
     isInternal: false 
   });
+  const [metadata, setMetadata] = useState<{key: string; value: string}[]>([]);
+  const [newMetadata, setNewMetadata] = useState({key: '', value: ''});
   
   const validateName = (name: string): boolean => {
     if (!name) {
@@ -91,11 +107,40 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
     validateName(value);
   };
 
+  const handleAddMetadata = () => {
+    if (newMetadata.key && newMetadata.value) {
+      setMetadata([...metadata, newMetadata]);
+      setNewMetadata({key: '', value: ''});
+    }
+  };
+
+  const handleRemoveMetadata = (index: number) => {
+    setMetadata(metadata.filter((_, i) => i !== index));
+  };
+
   const handleAddField = () => {
     if (!newField.name || !validateName(newField.name)) return;
     
-    setFields([...fields, { ...newField, id: Date.now().toString() }]);
-    setNewField({ ...newField, name: '', initialValue: '', isOptional: false });
+    const fieldMetadata = metadata.reduce((acc, {key, value}) => ({
+      ...acc,
+      [key]: value
+    }), {});
+    
+    const fieldToAdd = {
+      ...newField,
+      metadata: Object.keys(fieldMetadata).length > 0 ? fieldMetadata : undefined
+    };
+    
+    setFields([...fields, { ...fieldToAdd, id: Date.now().toString() }]);
+    setNewField({ 
+      name: '', 
+      type: 'str',
+      isOptional: false,
+      initialValue: '',
+      fieldMetadata: {},
+      isInternal: false
+    });
+    setMetadata([]);
   };
 
   const removeField = (id: string) => {
@@ -141,13 +186,15 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
   }, []);
 
   const codePreview = `
-  from langgraph.graph.message import add_messages
-  from typing import TypedDict, Annotated
-  
-  class State(TypedDict):
-    messages: Annotated[list, add_messages]
-    message_type: str | None
-    next: str | None`;
+from langgraph.graph.message import add_messages
+from typing import Optional, Dict, Any
+from pydantic import BaseModel, Field
+
+
+class State(BaseModel):
+    messages: list = Field(default_factory=list, metadata={"langgraph_annotation": add_messages})
+    message_type: Optional[str] = None
+    next: Optional[str] = None`;
 
   if (!isOpen) return null;
 
@@ -164,7 +211,7 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
         <div className="px-6 py-4 border-b border-gray-800 bg-gray-800/50 flex justify-between items-center">
           <div>
             <h2 className="text-xl font-semibold text-white">State Manager</h2>
-            <p className="text-sm text-gray-400 mt-1">Define and manage your application state</p>
+            <p className="text-sm text-gray-400 mt-1">Define and manage your application state. A state is a <strong>shared data structure</strong> that represents the current snapshot of your application. States are <strong>passed along edges between nodes</strong>, carrying the output of one node to the next as input. Agent-smith translates the state into a <strong>Pydantic model</strong>.</p>
           </div>
           <button
             onClick={onClose}
@@ -231,6 +278,51 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
                   />
                 </div>
               </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Metadata</label>
+                <div className="space-y-2">
+                  {metadata.map((item, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <code className="text-xs font-mono bg-gray-800/70 px-2 py-1 rounded text-gray-300 border border-gray-700">
+                        <span className="text-blue-300">"{item.key}"</span>
+                        <span className="text-gray-400">: </span>
+                        <span className="text-green-300">"{item.value}"</span>
+                      </code>
+                      <button
+                        onClick={() => handleRemoveMetadata(index)}
+                        className="text-gray-400 hover:text-red-400"
+                        type="button"
+                      >
+                        <TrashIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={newMetadata.key}
+                      onChange={(e) => setNewMetadata({...newMetadata, key: e.target.value})}
+                      className="flex-1 bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Key"
+                    />
+                    <input
+                      type="text"
+                      value={newMetadata.value}
+                      onChange={(e) => setNewMetadata({...newMetadata, value: e.target.value})}
+                      className="flex-1 bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-sm text-white focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Value"
+                    />
+                    <button
+                      onClick={handleAddMetadata}
+                      disabled={!newMetadata.key || !newMetadata.value}
+                      className="px-2 py-1 bg-gray-600 text-gray-300 text-xs rounded hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      type="button"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
               <div className="mt-4 flex items-center justify-between">
                 <label className="flex items-center text-sm text-gray-300 cursor-pointer">
                   <span className="mr-2">Optional</span>
@@ -261,6 +353,7 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
                   <span>Add Field</span>
                 </button>
               </div>
+
             </div>
           </div>
 
@@ -305,6 +398,7 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Default</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Metadata</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -329,6 +423,15 @@ const StateModal: React.FC<StateModalProps> = ({ isOpen, onClose, onSave, initia
                             readOnly
                             className="w-full bg-gray-700/30 border border-gray-600 rounded px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
                             placeholder="Initial value"
+                          />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <input
+                            type="text"
+                            value={field.fieldMetadata ? JSON.stringify(field.fieldMetadata) : ""}
+                            readOnly
+                            className="w-full bg-gray-700/30 border border-gray-600 rounded px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
+                            placeholder="{}"
                           />
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">

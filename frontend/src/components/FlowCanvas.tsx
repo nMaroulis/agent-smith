@@ -80,6 +80,9 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           type: 'List[str]',
           isOptional: false,
           initialValue: '[]',
+          fieldMetadata: {
+            langgraph_annotation: 'add_messages'
+          },
           isInternal: false
         },
         {
@@ -88,6 +91,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           type: 'str',
           isOptional: true,
           initialValue: 'None',
+          fieldMetadata: {},
           isInternal: false
         },
         {
@@ -96,6 +100,7 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           type: 'str',
           isOptional: true,
           initialValue: 'None',
+          fieldMetadata: {},
           isInternal: false
         }
       ];

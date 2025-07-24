@@ -1,18 +1,20 @@
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
+from schemas.state import State
+
 
 class FlowCreate(BaseModel):
     name: str
     description: Optional[str] = None
     graph: dict
-    state: dict
+    state: State
 
 class FlowOut(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
     graph: dict
-    state: dict
+    state: State
 
     class Config:
         from_attributes = True
@@ -66,9 +68,6 @@ class GraphEdge(BaseModel):
 class Graph(BaseModel):
     nodes: List[GraphNode]
     edges: List[GraphEdge]
-
-class State(BaseModel):
-    fields: List[Any] = []
 
 # ----- Main Flow Parser -----
 

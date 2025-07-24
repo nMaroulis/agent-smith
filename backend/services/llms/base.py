@@ -50,7 +50,7 @@ class BaseLLM(ABC):
         ...
 
     @abstractmethod
-    def to_code(self) -> str:
+    def to_code(self, model: str) -> str:
         """Generate a Python code snippet for the LLM."""
         ...
     

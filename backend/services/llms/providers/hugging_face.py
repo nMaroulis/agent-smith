@@ -129,10 +129,10 @@ class HuggingFaceAPILLM(BaseAPILLM):
         ]
 
 
-    def to_code(self) -> str:
+    def to_code(self, model: str = "mistralai/Mistral-7B-Instruct-v0.2") -> str:
         """Generate a Python code snippet for the LLM."""
         return self.render_template("llms/api/hugging_face.jinja",
-            model_name="mistralai/Mistral-7B-Instruct-v0.2",
+            model_name=model,
         )
 
 

@@ -133,10 +133,10 @@ class OpenAIAPILLM(BaseAPILLM):
         ]
 
 
-    def to_code(self) -> str:
+    def to_code(self, model: str = "gpt-4") -> str:
         """Generate a Python code snippet for the LLM."""
         return self.render_template("llms/api/openai.jinja",
-            model_name="gpt-4",
+            model_name=model,
         )
 
 
