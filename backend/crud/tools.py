@@ -21,6 +21,10 @@ def get_tool_by_id(db: Session, id: int):
     return db.query(Tool).filter(Tool.id == id).first()
 
 
+def get_tool_by_name(db: Session, name: str):
+    return db.query(Tool).filter(Tool.name == name).first()
+
+
 def update_tool_by_id(db: Session, id: int, name: str, description: str, type: str, config: dict, code: str, is_active: bool):
     tool = db.query(Tool).filter(Tool.id == id).first()
     if not tool:

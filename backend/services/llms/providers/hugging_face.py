@@ -8,6 +8,7 @@ class HuggingFaceAPILLM(BaseAPILLM):
     """Hugging Face API LLM."""
     def __init__(self, api_key: Optional[str] = None):
         super().__init__(name="huggingface", api_key=api_key)
+        self.template = self.env.get_template("llms/api/hugging_face.jinja")
         if api_key is not None:
             self.client = InferenceClient(api_key=self.api_key)
 
@@ -131,7 +132,7 @@ class HuggingFaceAPILLM(BaseAPILLM):
 
     def to_code(self, model: str = "mistralai/Mistral-7B-Instruct-v0.2") -> str:
         """Generate a Python code snippet for the LLM."""
-        return self.render_template("llms/api/hugging_face.jinja",
+        return self.template.render(
             model_name=model,
         )
 

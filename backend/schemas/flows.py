@@ -37,10 +37,15 @@ class LLMConfig(BaseModel):
     modelName: Optional[str] = ""
     type: Optional[str] = ""
 
+class ToolConfig(BaseModel):
+    id: Optional[int] = None
+    name: str
+    description: Optional[str] = ""
+
 class NodeData(BaseModel):
     label: str
     type: str
-    tool: Optional[Any]
+    tool: Optional[ToolConfig] = None
     node: Optional[Dict[str, Any]] = {}
     llm: Optional[LLMConfig] = None
 

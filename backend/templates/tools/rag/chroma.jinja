@@ -1,35 +1,38 @@
-from langchain.vectorstores import Chroma
-
+from langchain_chroma import Chroma
 {% if vector_store_url is defined %}
 from chromadb.config import Settings
 import chromadb
-
-client = chromadb.HttpClient(host="{{ vector_store_url }}")
-{{ name }}_vectorstore = Chroma(
-    client=client,
-    collection_name="{{ index_name }}",
-    embedding_function=embeddings_model
-)
-{% else %}
-{{ name }}_vectorstore = Chroma(
-    persist_directory="{{ vector_store_path }}",
-    collection_name="{{ index_name }}",
-    embedding_function=embeddings_model
-)
 {% endif %}
 
-{{ name }}_retriever = {{ name }}_vectorstore.as_retriever(
-    search_type="similarity",
-    search_kwargs={
-        "k": {{ top_k }}
-        {% if similarity_threshold is defined %}
-        , "score_threshold": {{ similarity_threshold }}
-        {% endif %}
-    }
-)
 
-def {{ name }}(input):
-    docs = {{ name }}_retriever.get_relevant_documents(input["question"])
-    context = " ".join([doc.page_content for doc in docs])
-    prompt = f"""{{ llm_followup_prompt }}""".replace("{context}", context).replace("{question}", input["question"])
-    return llm.invoke(prompt)
+def {{ name }}(query: str, threshold: int = 0.5, k: int = 5) -> List[str]:
+    """Retrieve relevant documents from the Chromadb vector store based on the query."""
+    try:
+
+        {% if vector_store_url is defined %}
+        client = chromadb.HttpClient(host="{{ vector_store_url }}")
+        {% endif %}
+        vectorstore = Chroma(
+            {% if vector_store_url is defined %}
+            client=client,
+            {% else %}
+            persist_directory="{{ vector_store_path }}",
+            {% endif %}
+            embedding_function=embeddings_model,
+            collection_name="{{ index_name }}"
+        )
+
+        retriever = vectorstore.as_retriever(
+            search_type="similarity",
+            search_kwargs={
+                {% if similarity_threshold is defined %}
+                "score_threshold": {{ similarity_threshold }}
+                {% endif %}
+            },
+            k={{ top_k }}
+        )
+
+        results = retriever.get_relevant_documents(query)
+        return [doc.page_content for doc in results] if results else []
+    except Exception as e:
+        return [f"Document Retrieval failed with error message: {e}"]

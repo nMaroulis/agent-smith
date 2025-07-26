@@ -24,7 +24,7 @@ class BaseLLM(ABC):
             loader=FileSystemLoader(templates_path),
             autoescape=select_autoescape()
         )
-
+        self.template = None  # Template for rendering code
 
     @abstractmethod
     def get_completion(self, system_prompt: str, user_prompt: str, **kwargs) -> str:

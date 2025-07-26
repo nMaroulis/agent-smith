@@ -8,6 +8,7 @@ class OpenAIAPILLM(BaseAPILLM):
 
     def __init__(self, api_key: Optional[str] = None):
         super().__init__(name="openai", api_key=api_key)
+        self.template = self.env.get_template("llms/api/openai.jinja")
         if api_key is not None:
             self.client = OpenAI(api_key=self.api_key)
 
@@ -135,7 +136,7 @@ class OpenAIAPILLM(BaseAPILLM):
 
     def to_code(self, model: str = "gpt-4") -> str:
         """Generate a Python code snippet for the LLM."""
-        return self.render_template("llms/api/openai.jinja",
+        return self.template.render(
             model_name=model,
         )
 

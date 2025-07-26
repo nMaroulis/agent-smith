@@ -1,26 +1,47 @@
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, START, END
+from pydantic import BaseModel, Field
+from typing import TypedDict, Annotated
+from langgraph.graph.message import add_messages
+import os
 
-# ---- Node function stubs ----
+
+# === Import LLMs ===
+{{llms_code}}
+
+# === Import Tools ===
+{{tools_code}}
+
+# === Agent State ===
+class State(BaseModel):
+    """
+    A state is a shared data structure that represents the current snapshot of your application.
+    States are passed along edges between nodes, carrying the output of one node to the next as input.
+    """
+    messages: list = Field(default_factory=list, metadata={"langgraph_annotation": add_messages})
+    message_type: Optional[str] = None
+    next: Optional[str] = None
+
+# === Node function stubs ===
 {% for node in nodes %}
+{% if node.type not in ["start", "end"]%}
 def {{ node.function_name }}(state):
     pass
-
+{% endif%}
 {% endfor %}
 
 graph = StateGraph()
 
-# ---- Nodes ----
+# === Nodes ===
 {% for node in nodes %}
-graph.add_node("{{ node.id }}", {{ node.function_name }})
+graph.add_node("{{ node.function_name }}", {{ node.function_name }})
 {% endfor %}
-
-# ---- Entry and Exit Points ----
-graph.set_entry_point("{{ entry_point }}")
-graph.set_finish_point("{{ finish_point }}")
-
-# ---- Edges ----
+{#
+    # === Entry and Exit Points ===
+    graph.set_entry_point("{{ entry_point }}")
+    graph.set_finish_point("{{ finish_point }}")
+#}
+# === Edges ===
 {% for edge in edges %}
-graph.add_edge("{{ edge.source }}", "{{ edge.target }}")
+graph.add_edge({{ edge.source }}, {{ edge.target }})
 {% endfor %}
-
 app = graph.compile()

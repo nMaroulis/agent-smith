@@ -1,8 +1,13 @@
 from duckduckgo_search import DDGS
+from duckduckgo_search.exceptions import DuckDuckGoSearchException
+
 
 def web_search(query: str, max_results: int = {{ max_results }}) -> str:
     """
     Perform a web search using DuckDuckGo and return the top results.
     """
-    results = DDGS().text(keywords=query, max_results=max_results)
-    return "\n".join([r["body"] for r in results]) if results else "No web results found."
+    try:
+        results = DDGS().text(keywords=query, max_results=max_results)
+        return "\n".join([r["body"] for r in results]) if results else "No web results found."
+    except DuckDuckGoSearchException as e:
+        return f"Duckduckgo web search failed to retrieve results with error message: {e}"

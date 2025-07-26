@@ -5,10 +5,11 @@ from services.tools.web_search.duckduckgo import DuckDuckGoWebSearchTool
 from services.tools.api_call.api_call import APICallTool
 from schemas.tools import ToolCreate
 from models.tools import ToolType
+from crud.tools import get_tool_by_name as get_tool_by_name_db
+from sqlalchemy.orm import Session
 
 
 def get_tool(tool: ToolCreate) -> BaseTool:
-    # .lower().replace(" ", "_")
     if tool.type == ToolType.RAG:
         if tool.config.get("library", "").lower() == "chromadb":
             return ChromaRAGTool(tool)
@@ -24,3 +25,11 @@ def get_tool(tool: ToolCreate) -> BaseTool:
     elif tool.type == ToolType.API_CALL:
         return APICallTool(tool)
     raise ValueError(f"Unsupported tool type: {tool.type}")
+
+
+def get_tool_by_name(db: Session, name: str) -> BaseTool:
+    tool = get_tool_by_name_db(db, name)
+    if not tool:
+        return None
+    return get_tool(tool)
+    
