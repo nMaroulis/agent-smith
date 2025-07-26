@@ -26,10 +26,6 @@ export interface NodeData {
   tool?: ToolData | null;
 }
 
-// export interface StateField {
-//   // Add properties for StateField interface
-// }
-
 export interface FlowState {
   // State
   nodes: Node<NodeData>[];

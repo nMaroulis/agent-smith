@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { FiCpu, FiPlus, FiChevronDown, FiTool } from 'react-icons/fi';
+import { useState, useEffect, useRef } from 'react';
+import { FiCpu, FiPlus, FiChevronDown, FiTool, FiChevronRight } from 'react-icons/fi';
 import type { CustomNode } from '../../types';
 import { Divider } from '@mui/material';
 
@@ -12,22 +12,23 @@ interface RemoteLLM {
   baseUrl?: string;
 }
 
-
 interface NodeSidebarProps {
   node: CustomNode | null;
   onUpdate: (node: CustomNode) => void;
 }
 
 const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProviderOpen, setIsProviderOpen] = useState(false);
   const [isModelOpen, setIsModelOpen] = useState(false);
   const [isToolOpen, setIsToolOpen] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
   interface Tool {
     id: string;
     name: string;
     description?: string;
   }
-
   const [tools, setTools] = useState<Tool[]>([]);
   const [isLoadingTools, setIsLoadingTools] = useState(false);
   const [llmType, setLlmType] = useState<'local' | 'remote'>('remote');
@@ -35,6 +36,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [llmProviders, setLlmProviders] = useState<RemoteLLM[]>([]);
   const [isLoadingProviders, setIsLoadingProviders] = useState(true);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Fetch available tools
   useEffect(() => {
@@ -294,6 +296,38 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
     }
   };
 
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  // Add resizing handlers
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  const stopResizing = () => {
+    setIsResizing(false);
+  };
+
+  const resize = (e: MouseEvent) => {
+    if (isResizing && sidebarRef.current) {
+      const newWidth = e.clientX - sidebarRef.current.getBoundingClientRect().left;
+      if (newWidth > 300 && newWidth < 800) {
+        setSidebarWidth(newWidth);
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('mousemove', resize);
+    window.addEventListener('mouseup', stopResizing);
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing]);
+
   const renderProviderDropdown = () => (
     <div className="relative">
       <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Alias</label>
@@ -338,10 +372,61 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
     </div>
   );
 
+  // When collapsed, show a vertical bar with node icon
+  if (isCollapsed) {
+    return (
+      <div className="h-full w-10 bg-gradient-to-b from-gray-800 to-gray-900 border-l border-gray-700/50 flex flex-col items-center justify-center transition-all duration-300">
+        <div className="w-full h-full relative hover:shadow-2xl hover:shadow-purple-500/20 group">
+          {/* Glowing accent line on the right side */}
+          <div className="absolute inset-y-0 right-0 w-0.5 bg-gradient-to-b from-purple-400 to-purple-600 opacity-0 group-hover:opacity-100 group-hover:shadow-[0_0_8px_2px_rgba(168,85,247,0.6)] transition-all duration-300 group-hover:scale-x-150"></div>
+          
+          {/* Glow effect container - only shows on hover */}
+          <div className="absolute inset-0 bg-gradient-to-l from-purple-500/0 via-purple-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          
+          <button
+            onClick={toggleCollapse}
+            className="relative w-full h-full flex flex-col items-center justify-center text-gray-400 hover:text-purple-300 rounded-r transition-all duration-300 z-10"
+            title="Show Node Properties"
+          >
+            {/* Animated icon */}
+            <div className="relative group-hover:scale-110 transition-transform duration-300">
+              <div className="absolute inset-0 rounded-full bg-purple-500/0 group-hover:bg-purple-500/20 blur-sm group-hover:scale-150 transition-all duration-300"></div>
+              <FiCpu 
+                className="h-5 w-5 transform -rotate-90 mb-2 text-purple-400 group-hover:text-purple-300 group-hover:drop-shadow-[0_0_8px_rgba(192,132,252,0.6)] transition-all duration-300"
+              />
+            </div>
+            
+            {/* Text label with glow effect */}
+            <span className="text-[10px] font-mono font-bold tracking-wider text-purple-400 group-hover:text-purple-300 group-hover:drop-shadow-[0_0_8px_rgba(192,132,252,0.6)] uppercase transform -rotate-90 origin-center whitespace-nowrap mt-8 transition-all duration-300">
+              Node
+            </span>
+            
+            {/* Subtle pulsing dot indicator */}
+            <span className="absolute bottom-2 w-1.5 h-1.5 bg-purple-400 rounded-full opacity-0 group-hover:opacity-70 group-hover:animate-pulse transition-opacity duration-300"></span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-72 bg-gray-800 border-r border-gray-700 flex-shrink-0 overflow-y-auto">
-      <div className="p-4">
-        <h2 className="text-lg font-semibold text-white mb-4">Node Properties</h2>
+    <div 
+      ref={sidebarRef}
+      className="h-full flex flex-col bg-gray-800 border-l border-gray-700 relative"
+      style={{ width: `${sidebarWidth}px`, minWidth: '300px', maxWidth: '800px' }}
+    >
+      <div className="flex items-center justify-between p-3 border-b border-gray-700">
+        <h2 className="text-lg font-semibold text-white">Node Properties</h2>
+        <button
+          onClick={toggleCollapse}
+          className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700 transition-colors"
+          title="Collapse panel"
+        >
+          <FiChevronRight className="h-5 w-5 transform rotate-180" />
+        </button>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-4">
         {!node ? (
           <div className="text-center p-6 bg-gray-700/50 rounded-lg">
             <FiCpu className="w-8 h-8 mx-auto text-gray-600 mb-2" />
@@ -532,6 +617,15 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
           </div>
         )}
       </div>
+      {/* Resize handle on the right side */}
+      <div 
+        className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-purple-500 active:bg-purple-600 transition-colors z-20"
+        onMouseDown={startResizing}
+        style={{
+          right: '-3px',
+          width: '4px',
+        }}
+      />
     </div>
   );
 };
