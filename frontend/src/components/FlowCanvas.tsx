@@ -189,7 +189,6 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
               provider: '',
               providerName: '',
               model: '',
-              modelName: '',
             },
             tool: null,
           },

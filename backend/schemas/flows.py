@@ -34,7 +34,6 @@ class LLMConfig(BaseModel):
     alias: Optional[str] = ""
     provider: Optional[str] = ""
     model: Optional[str] = ""
-    modelName: Optional[str] = ""
     type: Optional[str] = ""
 
 class ToolConfig(BaseModel):

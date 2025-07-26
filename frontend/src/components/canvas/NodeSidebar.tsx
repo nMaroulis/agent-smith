@@ -196,8 +196,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
     // Update the LLM data with alias and provider info
     updatedNode.data.llm.alias = provider.alias;
     updatedNode.data.llm.provider = provider.provider;
-    updatedNode.data.llm.model = '';
-    updatedNode.data.llm.modelName = 'Select a model';
+    updatedNode.data.llm.model = 'Select a model';
     updatedNode.data.llm.type = provider.type;
       
     // Force a new object reference
@@ -226,7 +225,6 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
       updatedNode.data.llm = {
         ...updatedNode.data.llm,
         model: '',
-        modelName: ''
       };
     } else {
       // Initialize llm object with all necessary properties when a model is selected
@@ -235,7 +233,6 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
         alias: selectedProvider.alias,
         provider: selectedProvider.provider,
         model: model.id,
-        modelName: model.name,
         type: selectedProvider.type || 'api'
       };
     }
@@ -289,8 +286,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
             ...node.data.llm,
             alias: '',
             provider: '',
-            model: '',
-            modelName: 'Select a model',
+            model: 'Select a model',
             type: type === 'remote' ? 'api' : 'local'
           }
         }
@@ -410,7 +406,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                     <span className={!currentProvider || isLoadingModels ? 'text-gray-500' : ''}>
                       {isLoadingModels 
                         ? 'Loading models...' 
-                        : node.data.llm?.modelName || (currentProvider ? 'Select a model' : 'Select provider first')}
+                        : node.data.llm?.model || (currentProvider ? 'Select a model' : 'Select provider first')}
                     </span>
                     {!isLoadingModels && (
                       <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${

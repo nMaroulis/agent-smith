@@ -5,10 +5,10 @@ import { type StateField } from '../components/StateModal';
 export type NodeType = 'node' | 'router' | 'trigger' | 'start' | 'end';
 
 export interface LLMData {
+  alias: string;
   provider: string;
-  providerName: string;
   model: string;
-  modelName: string;
+  type: 'local' | 'remote';
 }
 
 export interface ToolData {
@@ -26,9 +26,9 @@ export interface NodeData {
   tool?: ToolData | null;
 }
 
-export interface StateField {
-  // Add properties for StateField interface
-}
+// export interface StateField {
+//   // Add properties for StateField interface
+// }
 
 export interface FlowState {
   // State

@@ -85,7 +85,6 @@ interface NodeDetailsProps {
     alias?: string;
     provider?: string;
     model?: string;
-    modelName?: string;
     type?: 'api' | 'local';
   };
 }
@@ -102,9 +101,7 @@ const NodeDetails = ({ node, tool, llm }: NodeDetailsProps) => {
       {llmData.provider && (
         <div className="flex items-center gap-1 text-xs">
           <span className="text-white/70 font-medium">{llmData.provider}</span>
-          {llmData.modelName && llmData.modelName !== 'Select a model' ? (
-            <span className="text-white/60">• {llmData.modelName}</span>
-          ) : llmData.model ? (
+          {llmData.model && llmData.model !== 'Select a model' ? (
             <span className="text-white/60">• {llmData.model}</span>
           ) : (
             <span className="text-white/40 italic">• No LLM model selected</span>
