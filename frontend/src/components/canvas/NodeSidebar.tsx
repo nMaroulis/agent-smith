@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiCpu, FiPlus, FiChevronDown, FiTool, FiChevronRight, FiTrash2 } from 'react-icons/fi';
+import { FiCpu, FiPlus, FiChevronDown, FiTool, FiChevronRight, FiInfo, FiTerminal } from 'react-icons/fi';
 import type { CustomNode } from '../../types';
 import { Divider } from '@mui/material';
 
@@ -16,6 +16,22 @@ interface NodeSidebarProps {
   node: CustomNode | null;
   onUpdate: (node: CustomNode) => void;
 }
+
+const SectionHeader = ({ 
+  icon: Icon, 
+  title,
+  className = ''
+}: { 
+  icon: React.ComponentType<{ className?: string }>; 
+  title: string;
+  className?: string;
+}) => (
+  <div className={`flex items-center mb-4 ${className}`}>
+    <Icon className="h-5 w-5 text-purple-400 mr-2" />
+    <h3 className="text-base font-medium text-gray-300">{title}</h3>
+    <div className="ml-3 h-px flex-1 bg-gray-700"></div>
+  </div>
+);
 
 const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -518,6 +534,10 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
           </div>
         ) : (
           <div className="space-y-4">
+            <SectionHeader 
+              icon={FiInfo} 
+              title="Node Information" 
+            />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Label</label>
               <input
@@ -527,6 +547,9 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent transition-all"
                 placeholder="Enter node label"
               />
+              <p className="mt-1 text-xs text-gray-400">
+                This label will be used as the agent <strong>function name</strong> in the generated code.
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Description</label>
@@ -537,8 +560,13 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 placeholder="Enter node description"
               />
             </div>
-            <Divider sx={{ my: 0, borderColor: '#374151' }} />
             <div className="space-y-4">
+
+            <SectionHeader 
+              icon={FiCpu} 
+              title="LLM Configuration"
+              className="mt-6"
+            />
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">LLM Type</label>
                 <div className="flex space-x-2 mb-4">
@@ -622,9 +650,29 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                   )}
                 </div>
               </div>
+              <button
+                type="button"
+                disabled
+                className="mt-3 w-full flex items-center justify-between px-4 py-2 bg-gray-800/50 border border-dashed border-gray-600 rounded-lg text-gray-400 cursor-not-allowed transition-all hover:border-purple-400/30 hover:text-gray-300 group"
+              >
+                <div className="flex items-center">
+                  <svg className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span className="text-sm font-medium">Override LLM Parameters</span>
+                </div>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700 text-gray-400 ml-2">
+                  Coming Soon
+                </span>
+              </button>
             </div>
-            <Divider sx={{ my: 0, borderColor: '#374151' }} />
             <div>
+              <SectionHeader 
+              icon={FiTerminal} 
+              title="Agent Logic"
+              className="mt-6"
+            />
+              <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-sm font-medium text-gray-300">Tool</label>
                 <button
@@ -686,10 +734,6 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 )}
               </div>
             </div>
-            <Divider sx={{ my: 0, borderColor: '#374151' }} />
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Agent Logic</label>
-              
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">System Prompt</label>
                 <textarea
