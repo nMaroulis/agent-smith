@@ -44,9 +44,10 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   const [modelName, setModelName] = useState('');
   const [literalFields, setLiteralFields] = useState([{ 
     name: 'message_type', 
-    values: [''], 
-    description: '' 
+    values: [], 
+    description: ''
   }]);
+  const [literalInputValue, setLiteralInputValue] = useState('');
   const [structuredSchema, setStructuredSchema] = useState('');
   const [structuredFields, setStructuredFields] = useState([{ key: '', type: 'string' }]);
   const [availableSchemas, setAvailableSchemas] = useState<Array<{id: string, name: string}>>([
@@ -357,7 +358,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
         <button
           type="button"
           onClick={() => setIsProviderOpen(!isProviderOpen)}
-          className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent transition-all"
         >
           <span>{
             selectedProvider?.alias || 
@@ -377,7 +378,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                   onClick={() => handleProviderSelect(provider)}
                   className={`w-full text-left px-4 py-2 text-sm ${
                     selectedProvider?.alias === provider.alias
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-purple-600 text-white'
                     : 'text-gray-300 hover:bg-gray-700'
                   }`}
                 >
@@ -430,6 +431,29 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
         ...,
         description="${literalFields[0]?.description || 'The type of message'}"
     )`;
+  };
+
+  const handleLiteralInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLiteralInputValue(value);
+    
+    // Parse the values but don't update the state until blur
+    const newValues = value
+      .split(',')
+      .map(v => v.trim())
+      .filter(v => v.length > 0);
+    
+    // Update the values in state without triggering a re-render
+    setLiteralFields(prev => {
+      const newFields = [...prev];
+      newFields[0].values = newValues;
+      return newFields;
+    });
+  };
+
+  const handleLiteralInputBlur = () => {
+    const formatted = literalFields[0].values.join(', ');
+    setLiteralInputValue(formatted);
   };
 
   // When collapsed, show a vertical bar with node icon
@@ -500,7 +524,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 type="text"
                 value={node.data.label}
                 onChange={(e) => handleChange('label', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent transition-all"
                 placeholder="Enter node label"
               />
             </div>
@@ -509,7 +533,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
               <textarea
                 value={node.data.description || ''}
                 onChange={(e) => handleChange('description', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[50px] resize-none"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent transition-all min-h-[50px] resize-none"
                 placeholder="Enter node description"
               />
             </div>
@@ -523,7 +547,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                     onClick={() => handleLlmTypeChange('local')}
                     className={`flex-1 py-2 px-3 text-sm rounded-lg border ${
                       llmType === 'local' 
-                        ? 'bg-blue-600 border-blue-600 text-white' 
+                        ? 'bg-purple-600 border-purple-600 text-white' 
                         : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600/50'
                     }`}
                   >
@@ -534,7 +558,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                     onClick={() => handleLlmTypeChange('remote')}
                     className={`flex-1 py-2 px-3 text-sm rounded-lg border ${
                       llmType === 'remote' 
-                        ? 'bg-blue-600 border-blue-600 text-white' 
+                        ? 'bg-purple-600 border-purple-600 text-white' 
                         : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600/50'
                     }`}
                   >
@@ -555,7 +579,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                       currentProvider && !isLoadingModels 
                         ? 'border-gray-600' 
                         : 'border-gray-700 bg-gray-800/50 cursor-not-allowed'
-                    } rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+                    } rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent transition-all`}
                   >
                     <span className={!currentProvider || isLoadingModels ? 'text-gray-500' : ''}>
                       {isLoadingModels 
@@ -577,7 +601,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                             onClick={() => handleModelSelect(model)}
                             className={`w-full text-left px-4 py-2 text-sm ${
                               node.data.llm?.model === model.id
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-purple-600 text-white'
                                 : 'text-gray-300 hover:bg-gray-700'
                             }`}
                           >
@@ -616,7 +640,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 <button
                   type="button"
                   onClick={() => setIsToolOpen(!isToolOpen)}
-                  className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full flex items-center justify-between bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-left text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent transition-all"
                 >
                   <span>{node?.data?.tool?.name || 'Select Tool'}</span>
                   <FiChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isToolOpen ? 'transform rotate-180' : ''}`} />
@@ -633,7 +657,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                             onClick={() => handleToolSelect(tool)}
                             className={`w-full text-left px-4 py-2 text-sm ${
                               node.data.tool?.id === tool.id
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-purple-600 text-white'
                                 : 'text-gray-300 hover:bg-gray-700'
                             }`}
                             title={tool.description}
@@ -651,7 +675,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                         <div className="px-4 py-2 text-sm text-gray-400">
                           No tools available. <button 
                             onClick={handleAddTool}
-                            className="text-blue-400 hover:text-blue-300 underline"
+                            className="text-purple-400 hover:text-purple-300 underline"
                           >
                             Add tools
                           </button>
@@ -671,7 +695,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 <textarea
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[100px] resize-none"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent transition-all min-h-[100px] resize-none"
                   placeholder="Enter system prompt"
                   disabled={isLoadingPrompts}
                 />
@@ -682,7 +706,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 <textarea
                   value={userPrompt}
                   onChange={(e) => setUserPrompt(e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[100px] resize-none"
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent transition-all min-h-[100px] resize-none"
                   placeholder="Enter user prompt template"
                   disabled={isLoadingPrompts}
                 />
@@ -699,7 +723,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <label className={`relative flex cursor-pointer rounded-lg border-2 p-3 transition-all ${
                     outputMode === 'text' 
-                      ? 'border-blue-500 bg-blue-500/10' 
+                      ? 'border-purple-500 bg-purple-500/10' 
                       : 'border-gray-600 hover:border-gray-500'
                   }`}>
                     <input
@@ -711,7 +735,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                     <div className="flex items-center">
                       <div className={`h-4 w-4 rounded-full border-2 mr-2 flex-shrink-0 transition-all ${
                         outputMode === 'text' 
-                          ? 'border-blue-400 bg-blue-400 ring-2 ring-blue-400/30' 
+                          ? 'border-purple-400 bg-purple-400 ring-2 ring-purple-400/30' 
                           : 'border-gray-400'
                       }`}></div>
                       <div>
@@ -748,6 +772,23 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 
                 {outputMode === 'structured' && (
                   <div className="space-y-4">
+
+                      <div className="mt-4 p-3 bg-gradient-to-r from-purple-900/20 to-purple-900/10 rounded-lg border border-purple-800/40">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 pt-0.5">
+                            <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div className="ml-2">
+                            <p className="text-xs text-purple-100 font-medium">About Structured Outputs</p>
+                            <p className="mt-1 text-xs text-purple-200/80">
+                              <span className="font-semibold">API LLM models</span> (i.e. OpenAI, Anthropic, Gemini) use <span className="font-semibold text-purple-100">built-in structured output functionality</span> via langchain. For models without native support (e.g. llama.cpp), the <span className="font-semibold text-purple-100">Outlines</span> library ensures consistent output formatting.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Model Name</label>
                       <input
@@ -807,14 +848,12 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                                 </label>
                                 <input
                                   type="text"
-                                  value={literalFields[0].values.join(', ')}
-                                  onChange={(e) => {
-                                    const newFields = [...literalFields];
-                                    newFields[0].values = e.target.value
-                                      .split(',')
-                                      .map(v => v.trim())
-                                      .filter(v => v.length > 0);
-                                    setLiteralFields(newFields);
+                                  value={literalInputValue}
+                                  onChange={handleLiteralInputChange}
+                                  onBlur={handleLiteralInputBlur}
+                                  onFocus={() => {
+                                    // Show raw values when focused
+                                    setLiteralInputValue(literalFields[0].values.join(','));
                                   }}
                                   placeholder="e.g., rag, web_search, conversational"
                                   className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent font-mono"
@@ -841,7 +880,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                           </div>
                         </div>
                       </div>
-                      
+
                       {literalFields.length > 0 && (
                         <div className="mt-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
                           <div className="flex items-center justify-between mb-2">
