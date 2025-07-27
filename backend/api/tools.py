@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from schemas.tools import ToolOut, ToolCreate
 from crud.tools import get_tools, create_tool, get_tool_by_id, update_tool_by_id, delete_tool_by_id
 from typing import Optional
 from sqlalchemy.orm import Session
 from db.session import get_db
-from services.tools.factory import get_tool as get_tool_object
+from services.tools.factory import get_tool as get_tool_object, get_tool_by_name
 
 
 router = APIRouter(prefix="/tools", tags=["Tool"])
@@ -51,3 +51,11 @@ def delete_tool(id: int, db: Session = Depends(get_db)):
 def preview_tool_code(tool: ToolCreate):
     tool = get_tool_object(tool)
     return {"code": tool.to_code()}
+
+
+@router.get("/{name}/default_agent_prompts")
+def get_default_agent_prompts(name: str = Path(..., description="Tool name"), db: Session = Depends(get_db)):
+    tool = get_tool_by_name(db, name)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    return tool.get_default_agent_prompts()

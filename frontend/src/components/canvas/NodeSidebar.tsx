@@ -27,6 +27,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   interface Tool {
     id: string;
     name: string;
+    type: string;
     description?: string;
   }
   const [tools, setTools] = useState<Tool[]>([]);
@@ -36,6 +37,9 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [llmProviders, setLlmProviders] = useState<RemoteLLM[]>([]);
   const [isLoadingProviders, setIsLoadingProviders] = useState(true);
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [userPrompt, setUserPrompt] = useState('');
+  const [isLoadingPrompts, setIsLoadingPrompts] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Fetch available tools
@@ -259,13 +263,15 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
         tool: {
           id: tool.id,
           name: tool.name,
-          description: tool.description || ''
+          type: tool.type,
+          description: tool.description
         }
       }
     };
     
     onUpdate(updatedNode);
     setIsToolOpen(false);
+    fetchDefaultPrompts(tool.name);
   };
 
   const handleAddTool = () => {
@@ -372,6 +378,26 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
     </div>
   );
 
+  const fetchDefaultPrompts = async (toolName: string) => {
+    if (!toolName) return;
+    
+    setIsLoadingPrompts(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/tools/${encodeURIComponent(toolName)}/default_agent_prompts`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch default prompts');
+      }
+      const data = await response.json();
+      setSystemPrompt(data.system_prompt);
+      setUserPrompt(data.user_prompt);
+    } catch (error) {
+      console.error('Error fetching default prompts:', error);
+      // Optionally show an error message to the user
+    } finally {
+      setIsLoadingPrompts(false);
+    }
+  };
+
   // When collapsed, show a vertical bar with node icon
   if (isCollapsed) {
     return (
@@ -442,6 +468,15 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                 onChange={(e) => handleChange('label', e.target.value)}
                 className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 placeholder="Enter node label"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Description</label>
+              <textarea
+                value={node.data.description || ''}
+                onChange={(e) => handleChange('description', e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[50px] resize-none"
+                placeholder="Enter node description"
               />
             </div>
             <Divider sx={{ my: 0, borderColor: '#374151' }} />
@@ -606,14 +641,38 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
             </div>
             <Divider sx={{ my: 0, borderColor: '#374151' }} />
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Description</label>
-              <textarea
-                value={node.data.description || ''}
-                onChange={(e) => handleChange('description', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[80px] resize-none"
-                placeholder="Enter node description"
-              />
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Agent Logic</label>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">System Prompt</label>
+                <textarea
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[100px] resize-none"
+                  placeholder="Enter system prompt"
+                  disabled={isLoadingPrompts}
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">User Prompt Template</label>
+                <textarea
+                  value={userPrompt}
+                  onChange={(e) => setUserPrompt(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[100px] resize-none"
+                  placeholder="Enter user prompt template"
+                  disabled={isLoadingPrompts}
+                />
+              </div>
+              
+              {isLoadingPrompts && (
+                <div className="text-sm text-gray-400 text-center py-2">
+                  Loading default prompts...
+                </div>
+              )}
             </div>
+            <Divider sx={{ my: 0, borderColor: '#374151' }} />
+
           </div>
         )}
       </div>
