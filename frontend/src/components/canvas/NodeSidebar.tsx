@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiCpu, FiPlus, FiChevronDown, FiTool, FiChevronRight } from 'react-icons/fi';
+import { FiCpu, FiPlus, FiChevronDown, FiTool, FiChevronRight, FiTrash2 } from 'react-icons/fi';
 import type { CustomNode } from '../../types';
 import { Divider } from '@mui/material';
 
@@ -40,6 +40,22 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
   const [isLoadingPrompts, setIsLoadingPrompts] = useState(false);
+  const [outputMode, setOutputMode] = useState<'text' | 'structured'>('text');
+  const [modelName, setModelName] = useState('');
+  const [literalFields, setLiteralFields] = useState([{ 
+    name: 'message_type', 
+    values: [''], 
+    description: '' 
+  }]);
+  const [structuredSchema, setStructuredSchema] = useState('');
+  const [structuredFields, setStructuredFields] = useState([{ key: '', type: 'string' }]);
+  const [availableSchemas, setAvailableSchemas] = useState<Array<{id: string, name: string}>>([
+    { id: 'user', name: 'User' },
+    { id: 'product', name: 'Product' },
+    { id: 'order', name: 'Order' },
+    // Add more default schemas as needed
+  ]);
+  const [isSchemaDropdownOpen, setIsSchemaDropdownOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Fetch available tools
@@ -398,6 +414,24 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
     }
   };
 
+  const generateExampleOutput = () => {
+    const fields = structuredFields.map((field) => `${field.key}: ${field.type}`);
+    return `{ ${fields.join(', ')} }`;
+  };
+
+  const generatePydanticModel = () => {
+    return `from pydantic import BaseModel, Field, Literal
+
+class ${modelName || 'MessageClassifier'}(BaseModel):
+    """
+    Structured output schema for message classification.
+    """
+    ${literalFields[0]?.name || 'message_type'}: Literal[${literalFields[0]?.values.map(v => `"${v}"`).join(', ') || ''}] = Field(
+        ...,
+        description="${literalFields[0]?.description || 'The type of message'}"
+    )`;
+  };
+
   // When collapsed, show a vertical bar with node icon
   if (isCollapsed) {
     return (
@@ -537,17 +571,6 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                   {isModelOpen && currentProvider && availableModels.length > 0 && (
                     <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-600 rounded-lg shadow-lg">
                       <div className="py-1 max-h-60 overflow-auto">
-                        <button
-                          key="select-none"
-                          onClick={() => handleModelSelect(null)}
-                          className={`w-full text-left px-4 py-2 text-sm ${
-                            !node.data.llm?.model
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-300 hover:bg-gray-700'
-                          }`}
-                        >
-                          Select a model
-                        </button>
                         {availableModels.map((model) => (
                           <button
                             key={model.id}
@@ -670,9 +693,180 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
                   Loading default prompts...
                 </div>
               )}
+              
+              <div className="mt-4 pt-4 border-t border-gray-700">
+                <label className="block text-sm font-medium text-gray-300 mb-3">Output Mode</label>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <label className={`relative flex cursor-pointer rounded-lg border-2 p-3 transition-all ${
+                    outputMode === 'text' 
+                      ? 'border-blue-500 bg-blue-500/10' 
+                      : 'border-gray-600 hover:border-gray-500'
+                  }`}>
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      checked={outputMode === 'text'}
+                      onChange={() => setOutputMode('text')}
+                    />
+                    <div className="flex items-center">
+                      <div className={`h-4 w-4 rounded-full border-2 mr-2 flex-shrink-0 transition-all ${
+                        outputMode === 'text' 
+                          ? 'border-blue-400 bg-blue-400 ring-2 ring-blue-400/30' 
+                          : 'border-gray-400'
+                      }`}></div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-100">Text</div>
+                        <div className="text-xs text-gray-400">Simple text response</div>
+                      </div>
+                    </div>
+                  </label>
+                  
+                  <label className={`relative flex cursor-pointer rounded-lg border-2 p-3 transition-all ${
+                    outputMode === 'structured' 
+                      ? 'border-purple-500 bg-purple-500/10' 
+                      : 'border-gray-600 hover:border-gray-500'
+                  }`}>
+                    <input
+                      type="radio"
+                      className="sr-only"
+                      checked={outputMode === 'structured'}
+                      onChange={() => setOutputMode('structured')}
+                    />
+                    <div className="flex items-center">
+                      <div className={`h-4 w-4 rounded-full border-2 mr-2 flex-shrink-0 transition-all ${
+                        outputMode === 'structured' 
+                          ? 'border-purple-400 bg-purple-400 ring-2 ring-purple-400/30' 
+                          : 'border-gray-400'
+                      }`}></div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-100">Structured Output</div>
+                        <div className="text-xs text-gray-400">Pydantic model with Literal types</div>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+                
+                {outputMode === 'structured' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Model Name</label>
+                      <input
+                        type="text"
+                        value={modelName}
+                        onChange={(e) => setModelName(e.target.value)}
+                        placeholder="e.g., MessageClassifier"
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                      <p className="mt-1 text-xs text-gray-400">
+                        Name of your Pydantic model (PascalCase)
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-300">Literal Field</label>
+                        <button
+                          type="button"
+                          disabled
+                          className="text-xs bg-gray-700 text-gray-500 px-2 py-1 rounded flex items-center cursor-not-allowed"
+                        >
+                          <FiPlus className="mr-1" size={12} />
+                          Add Field
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700">
+                          <div className="flex items-start space-x-2">
+                            <div className="flex-1 space-y-2">
+                              <div>
+                                <div className="flex items-center justify-between">
+                                  <label className="block text-xs font-medium text-gray-300 mb-1">Field Name</label>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-900/50 text-purple-200 border border-purple-700/50">
+                                    Default Field
+                                  </span>
+                                </div>
+                                <div className="relative">
+                                  <input
+                                    type="text"
+                                    value="message_type"
+                                    disabled
+                                    className="w-full bg-gray-700/50 border border-gray-600/50 rounded px-2 py-1.5 text-sm text-gray-400 cursor-not-allowed font-mono"
+                                  />
+                                  <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+                                    <svg className="h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h.01a1 1 0 100-2H9z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-300 mb-1">
+                                  Literal Values (comma separated)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={literalFields[0].values.join(', ')}
+                                  onChange={(e) => {
+                                    const newFields = [...literalFields];
+                                    newFields[0].values = e.target.value
+                                      .split(',')
+                                      .map(v => v.trim())
+                                      .filter(v => v.length > 0);
+                                    setLiteralFields(newFields);
+                                  }}
+                                  placeholder="e.g., rag, web_search, conversational"
+                                  className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent font-mono"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-xs font-medium text-gray-300 mb-1">
+                                  Description
+                                </label>
+                                <input
+                                  type="text"
+                                  value={literalFields[0].description}
+                                  onChange={(e) => {
+                                    const newFields = [...literalFields];
+                                    newFields[0].description = e.target.value;
+                                    setLiteralFields(newFields);
+                                  }}
+                                  placeholder="Field description for documentation"
+                                  className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-transparent"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {literalFields.length > 0 && (
+                        <div className="mt-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-mono text-gray-400">Pydantic Model Preview:</span>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(generatePydanticModel());
+                              }}
+                              className="text-xs text-blue-400 hover:text-blue-300"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                          <pre className="text-xs text-gray-300 overflow-auto max-h-40">
+                            {generatePydanticModel()}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <Divider sx={{ my: 0, borderColor: '#374151' }} />
-
           </div>
         )}
       </div>
