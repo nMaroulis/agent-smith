@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiCpu, FiPlus, FiChevronDown, FiTool, FiChevronRight, FiInfo, FiTerminal } from 'react-icons/fi';
+import { FiCpu, FiPlus, FiChevronDown, FiTool, FiChevronRight, FiInfo, FiTerminal, FiLogIn, FiLogOut } from 'react-icons/fi';
 import type { CustomNode } from '../../types';
 import { Divider } from '@mui/material';
-import { Listbox, Transition } from '@headlessui/react'
+import { Label, ListboxOption, Listbox, ListboxButton, ListboxOptions, Transition } from '@headlessui/react'
 import { ChevronUpDownIcon } from '@heroicons/react/20/solid'
 
 
@@ -690,8 +690,8 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
             />
               <div>
               <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-sm font-medium text-gray-300 flex items-center">
-                <FiTool className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                <FiTool className="h-4 w-4 text-purple-400" />
                 Tool
               </label>
               <button
@@ -782,7 +782,6 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
               )}
               
               {/* Input Format */}
-
               <div className="mt-4 pt-4">
                 <Listbox
                   value={inputFormat}
@@ -798,11 +797,12 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 >
                   {({ open }) => (
                     <div>
-                      <Listbox.Label className="block text-sm font-medium text-gray-300 mb-2">
+                      <Label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+                        <FiLogIn className="h-4 w-4 text-purple-400" />
                         Input Format
-                      </Listbox.Label>
+                      </Label>
                       <div className="relative">
-                        <Listbox.Button className="relative w-full cursor-default rounded-lg bg-gray-700 py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-purple-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-purple-300 sm:text-sm border border-gray-600">
+                        <ListboxButton className="relative w-full cursor-default rounded-lg bg-gray-700 py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-purple-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-purple-300 sm:text-sm border border-gray-600">
                           <span className="block truncate">
                             {showCustomInput ? (
                               <span className="text-gray-300">Custom...</span>
@@ -823,7 +823,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                               aria-hidden="true"
                             />
                           </span>
-                        </Listbox.Button>
+                        </ListboxButton>
 
                         <Transition
                           show={open}
@@ -833,7 +833,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                           leaveTo="opacity-0"
                           className="relative z-10"
                         >
-                          <Listbox.Options 
+                          <ListboxOptions 
                             static
                             className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm border border-gray-600"
                           >
@@ -844,7 +844,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                               { label: 'Next Route', value: 'next' },
                               { label: 'Custom...', value: 'custom' }
                             ].map((option) => (
-                              <Listbox.Option
+                              <ListboxOption
                                 key={option.value}
                                 className={({ active }) =>
                                   `relative cursor-default select-none py-2 pl-4 pr-4 ${
@@ -865,9 +865,9 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                                     )}
                                   </div>
                                 )}
-                              </Listbox.Option>
+                              </ListboxOption>
                             ))}
-                          </Listbox.Options>
+                          </ListboxOptions>
                         </Transition>
                       </div>
                     </div>
@@ -894,7 +894,10 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
 
               {/* Output Format */}
               <div className="mt-4 pt-4">
-                <label className="block text-sm font-medium text-gray-300 mb-3">Output Format</label>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
+                  <FiLogOut className="h-4 w-4 text-purple-400" />
+                  Output Format
+                </label>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <label className={`relative flex cursor-pointer rounded-lg border-2 p-3 transition-all ${
                     outputMode === 'text' 
