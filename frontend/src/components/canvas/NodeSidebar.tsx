@@ -70,7 +70,7 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
   const [isLoadingPrompts, setIsLoadingPrompts] = useState(false);
-  const [inputFormat, setInputFormat] = useState('');
+  const [inputFormat, setInputFormat] = useState('messages[-1]["content"]');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [outputMode, setOutputMode] = useState<'text' | 'structured'>('text');
   const [modelName, setModelName] = useState('');
@@ -80,15 +80,6 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
     description: ''
   }]);
   const [literalInputValue, setLiteralInputValue] = useState('');
-  const [structuredSchema, setStructuredSchema] = useState('');
-  const [structuredFields, setStructuredFields] = useState([{ key: '', type: 'string' }]);
-  const [availableSchemas, setAvailableSchemas] = useState<Array<{id: string, name: string}>>([
-    { id: 'user', name: 'User' },
-    { id: 'product', name: 'Product' },
-    { id: 'order', name: 'Order' },
-    // Add more default schemas as needed
-  ]);
-  const [isSchemaDropdownOpen, setIsSchemaDropdownOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Fetch available tools
@@ -445,11 +436,6 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
     } finally {
       setIsLoadingPrompts(false);
     }
-  };
-
-  const generateExampleOutput = () => {
-    const fields = structuredFields.map((field) => `${field.key}: ${field.type}`);
-    return `{ ${fields.join(', ')} }`;
   };
 
   const generatePydanticModel = () => {
@@ -1083,7 +1069,17 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 )}
               </div>
             </div>
-            <Divider sx={{ my: 0, borderColor: '#374151' }} />
+
+            <div 
+              className="relative bottom-0 left-0 right-0 h-12 pointer-events-none"
+              style={{
+                background: 'linear-gradient(to top, rgba(139, 92, 246, 0.2) 0%, transparent 100%)',
+                filter: 'blur(8px)',
+                transform: 'translateY(50%)',
+                zIndex: 10
+              }}
+            />
+
           </div>
         )}
       </div>
