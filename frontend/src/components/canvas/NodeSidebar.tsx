@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { FiCpu, FiPlus, FiChevronDown, FiTool, FiChevronRight, FiInfo, FiTerminal } from 'react-icons/fi';
 import type { CustomNode } from '../../types';
 import { Divider } from '@mui/material';
+import { Listbox, Transition } from '@headlessui/react'
+import { ChevronUpDownIcon } from '@heroicons/react/20/solid'
+
 
 interface RemoteLLM {
   alias: string;        // Unique identifier for the LLM
@@ -33,6 +36,17 @@ const SectionHeader = ({
   </div>
 );
 
+function getLabel(value: string): string {
+  const options = [
+    { label: 'Last Message Content', value: 'messages[-1]["content"]' },
+    { label: 'All Messages', value: 'messages' },
+    { label: 'Message Type', value: 'message_type' },
+    { label: 'Next Route', value: 'next' }
+  ]
+  return options.find(opt => opt.value === value)?.label || value
+}
+
+
 const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProviderOpen, setIsProviderOpen] = useState(false);
@@ -56,6 +70,8 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   const [systemPrompt, setSystemPrompt] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
   const [isLoadingPrompts, setIsLoadingPrompts] = useState(false);
+  const [inputFormat, setInputFormat] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [outputMode, setOutputMode] = useState<'text' | 'structured'>('text');
   const [modelName, setModelName] = useState('');
   const [literalFields, setLiteralFields] = useState([{ 
@@ -674,8 +690,11 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
             />
               <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium text-gray-300">Tool</label>
-                <button
+              <label className="block text-sm font-medium text-gray-300 flex items-center">
+                <FiTool className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                Tool
+              </label>
+              <button
                   type="button"
                   onClick={handleAddTool}
                   className="text-xs text-blue-400 hover:text-blue-300 flex items-center"
@@ -735,7 +754,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
               </div>
             </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">System Prompt</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5 mt-4">System Prompt</label>
                 <textarea
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
@@ -762,8 +781,120 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 </div>
               )}
               
-              <div className="mt-4 pt-4 border-t border-gray-700">
-                <label className="block text-sm font-medium text-gray-300 mb-3">Output Mode</label>
+              {/* Input Format */}
+
+              <div className="mt-4 pt-4">
+                <Listbox
+                  value={inputFormat}
+                  onChange={(value) => {
+                    if (value === 'custom') {
+                      setShowCustomInput(true);
+                      setInputFormat('');
+                    } else {
+                      setShowCustomInput(false);
+                      setInputFormat(value);
+                    }
+                  }}
+                >
+                  {({ open }) => (
+                    <div>
+                      <Listbox.Label className="block text-sm font-medium text-gray-300 mb-2">
+                        Input Format
+                      </Listbox.Label>
+                      <div className="relative">
+                        <Listbox.Button className="relative w-full cursor-default rounded-lg bg-gray-700 py-2 pl-3 pr-10 text-left shadow-md focus:outline-none focus-visible:border-purple-500 focus-visible:ring-2 focus-visible:ring-white/75 focus-visible:ring-offset-2 focus-visible:ring-offset-purple-300 sm:text-sm border border-gray-600">
+                          <span className="block truncate">
+                            {showCustomInput ? (
+                              <span className="text-gray-300">Custom...</span>
+                            ) : (
+                              <div>
+                                <div className="font-medium text-white">
+                                  {getLabel(inputFormat)}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {inputFormat}
+                                </div>
+                              </div>
+                            )}
+                          </span>
+                          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                            <ChevronUpDownIcon
+                              className="h-5 w-5 text-gray-400"
+                              aria-hidden="true"
+                            />
+                          </span>
+                        </Listbox.Button>
+
+                        <Transition
+                          show={open}
+                          as="div"
+                          leave="transition ease-in duration-100"
+                          leaveFrom="opacity-100"
+                          leaveTo="opacity-0"
+                          className="relative z-10"
+                        >
+                          <Listbox.Options 
+                            static
+                            className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-700 py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm border border-gray-600"
+                          >
+                            {[
+                              { label: 'Last Message Content', value: 'messages[-1]["content"]' },
+                              { label: 'All Messages', value: 'messages' },
+                              { label: 'Message Type', value: 'message_type' },
+                              { label: 'Next Route', value: 'next' },
+                              { label: 'Custom...', value: 'custom' }
+                            ].map((option) => (
+                              <Listbox.Option
+                                key={option.value}
+                                className={({ active }) =>
+                                  `relative cursor-default select-none py-2 pl-4 pr-4 ${
+                                    active ? 'bg-gray-600 text-white' : 'text-gray-300'
+                                  }`
+                                }
+                                value={option.value}
+                              >
+                                {({ selected }) => (
+                                  <div>
+                                    <div className={`font-medium ${selected ? 'text-white' : 'text-gray-200'}`}>
+                                      {option.label}
+                                    </div>
+                                    {option.value !== 'custom' && (
+                                      <div className="text-xs text-gray-400">
+                                        {option.value}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </Listbox.Option>
+                            ))}
+                          </Listbox.Options>
+                        </Transition>
+                      </div>
+                    </div>
+                  )}
+                </Listbox>
+
+                {showCustomInput && (
+                  <div className="mt-3">
+                    <input
+                      type="text"
+                      value={inputFormat}
+                      onChange={(e) => setInputFormat(e.target.value)}
+                      placeholder='e.g., messages[-1]["content"]'
+                      className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
+
+                <p className="mt-2 text-xs text-gray-400">
+                  Which field of the <strong>State</strong> should be passed as an input <strong>query</strong> to the Tool or <strong>user message</strong> to the LLM.
+                </p>
+              </div>
+
+
+              {/* Output Format */}
+              <div className="mt-4 pt-4">
+                <label className="block text-sm font-medium text-gray-300 mb-3">Output Format</label>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <label className={`relative flex cursor-pointer rounded-lg border-2 p-3 transition-all ${
                     outputMode === 'text' 
