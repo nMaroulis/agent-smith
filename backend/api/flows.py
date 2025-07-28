@@ -55,7 +55,11 @@ def delete_flow(id: int, db: Session = Depends(get_db)):
 def generate_flow_code(flow: FlowPayload):
     print(flow)
     codegen = CodeGenerator()
-    code = codegen.generate(flow)
+    try:
+        code = codegen.generate(flow)
+    except Exception as e:
+        print(f"Code generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"{e}")
     return {"code": code}
 
 

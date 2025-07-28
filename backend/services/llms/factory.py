@@ -20,12 +20,10 @@ LOCAL_PROVIDERS: Dict[str, Callable[[str], object]] = {
 
 def get_llm_client_by_alias(alias: str, db: Session, is_remote: bool):
 
-    print(f"AAAAAAAAAAAAAAA: {alias}")
     try:
         if is_remote:
             llm = get_remote_llm_by_alias(db, alias=alias)
             api_key = get_api_key_by_alias(db, alias=alias)
-            print(f"BBBBBBBBBBBBBBBBB: {llm}")
             if llm.provider not in REMOTE_PROVIDERS:
                 raise ValueError(f"Unknown Remote LLM provider: {llm.provider}")
 
