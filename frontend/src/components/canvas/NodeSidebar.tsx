@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiCpu, FiPlus, FiChevronDown, FiTool, FiChevronRight, FiInfo, FiTerminal, FiLogIn, FiLogOut } from 'react-icons/fi';
 import type { CustomNode } from '../../types';
-import { Divider } from '@mui/material';
 import { Label, ListboxOption, Listbox, ListboxButton, ListboxOptions, Transition } from '@headlessui/react'
 import { ChevronUpDownIcon } from '@heroicons/react/20/solid'
 
@@ -81,6 +80,15 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
   }]);
   const [literalInputValue, setLiteralInputValue] = useState('');
   const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Track previous node values to prevent unnecessary updates
+  const prevNodeRef = useRef<CustomNode | null>(null);
+  const prevValuesRef = useRef({
+    systemPrompt: '',
+    userPrompt: '',
+    inputFormat: 'messages[-1]["content"]',
+    outputMode: 'text' as const
+  });
 
   // Fetch available tools
   useEffect(() => {
@@ -204,6 +212,80 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
 
     fetchModels();
   }, [selectedProvider, llmType]);
+
+  // Initialize form fields when node changes
+  useEffect(() => {
+    if (node && node !== prevNodeRef.current) {
+      // Only update if node has changed
+      prevNodeRef.current = node;
+      
+      const nodeData = node.data.node || {};
+      
+      // Only update state if values are different to prevent unnecessary re-renders
+      if (nodeData.systemPrompt !== prevValuesRef.current.systemPrompt) {
+        setSystemPrompt(nodeData.systemPrompt || '');
+      }
+      if (nodeData.userPrompt !== prevValuesRef.current.userPrompt) {
+        setUserPrompt(nodeData.userPrompt || '');
+      }
+      if (nodeData.inputFormat !== prevValuesRef.current.inputFormat) {
+        setInputFormat(nodeData.inputFormat || 'messages[-1]["content"]');
+      }
+      if (nodeData.outputMode !== prevValuesRef.current.outputMode) {
+        setOutputMode(nodeData.outputMode || 'text');
+      }
+      
+      setShowCustomInput(!!nodeData.inputFormat && ![
+        'messages[-1]["content"]',
+        'messages',
+        'message_type',
+        'next'
+      ].includes(nodeData.inputFormat));
+      
+      // Update the ref with current values
+      prevValuesRef.current = {
+        systemPrompt: nodeData.systemPrompt || '',
+        userPrompt: nodeData.userPrompt || '',
+        inputFormat: nodeData.inputFormat || 'messages[-1]["content"]',
+        outputMode: nodeData.outputMode || 'text'
+      };
+    }
+  }, [node]);
+
+  // Update node data when any field changes
+  useEffect(() => {
+    if (!node) return;
+    
+    const currentValues = {
+      systemPrompt,
+      userPrompt,
+      inputFormat,
+      outputMode
+    };
+    
+    // Only update if values have actually changed
+    const hasChanges = Object.entries(currentValues).some(
+      ([key, value]) => prevValuesRef.current[key as keyof typeof currentValues] !== value
+    );
+    
+    if (hasChanges) {
+      const updatedNode = {
+        ...node,
+        data: {
+          ...node.data,
+          node: {
+            ...node.data.node,
+            ...currentValues
+          }
+        }
+      };
+      
+      // Update the ref with current values
+      prevValuesRef.current = currentValues;
+      
+      onUpdate(updatedNode);
+    }
+  }, [systemPrompt, userPrompt, inputFormat, outputMode, node, onUpdate]);
 
   const handleChange = (field: string, value: any) => {
     if (!node) return;
@@ -740,7 +822,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
               </div>
             </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-1.5 mt-4">System Prompt</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">System Prompt</label>
                 <textarea
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
@@ -1000,7 +1082,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                                   />
                                   <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
                                     <svg className="h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h.01a1 1 0 100-2H9z" clipRule="evenodd" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h.01a1 1 0 100-2H9z" clipRule="evenodd" />
                                     </svg>
                                   </div>
                                 </div>
@@ -1079,7 +1161,6 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 zIndex: 10
               }}
             />
-
           </div>
         )}
       </div>

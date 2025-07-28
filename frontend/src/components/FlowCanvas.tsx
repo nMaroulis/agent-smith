@@ -174,6 +174,13 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
       data: {
         label: type === 'router' ? 'Router' : type.charAt(0).toUpperCase() + type.slice(1),
         type,
+        // Initialize node object with default values
+        node: {
+          inputFormat: 'messages[-1]["content"]',
+          outputMode: 'text' as const,
+          systemPrompt: '',
+          userPrompt: ''
+        }
       },
     };
 
@@ -186,9 +193,8 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
             ...baseNode.data,
             type: 'node',
             node: {
-              provider: '',
-              providerName: '',
-              model: '',
+              ...baseNode.data.node,
+              // Keep any existing node properties
             },
             tool: null,
           },
@@ -200,6 +206,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           data: {
             ...baseNode.data,
             type: 'router',
+            node: {
+              ...baseNode.data.node,
+              // Router-specific node properties can go here
+            },
             tool: null
           },
         } as unknown as CustomNode;
@@ -213,6 +223,10 @@ export const FlowCanvas: React.FC<FlowCanvasProps> = ({
           data: {
             ...baseNode.data,
             type: type as NodeType,
+            node: {
+              ...baseNode.data.node,
+              // Node type-specific properties can go here
+            },
             tool: null,
           },
         } as unknown as CustomNode;

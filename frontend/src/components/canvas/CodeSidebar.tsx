@@ -25,14 +25,10 @@ const CodeSidebar = ({ flowId }: CodeSidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   
-  // Toggle sidebar collapsed state
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
   
-  // Get nodes, edges, and state from the flow store
-  const { nodes, edges, state: flowState } = useFlowStore();
-
   const startResizing = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
