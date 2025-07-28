@@ -85,52 +85,59 @@ interface NodeDetailsProps {
     alias?: string;
     provider?: string;
     model?: string;
-    type?: 'api' | 'local';
+    type?: 'remote' | 'local';
   };
 }
 
 const NodeDetails = ({ node, tool, llm }: NodeDetailsProps) => {
   if (!node) return null;
   
-  // Use the passed llm prop or fall back to node.llm
-  const llmData = llm || node.llm || {};
-  
   return (
     <div className="mt-2 pt-2 border-t border-white/10">
       {/* Display LLM info if available */}
-      {llmData.provider && (
-        <div className="flex items-center gap-1 text-xs">
-          <span className="text-white/70 font-medium">{llmData.provider}</span>
-          {llmData.model && llmData.model !== 'Select a model' ? (
-            <span className="text-white/60">• {llmData.model}</span>
-          ) : (
-            <span className="text-white/40 italic">• No LLM model selected</span>
-          )}
-          {llmData.type && (
-            <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-white/10 rounded-full">
-              {llmData.type.toUpperCase()}
-            </span>
-          )}
+      {llm?.provider && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-blue-300 truncate">
+                  {llm.provider}
+                </span>
+                {llm.type && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-900/50 text-blue-200 rounded-full whitespace-nowrap">
+                    {llm.type.toUpperCase()}
+                  </span>
+                )}
+              </div>
+              {llm?.model && llm.model !== 'Select a model' ? (
+                <p className="text-xs text-white/80 truncate" title={llm.model}>
+                  {llm.model}
+                </p>
+              ) : (
+                <p className="text-xs text-white/40 italic">No model selected</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
+      
       {/* Display tool info if available */}
       {tool?.name && (
-        <div className="text-xs text-white/80 mt-1 pt-1 border-t border-white/5">
-          {tool.name}
+        <div className="mt-2 pt-2 border-t border-white/5">
+          <div className="flex items-center gap-2">
+            <div className="flex-shrink-0 w-2 h-2 rounded-full bg-purple-400" />
+            <div className="text-xs font-medium text-purple-300 truncate" title={tool.name}>
+              {tool.name}
+            </div>
+          </div>
+          {tool.description && (
+            <p className="mt-1 text-xs text-white/60 line-clamp-2">
+              {tool.description}
+            </p>
+          )}
         </div>
       )}
-    </div>
-  );
-};
-
-const ToolDetails = ({ tool, hasNode }: { tool?: any; hasNode: boolean }) => {
-  if (hasNode || !tool) return null;
-  
-  return (
-    <div className="mt-2 pt-2 border-t border-white/10">
-      <div className="text-xs font-medium text-white/80">
-        {tool.name}
-      </div>
     </div>
   );
 };
@@ -144,7 +151,9 @@ const areNodeDataEqual = (a: any, b: any) => {
     a.label === b.label &&
     a.description === b.description &&
     a.type === b.type &&
-    (!a.node && !b.node || (a.node?.model === b.node?.model)) &&
+    (!a.llm && !b.llm || (a.llm?.model === b.llm?.model)) &&
+    a.llm?.type === b.llm?.type &&
+    a.llm?.alias === b.llm?.alias &&
     (!a.tool && !b.tool || (a.tool?.name === b.tool?.name))
   );
 };
@@ -169,7 +178,7 @@ const NodeComponent = memo(({
         transform: selected ? 'scale(105%)' : 'none',
         transition: dragging ? 'none' : 'transform 100ms ease-out',
         willChange: dragging ? 'transform' : 'auto',
-        opacity: dragging ? 0.9 : 1
+        opacity: dragging ? 0.8 : 1
       }}
     >
       {/* Left handle (target) */}
@@ -201,7 +210,6 @@ const NodeComponent = memo(({
           tool={data.tool} 
           llm={data.llm} 
         />
-        <ToolDetails tool={data.tool} hasNode={!!data.llm} />
       </div>
       
       {/* Right handle (source) */}
