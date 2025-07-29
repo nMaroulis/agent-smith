@@ -1149,6 +1149,27 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                     </div>
                   </div>
                 )}
+                {outputMode === 'text' && (
+                  <div className="space-y-4">
+
+                      <div className="mt-4 p-3 bg-gradient-to-r from-purple-900/20 to-purple-900/10 rounded-lg border border-purple-800/40">
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0 pt-0.5">
+                            <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div className="ml-2">
+                            <p className="text-xs text-purple-100 font-medium">About Text Output</p>
+                            <p className="mt-1 text-xs text-purple-200/80">
+                              <span className="font-semibold">Test output</span> means the node expects the LLM to return just a string, typically from the assistants message, without enforcing any schema or structure. In the code this is <span className="font-semibold text-purple-100">{JSON.stringify({ messages: [{ role: "assistant", content: "response.content" }] })}</span>.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+                )}
+                
               </div>
             </div>
 

@@ -2,24 +2,6 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any, Literal
 from schemas.state import State
 
-
-class FlowCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    graph: dict
-    state: State
-
-class FlowOut(BaseModel):
-    id: int
-    name: str
-    description: Optional[str] = None
-    graph: dict
-    state: State
-
-    class Config:
-        from_attributes = True
-
-
 # ----- Basic Substructures for parsing -----
 
 class Position(BaseModel):
@@ -43,6 +25,7 @@ class ToolConfig(BaseModel):
 
 class NodeData(BaseModel):
     label: str
+    description: Optional[str] = ""
     type: str
     tool: Optional[ToolConfig] = None
     node: Optional[Dict[str, Any]] = {}
@@ -80,3 +63,23 @@ class FlowPayload(BaseModel):
     description: Optional[str] = ""
     graph: Graph
     state: Optional[State] = State()
+
+
+# ----- CRUD Operations -----
+
+class FlowCreate(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    graph: Graph
+    state: Optional[State] = State()
+
+
+class FlowOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    graph: Graph
+    state: Optional[State] = State()
+
+    class Config:
+        from_attributes = True

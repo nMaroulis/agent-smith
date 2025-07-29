@@ -47,7 +47,15 @@ export const getFlow = async (id: number): Promise<Flow> => {
 export const createFlow = async (flowData: CreateFlowData): Promise<Flow> => {
   try {
     console.log('Creating flow with data:', JSON.stringify(flowData, null, 2));
-    const response = await axios.post(`${API_BASE_URL}/flows/`, flowData);
+    const response = await axios.post(
+      `${API_BASE_URL}/flows/`,
+      flowData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
     console.log('Flow created successfully:', response.data);
     return response.data;
   } catch (error) {
@@ -57,7 +65,8 @@ export const createFlow = async (flowData: CreateFlowData): Promise<Flow> => {
         status: error.response?.status,
         statusText: error.response?.statusText,
         responseData: error.response?.data,
-        requestData: error.config?.data
+        requestData: error.config?.data,
+        config: error.config
       });
     } else {
       console.error('Error creating flow:', error);

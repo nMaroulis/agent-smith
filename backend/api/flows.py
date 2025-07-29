@@ -19,6 +19,12 @@ router = APIRouter(
 
 @router.post("/", description="Add a new flow")
 def add_flow(flow: FlowCreate, db: Session = Depends(get_db)):
+
+    if hasattr(flow.graph, 'dict'):
+        flow.graph = flow.graph.dict()
+    if hasattr(flow.state, 'dict'):
+        flow.state = flow.state.dict()
+
     return create_flow(db, name=flow.name, description=flow.description, graph=flow.graph, state=flow.state)
 
 

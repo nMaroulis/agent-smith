@@ -94,10 +94,13 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
       setIsLoading(true);
       
       // Create a clean copy of the graph with the state
+      const graph_data = {...serializedGraph}
+
       const flowData = {
-        ...serializedGraph,
         name: flowName.trim(),
-        description: flowDescription.trim()
+        description: flowDescription.trim(),
+        graph: {nodes: graph_data.nodes, edges: graph_data.edges},
+        state: {fields: graph_data.state},
       };
 
       if (selectedFlow) {
