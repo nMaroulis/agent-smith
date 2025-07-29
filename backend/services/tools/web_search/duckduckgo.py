@@ -16,7 +16,7 @@ class DuckDuckGoWebSearchTool(BaseWebSearchTool):
 
     def to_node(self) -> dict:
         return {
-            "name": self.tool.name,
+            "name": self.sanitize_to_func_name(self.tool.name),
             "type": "web_search",
             "library": "duckduckgo",
             "max_results": self.tool.config.get("max_results"),

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from schemas.tools import ToolCreate
 import os
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from utils.naming_utils import sanitize_to_func_name
 
 
 class BaseTool(ABC):
@@ -40,6 +41,13 @@ class BaseTool(ABC):
     def get_default_agent_prompts(self) -> dict:
         """Returns the default agent prompts for the tool."""
         return {"system_prompt": "", "user_prompt": ""}
+
+
+    @staticmethod
+    def sanitize_to_func_name(name: str) -> str:
+        """Convert an arbitrary string into a valid Python function name."""
+        return sanitize_to_func_name(name)
+
 
 
 class BaseRAGTool(BaseTool):

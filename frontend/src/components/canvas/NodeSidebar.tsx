@@ -215,44 +215,39 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
 
   // Initialize form fields when node changes
   useEffect(() => {
-    if (node && node !== prevNodeRef.current) {
-      // Only update if node has changed
-      prevNodeRef.current = node;
-      
-      const nodeData = node.data.node || {};
-      
-      // Only update state if values are different to prevent unnecessary re-renders
-      if (nodeData.systemPrompt !== prevValuesRef.current.systemPrompt) {
-        setSystemPrompt(nodeData.systemPrompt || '');
-      }
-      if (nodeData.userPrompt !== prevValuesRef.current.userPrompt) {
-        setUserPrompt(nodeData.userPrompt || '');
-      }
-      if (nodeData.inputFormat !== prevValuesRef.current.inputFormat) {
-        setInputFormat(nodeData.inputFormat || 'messages[-1]["content"]');
-      }
-      if (nodeData.outputMode !== prevValuesRef.current.outputMode) {
-        setOutputMode(nodeData.outputMode || 'text');
-      }
-      
-      setShowCustomInput(!!nodeData.inputFormat && ![
-        'messages[-1]["content"]',
-        'messages',
-        'message_type',
-        'next'
-      ].includes(nodeData.inputFormat));
-      
-      // Update the ref with current values
-      prevValuesRef.current = {
-        systemPrompt: nodeData.systemPrompt || '',
-        userPrompt: nodeData.userPrompt || '',
-        inputFormat: nodeData.inputFormat || 'messages[-1]["content"]',
-        outputMode: nodeData.outputMode || 'text'
-      };
-    }
-  }, [node]);
+    if (!node) return;
+    
+    // Only update if node ID has changed
+    if (node.id === prevNodeRef.current?.id) return;
+    
+    prevNodeRef.current = node;
+    
+    const nodeData = node.data.node || {};
+    const newValues = {
+      systemPrompt: nodeData.systemPrompt || '',
+      userPrompt: nodeData.userPrompt || '',
+      inputFormat: nodeData.inputFormat || 'messages[-1]["content"]',
+      outputMode: nodeData.outputMode || 'text'
+    };
+    
+    // Batch state updates to prevent multiple re-renders
+    setSystemPrompt(newValues.systemPrompt);
+    setUserPrompt(newValues.userPrompt);
+    setInputFormat(newValues.inputFormat);
+    setOutputMode(newValues.outputMode);
+    
+    setShowCustomInput(!!nodeData.inputFormat && ![
+      'messages[-1]["content"]',
+      'messages',
+      'message_type',
+      'next'
+    ].includes(nodeData.inputFormat));
+    
+    // Update the ref with current values
+    prevValuesRef.current = newValues;
+  }, [node?.id]); // Only depend on node.id instead of the whole node
 
-  // Update node data when any field changes
+  // Update node data when any field changes - debounced
   useEffect(() => {
     if (!node) return;
     
@@ -280,10 +275,15 @@ const NodeSidebar = ({ node, onUpdate }: NodeSidebarProps) => {
         }
       };
       
-      // Update the ref with current values
+      // Update the ref before calling onUpdate to prevent loops
       prevValuesRef.current = currentValues;
       
-      onUpdate(updatedNode);
+      // Use setTimeout to break the update cycle
+      const timer = setTimeout(() => {
+        onUpdate(updatedNode);
+      }, 0);
+      
+      return () => clearTimeout(timer);
     }
   }, [systemPrompt, userPrompt, inputFormat, outputMode, node, onUpdate]);
 
@@ -740,7 +740,7 @@ class ${modelName || 'MessageClassifier'}(BaseModel):
                 className="mt-3 w-full flex items-center justify-between px-4 py-2 bg-gray-800/50 border border-dashed border-gray-600 rounded-lg text-gray-400 cursor-not-allowed transition-all hover:border-purple-400/30 hover:text-gray-300 group"
               >
                 <div className="flex items-center">
-                  <svg className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   <span className="text-sm font-medium">Override LLM Parameters</span>
