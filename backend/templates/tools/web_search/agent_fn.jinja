@@ -1,0 +1,28 @@
+def {{ agent_label }}(state: State):
+    """
+    Agent Description: {{ agent_description }}
+    """
+
+    query = {{ agent_input }}
+    results = {{ tool_name }}(query, 3)
+
+    if not results:
+        return {
+            "messages": [{"role": "assistant", "content": "I couldn't find any relevant information online right now. Try rephrasing or checking back later."}]
+        }
+
+    context = "\n\n".join(results)
+
+    messages = [
+        {
+            "role": "system",
+            "content": {{system_prompt}}
+        },
+        {
+            "role": "user",
+            "content": {{user_prompt}}
+        }
+    ]
+
+    response = llm.invoke(messages)
+    return {{ agent_output }}

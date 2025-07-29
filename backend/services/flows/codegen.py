@@ -25,39 +25,35 @@ class CodeGenerator:
     def generate(self, flow: FlowPayload) -> str:
         template = self.env.get_template(self.template_name)
 
-        llms = []
-        tools = []
+        llms = {}
+        tools = {}
         nodes = []
 
-        llms_code = ""
-        tools_code = ""
         for node in flow.graph.nodes:
 
             # LLMs
-            if node.data.llm is not None and node.data.llm.alias not in llms:
+            if node.data.llm is not None and node.data.llm.alias not in llms.keys():
                 is_remote = node.data.llm.type == "remote"
                 llm = get_llm_client_by_alias(node.data.llm.alias, db=self.db, is_remote=is_remote)
-                llms_code += llm.to_code(node.data.llm.model) + "\n"
-                llms.append(node.data.llm.alias)
-            if len(llms_code) == 0: llms_code += "pass"
+                llms[node.data.llm.alias] = llm.to_code(node.data.llm.model)
 
+            if len(llms) == 0: llms["default"] = "pass"
+    
             # Tools
-            if node.data.tool is not None and node.data.tool.name not in tools:
+            if node.data.tool is not None and node.data.tool.name not in tools.keys():
                 # fetch tool and get code
                 tool = get_tool_by_name(self.db, node.data.tool.name)
-                tools_code += tool.to_code() + "\n"
-                tools.append(node.data.tool.name)
-            if len(tools_code) == 0: tools_code += "pass"
+                tools[node.data.tool.name] = tool.to_code()
+            if len(tools) == 0: tools["default"] = "pass"
 
-            # Node functions and code
+            # Agent Node functions and code
             if node.type not in ["start", "end"]:
-                nodes.append(
-                    {
-                        "id": node.id,
-                        "function_name": self.sanitize_label(node.data.label),
-                        "type": node.type
-                    }
-                )
+                if node.data.tool is None:
+                    nodes.append("pass")
+                else:
+                    # TODO - renaming here and in the frontend, and schema for node config
+                    # TODO - fix text output code in plain text mode
+                    nodes.append(tool.get_agent_fn(agent_label=node.data.label, agent_description=node.data.description, system_prompt=f"""\"\"\"{node.data.node["systemPrompt"]}\"\"\"""", user_prompt=f"""f\"\"\"{node.data.node["userPrompt"]}\"\"\"""", tool_name=node.data.tool.name, agent_input=node.data.node["inputFormat"], agent_output=node.data.node["outputMode"]))
 
         # Entry & finish points
         # entry_point = next((n.id for n in flow.graph.nodes if n.type == "start"), "start")
@@ -82,9 +78,7 @@ class CodeGenerator:
 
         return template.render(
             nodes=nodes,
-            # entry_point=entry_point,
-            # finish_point=finish_point,
             edges=edges,
-            llms_code=llms_code,
-            tools_code=tools_code,
+            llms=list(llms.values()),
+            tools=list(tools.values()),
         )

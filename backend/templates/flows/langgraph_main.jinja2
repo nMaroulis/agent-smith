@@ -6,10 +6,14 @@ import os
 
 
 # === Import LLMs ===
-{{llms_code}}
+{% for llm in llms %}
+{{ llm }}
+{% endfor %}
 
 # === Import Tools ===
-{{tools_code}}
+{% for tool in tools %}
+{{ tool }}
+{% endfor %}
 
 # === Agent State ===
 class State(BaseModel):
@@ -23,10 +27,7 @@ class State(BaseModel):
 
 # === Node function stubs ===
 {% for node in nodes %}
-{% if node.type not in ["start", "end"]%}
-def {{ node.function_name }}(state):
-    pass
-{% endif%}
+{{ node }}
 {% endfor %}
 
 graph = StateGraph()
