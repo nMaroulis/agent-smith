@@ -15,6 +15,11 @@ Design intelligent workflows using a drag-and-drop interface, describe flows in 
 
 ---
 
+## 🖥️ AgentSmith Features
+
+![Demo](https://raw.githubusercontent.com/nMaroulis/agent-smith/refs/heads/main/assets/demo.gif)
+
+
 ## ✨ Features
 
 - 🧩 **Drag & Drop Agent Builder**  
