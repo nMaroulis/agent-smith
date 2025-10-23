@@ -108,3 +108,25 @@ export const deleteFlow = async (id: number): Promise<Flow> => {
     throw error;
   }
 };
+
+// Run a flow
+export const runFlow = async (id: number, inputData?: object): Promise<any> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/flows/${id}/run`, inputData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error running flow ${id}:`, error);
+    throw error;
+  }
+};
+
+// Test a flow
+export const testFlow = async (id: number, inputData?: object): Promise<any> => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/flows/${id}/test`, inputData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error testing flow ${id}:`, error);
+    throw error;
+  }
+};

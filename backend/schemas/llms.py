@@ -16,6 +16,7 @@ class RemoteProvider(str, Enum):
 
 class LocalProvider(str, Enum):
     LLAMA_CPP = "llama-cpp"
+    LM_STUDIO = "lm-studio"
 
 
 class BaseLLM(BaseModel):

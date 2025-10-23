@@ -80,7 +80,14 @@ class BaseWebSearchTool(BaseTool):
             "user_prompt": "{context}\n\nUser's question:\n{query}"}
 
     def get_agent_fn(self, agent_label: str, agent_description: str, system_prompt: str, user_prompt: str, tool_name: str, agent_input: str, agent_output: str) -> str:
-        return self.render_template("tools/web_search/agent_fn.jinja", agent_label=self.sanitize_to_func_name(agent_label), agent_description=agent_description, system_prompt=system_prompt, user_prompt=user_prompt, tool_name=self.sanitize_to_func_name(tool_name), agent_input=agent_input, agent_output=agent_output)
+        print(f"DEBUG: Rendering template for {tool_name} with user_prompt={user_prompt}")
+        try:
+            result = self.render_template("tools/web_search/agent_fn.jinja", agent_label=self.sanitize_to_func_name(agent_label), agent_description=agent_description, system_prompt=system_prompt, user_prompt=user_prompt, tool_name=self.sanitize_to_func_name(tool_name), agent_input=agent_input, agent_output=agent_output)
+            print(f"DEBUG: Template render successful")
+            return result
+        except Exception as e:
+            print(f"DEBUG: Template render failed: {e}")
+            raise
 
 
 class BaseAPICallTool(BaseTool):

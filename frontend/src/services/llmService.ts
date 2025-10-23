@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
-export type APIProvider = 'openai' | 'anthropic' | 'huggingface' | 'llama-cpp';
+export type APIProvider = 'openai' | 'anthropic' | 'huggingface' | 'llama-cpp' | 'lm-studio';
 
 export interface LLM {
   id?: string; // Optional, only used for internal frontend tracking

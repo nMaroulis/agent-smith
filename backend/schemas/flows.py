@@ -36,8 +36,8 @@ class GraphNode(BaseModel):
     type: str
     position: Position
     data: NodeData
-    width: Optional[float]
-    height: Optional[float]
+    width: Optional[float] = None
+    height: Optional[float] = None
     selected: Optional[bool] = False
 
 class GraphEdge(BaseModel):
@@ -47,7 +47,7 @@ class GraphEdge(BaseModel):
     target: str
     sourceHandle: Optional[str]
     targetHandle: Optional[str]
-    animated: Optional[bool]
+    animated: Optional[bool] = True
     style: Optional[Dict[str, Any]]
     markerEnd: Optional[MarkerEnd]
     selected: Optional[bool] = False

@@ -1,6 +1,7 @@
 from services.llms.providers.anthropic import AnthropicAPILLM
 from services.llms.providers.openai import OpenAIAPILLM
 from services.llms.local.llama_cpp import LlamaCppLLM
+from services.llms.local.lm_studio import LMStudioLLM
 from services.llms.providers.hugging_face import HuggingFaceAPILLM
 from typing import Callable, Dict
 from crud.llms import get_api_key_by_alias, get_remote_llm_by_alias, get_local_llm_by_alias
@@ -15,6 +16,7 @@ REMOTE_PROVIDERS: Dict[str, Callable[[str], object]] = {
 
 LOCAL_PROVIDERS: Dict[str, Callable[[str], object]] = {
     "llama-cpp": lambda path: LlamaCppLLM(path),
+    "lm-studio": lambda path: LMStudioLLM(),
 }
 
 
@@ -52,5 +54,7 @@ def get_llm_client_by_provider(provider: str, **kwargs):
         return HuggingFaceAPILLM()
     elif provider == "llama-cpp":
         return LlamaCppLLM()
+    elif provider == "lm-studio":
+        return LMStudioLLM()
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")

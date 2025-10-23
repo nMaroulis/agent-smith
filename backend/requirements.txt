@@ -1,4 +1,5 @@
 cryptography
+duckduckgo-search
 fastapi
 huggingface-hub
 jinja2

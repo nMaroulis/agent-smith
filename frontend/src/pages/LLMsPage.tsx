@@ -44,7 +44,8 @@ const LLMsPage = () => {
       'openai': 'OpenAI',
       'anthropic': 'Anthropic',
       'huggingface': 'Hugging Face',
-      'llama-cpp': 'LLaMA.cpp'
+      'llama-cpp': 'LLaMA.cpp',
+      'lm-studio': 'LM Studio'
     };
     return names[provider] || provider;
   };
@@ -98,8 +99,8 @@ const LLMsPage = () => {
           model: selectedModel || undefined
         }),
         ...(llmType === 'local' && { 
-          path: selectedModel,
-          model: selectedModel.split('/').pop()
+          path: localProvider === 'lm-studio' ? 'http://127.0.0.1:1234' : selectedModel,
+          model: localProvider === 'lm-studio' ? selectedModel : selectedModel.split('/').pop()
         })
       };
       
@@ -181,6 +182,8 @@ const LLMsPage = () => {
     setIsEditing(null);
     setValidationStatus({valid: null, message: ''});
     setSelectedLLM(null);
+    setAvailableModels([]);
+    setAvailableEmbeddings([]);
   };
 
   const validateApiKey = async () => {
@@ -315,7 +318,9 @@ const LLMsPage = () => {
                 </span>
                 <span className="text-gray-400">•</span>
                 <span className="text-gray-300">
-                  {selectedLLM?.type === 'api' && selectedLLM?.provider ? getProviderName(selectedLLM.provider) : 'LLaMA.cpp'}
+                  {selectedLLM?.type === 'api' && selectedLLM?.provider 
+                    ? getProviderName(selectedLLM.provider) 
+                    : (selectedLLM?.provider ? getProviderName(selectedLLM.provider) : 'LLaMA.cpp')}
                 </span>
               </div>
             </div>
@@ -500,7 +505,7 @@ const LLMsPage = () => {
                   </span>
                   <span className="text-gray-400">•</span>
                   <span className="text-gray-300 truncate">
-                    {llm.type === 'api' && llm.provider ? getProviderName(llm.provider) : 'LLaMA.cpp'}
+                    {llm.type === 'api' && llm.provider ? getProviderName(llm.provider) : (llm.provider ? getProviderName(llm.provider) : 'LLaMA.cpp')}
                   </span>
                   {llm.type === 'local' && llm.path && (
                     <>
@@ -746,56 +751,141 @@ const LLMsPage = () => {
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Provider
                       </label>
-                      <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm">
-                      <div 
-                        className="relative px-5 py-2.5 text-sm font-medium text-white rounded-lg"
-                        style={{
-                          minWidth: '120px',
-                          backdropFilter: 'blur(4px)',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        LLaMA.cpp
-                      </div>
-                    </div>
+                      {isEditing ? (
+                        <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm">
+                          <div 
+                            className="relative px-5 py-2.5 text-sm font-medium text-white rounded-lg"
+                            style={{
+                              minWidth: '120px',
+                              backdropFilter: 'blur(4px)',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            {localProvider === 'llama-cpp' ? 'LLaMA.cpp' : 'LM Studio'}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="inline-flex rounded-xl bg-gray-800 p-1 shadow-sm" role="group">
+                          {['llama-cpp', 'lm-studio'].map((p) => (
+                            <button
+                              key={p}
+                              type="button"
+                              onClick={() => setLocalProvider(p as APIProvider)}
+                              className={`relative px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
+                                localProvider === p
+                                  ? 'bg-gradient-to-br from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/20'
+                                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                              } ${p === 'llama-cpp' ? 'rounded-l-lg' : ''} ${
+                                p === 'lm-studio' ? 'rounded-r-lg' : ''
+                              }`}
+                              style={{
+                                minWidth: '120px',
+                                backdropFilter: 'blur(4px)'
+                              }}
+                            >
+                              {p === 'llama-cpp' ? 'LLaMA.cpp' : 'LM Studio'}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Model Path
+                        {localProvider === 'lm-studio' ? 'Connection Info' : 'Model Path'}
                       </label>
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          value={selectedModel}
-                          onChange={(e) => setSelectedModel(e.target.value)}
-                          placeholder="Enter path to model directory"
-                          className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const response = await fetch(
-                                `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/local/llama-cpp/recommended-path`
-                              );
-                              const data = await response.json();
-                              if (data.path) {
-                                setSelectedModel(data.path);
+                      {localProvider === 'lm-studio' ? (
+                        <div>
+                          <div className="bg-gray-700/50 rounded-lg p-3 mb-3">
+                            <p className="text-sm text-gray-300">LM Studio will connect to: <code className="bg-gray-800 px-2 py-1 rounded">http://127.0.0.1:1234</code></p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(
+                                  `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/local/provider/lm-studio/models`
+                                );
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  setAvailableModels(data.models || []);
+                                  if (data.models && data.models.length > 0) {
+                                    setSelectedModel(data.models[0]);
+                                  }
+                                } else {
+                                  setError('Failed to connect to LM Studio. Make sure LM Studio is running on http://127.0.0.1:1234');
+                                }
+                              } catch (err) {
+                                console.error('Failed to check LM Studio connection:', err);
+                                setError('Failed to connect to LM Studio. Make sure LM Studio is running on http://127.0.0.1:1234');
                               }
-                            } catch (err) {
-                              console.error('Failed to get recommended path:', err);
-                              setError('Failed to get recommended path');
-                            }
-                          }}
-                          className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm whitespace-nowrap"
-                        >
-                          Use Recommended
-                        </button>
-                      </div>
+                            }}
+                            className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm whitespace-nowrap"
+                          >
+                            Test Connection & Load Models
+                          </button>
+                          {availableModels.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-sm text-gray-300 mb-2">Available Models:</p>
+                              <div className="space-y-1">
+                                {availableModels.slice(0, 5).map((model, index) => (
+                                  <button
+                                    key={index}
+                                    type="button"
+                                    onClick={() => setSelectedModel(model)}
+                                    className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                                      selectedModel === model 
+                                        ? 'bg-purple-600/20 border border-purple-500 text-purple-300'
+                                        : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                                    }`}
+                                  >
+                                    {model}
+                                  </button>
+                                ))}
+                                {availableModels.length > 5 && (
+                                  <p className="text-xs text-gray-400 px-3 py-1">
+                                    ... and {availableModels.length - 5} more models
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex space-x-2">
+                          <input
+                            type="text"
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            placeholder="Enter path to model directory"
+                            className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(
+                                  `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/llms/local/llama-cpp/recommended-path`
+                                );
+                                const data = await response.json();
+                                if (data.path) {
+                                  setSelectedModel(data.path);
+                                }
+                              } catch (err) {
+                                console.error('Failed to get recommended path:', err);
+                                setError('Failed to get recommended path');
+                              }
+                            }}
+                            className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm whitespace-nowrap"
+                          >
+                            Use Recommended
+                          </button>
+                        </div>
+                      )}
                       <p className="mt-2 text-xs text-gray-400">
-                        Enter the absolute path to the directory containing your GGUF model files.
-                        This LLM alias will be associated with all .gguf files in the specified directory.
+                        {localProvider === 'lm-studio' 
+                          ? 'Make sure LM Studio is running with the OpenAI-compatible server enabled on http://127.0.0.1:1234'
+                          : 'Enter the absolute path to the directory containing your GGUF model files. This LLM alias will be associated with all .gguf files in the specified directory.'}
                       </p>
                     </div>
                   </div>
