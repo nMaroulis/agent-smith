@@ -167,6 +167,33 @@ async def get_tunable_parameters(alias: str = Path(..., description="The local L
         return {"error": f"Validation error: {str(e)}"}
 
 
+@router.get("/local/provider/{provider}/models")
+def test_local_provider_models(provider: str = Path(..., description="The local LLM provider")):
+    """Test connection and get models for a local provider without requiring a saved configuration"""
+    try:
+        provider_name = provider.lower().replace(" ", "_").replace(".", "_")
+        
+        # Direct LM Studio test to avoid factory/db issues
+        if provider_name == "lm-studio":
+            from services.llms.local.lm_studio import LMStudioLLM
+            llm = LMStudioLLM()
+            models = llm.list_models()
+            return {"models": models}
+        elif provider_name == "llama-cpp":
+            from services.llms.local.llama_cpp import LlamaCppLLM
+            llm = LlamaCppLLM()
+            try:
+                models = llm.list_models()
+                return {"models": models}
+            except:
+                return {"models": []}
+        else:
+            return {"models": []}
+            
+    except Exception:
+        return {"models": []}
+
+
 @router.get("/local/{provider}/recommended-path", response_model=dict[str, str])
 def get_recommended_path(provider: str = Path(..., description="The local LLM provider")):
     llm = get_llm_client_by_provider(provider.lower().replace(" ", "_").replace(".", "_"))

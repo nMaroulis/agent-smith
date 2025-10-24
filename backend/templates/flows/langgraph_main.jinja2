@@ -1,8 +1,10 @@
 from langgraph.graph import StateGraph, START, END
 from pydantic import BaseModel, Field
-from typing import TypedDict, Annotated
+from typing import Optional, TypedDict, Annotated
 from langgraph.graph.message import add_messages
 import os
+import json
+from langchain_core.messages import AIMessage, HumanMessage
 
 
 # === Import LLMs ===
@@ -21,28 +23,84 @@ class State(BaseModel):
     A state is a shared data structure that represents the current snapshot of your application.
     States are passed along edges between nodes, carrying the output of one node to the next as input.
     """
-    messages: list = Field(default_factory=list, metadata={"langgraph_annotation": add_messages})
+
+    messages: Annotated[list, add_messages] = Field(default_factory=list)
     message_type: Optional[str] = None
     next: Optional[str] = None
 
 # === Node function stubs ===
 {% for node in nodes %}
-{{ node }}
+{{ node.code }}
 {% endfor %}
 
-graph = StateGraph()
+# === Graph setup ===
+graph = StateGraph(State)
 
 # === Nodes ===
 {% for node in nodes %}
 graph.add_node("{{ node.function_name }}", {{ node.function_name }})
 {% endfor %}
-{#
-    # === Entry and Exit Points ===
-    graph.set_entry_point("{{ entry_point }}")
-    graph.set_finish_point("{{ finish_point }}")
-#}
+
 # === Edges ===
 {% for edge in edges %}
-graph.add_edge({{ edge.source }}, {{ edge.target }})
+graph.add_edge({% if edge.source == "START" %}START{% else %}"{{ edge.source }}"{% endif %}, {% if edge.target == "END" %}END{% else %}"{{ edge.target }}"{% endif %})
 {% endfor %}
+
 app = graph.compile()
+
+# Test the agent
+if __name__ == "__main__":
+    # Create initial state with a test message
+
+    initial_state = {
+        "messages": [
+            HumanMessage(
+                content="What is the latest news about artificial intelligence?"
+            )
+        ]
+    }
+
+    print("Agent response (streaming tokens):")
+    print("=" * 50)
+
+    # Test streaming directly from LM Studio
+    query = initial_state["messages"][0].content
+    results = duck_web_search(query, 3)
+
+    if not results:
+        print(
+            "I couldn't find any relevant information online right now. Try rephrasing or checking back later."
+        )
+    else:
+        context = "\n\n".join(results)
+
+        # Instantiate LM Studio client for testing
+        llm = LMStudioClient()
+
+        # Stream the LM Studio response token by token
+        response_stream = llm.get_completion_stream(
+            "You are an assistant that summarizes and explains search results from the web. Only use the information below to answer the user. Be helpful, clear, and avoid guessing. Search Results:",
+            f"{context}\n\nUser's question:\n{query}",
+        )
+
+        print("Processing search results and generating response: ", end="", flush=True)
+        for line in response_stream.iter_lines():
+            if line:
+                try:
+                    data = line.decode("utf-8").strip()
+                    if data.startswith("data: "):
+                        data = data[6:]  # Remove 'data: ' prefix
+                    if data and data != "[DONE]":
+                        chunk = json.loads(data)
+                        if "choices" in chunk and len(chunk["choices"]) > 0:
+                            delta = chunk["choices"][0].get("delta", {})
+                            if "content" in delta:
+                                token = delta["content"]
+                                print(token, end="", flush=True)
+                except (json.JSONDecodeError, KeyError):
+                    continue
+
+        print()  # New line at the end
+
+    print("=" * 50)
+    print("Streaming complete!")

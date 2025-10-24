@@ -18,8 +18,8 @@ import {
   Alert,
   type AlertColor
 } from '@mui/material';
-import { Delete as DeleteIcon, Save as SaveIcon, FolderOpen as FolderOpenIcon } from '@mui/icons-material';
-import { getFlows, createFlow, updateFlow, deleteFlow, type Flow } from '../services/flows';
+import { Delete as DeleteIcon, Save as SaveIcon, FolderOpen as FolderOpenIcon, PlayArrow as PlayIcon, BugReport as TestIcon } from '@mui/icons-material';
+import { getFlows, createFlow, updateFlow, deleteFlow, runFlow, testFlow, type Flow } from '../services/flows';
 
 interface SaveLoadFlowProps {
   serializedGraph: any;
@@ -93,14 +93,40 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
     try {
       setIsLoading(true);
       
-      // Create a clean copy of the graph with the state
-      const graph_data = {...serializedGraph}
-
+      // Create a clean copy of the graph with the state, properly serializing nodes and edges
       const flowData = {
         name: flowName.trim(),
         description: flowDescription.trim(),
-        graph: {nodes: graph_data.nodes, edges: graph_data.edges},
-        state: {fields: graph_data.state},
+        graph: {
+          nodes: serializedGraph.nodes?.map(node => ({
+            id: node.id,
+            type: node.type,
+            position: node.position,
+            data: node.data,
+            width: node.width || (node.type === 'node' ? 226 : node.type === 'start' || node.type === 'end' ? 162 : 162),
+            height: node.height || (node.type === 'node' ? 183 : node.type === 'start' || node.type === 'end' ? 66 : 66),
+            selected: node.selected || false
+          })) || [],
+          edges: serializedGraph.edges?.map(edge => ({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            type: edge.type || 'default',
+            data: edge.data,
+            style: edge.style || {"stroke": "#4B5563"},
+            sourceHandle: edge.sourceHandle || null,
+            targetHandle: edge.targetHandle || null,
+            animated: edge.animated !== undefined ? edge.animated : true,
+            markerEnd: edge.markerEnd ? {
+              type: edge.markerEnd.type,
+              color: edge.markerEnd.color
+            } : {"type": "arrowclosed", "color": "#94a3b8"},
+            selected: edge.selected || false
+          })) || []
+        },
+        state: serializedGraph.state && serializedGraph.state.fields 
+      ? serializedGraph.state 
+      : { fields: [] },
       };
 
       if (selectedFlow) {
@@ -175,6 +201,54 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
       } finally {
         setIsLoading(false);
       }
+    }
+  };
+
+  const handleRunFlow = async () => {
+    if (!selectedFlow) return;
+    
+    try {
+      setIsLoading(true);
+      const result = await runFlow(selectedFlow.id);
+      setSnackbar({
+        open: true,
+        message: `Flow "${selectedFlow.name}" executed successfully!`,
+        severity: 'success',
+      });
+      console.log('Flow execution result:', result);
+    } catch (error) {
+      console.error('Failed to run flow:', error);
+      setSnackbar({
+        open: true,
+        message: `Failed to run flow: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'error',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestFlow = async () => {
+    if (!selectedFlow) return;
+    
+    try {
+      setIsLoading(true);
+      const result = await testFlow(selectedFlow.id);
+      setSnackbar({
+        open: true,
+        message: `Flow "${selectedFlow.name}" test completed successfully!`,
+        severity: 'info',
+      });
+      console.log('Flow test result:', result);
+    } catch (error) {
+      console.error('Failed to test flow:', error);
+      setSnackbar({
+        open: true,
+        message: `Failed to test flow: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'error',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -499,6 +573,47 @@ const SaveLoadFlow: React.FC<SaveLoadFlowProps> = ({ serializedGraph, onLoad }) 
           >
             Cancel
           </Button>
+          
+          {/* Run and Test buttons in load mode */}
+          {mode === 'load' && selectedFlow && (
+            <>
+              <Button
+                onClick={handleTestFlow}
+                disabled={isLoading}
+                sx={{
+                  color: 'rgba(251, 191, 36, 0.9)',
+                  '&:hover': {
+                    color: 'white',
+                    bgcolor: 'rgba(245, 158, 11, 0.2)'
+                  },
+                  '&.Mui-disabled': {
+                    color: 'rgba(251, 191, 36, 0.3)'
+                  }
+                }}
+                startIcon={<TestIcon fontSize="small" />}
+              >
+                Test
+              </Button>
+              <Button
+                onClick={handleRunFlow}
+                disabled={isLoading}
+                sx={{
+                  color: 'rgba(34, 197, 94, 0.9)',
+                  '&:hover': {
+                    color: 'white',
+                    bgcolor: 'rgba(34, 197, 94, 0.2)'
+                  },
+                  '&.Mui-disabled': {
+                    color: 'rgba(34, 197, 94, 0.3)'
+                  }
+                }}
+                startIcon={<PlayIcon fontSize="small" />}
+              >
+                Run
+              </Button>
+            </>
+          )}
+          
           <Button
             onClick={mode === 'save' ? handleSave : handleLoad}
             disabled={isActionDisabled || isLoading}
